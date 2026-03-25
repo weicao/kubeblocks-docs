@@ -1,0 +1,185 @@
+---
+slug: oci-mssql-tcp-blackhole-troubleshooting
+title: 'A Deep Dive into Troubleshooting and Resolving a SQL Server TCP Blackhole on an OKE Cluster'
+description: 'This article documents the entire process of troubleshooting and resolving a TCP blackhole issue discovered during SQL Server failover testing on an Oracle Kubernetes Engine (OKE) cluster. The problem caused long-lived connections to experience a "fake death" phenomenon after failover, taking about 15 minutes to recover.'
+authors:
+  name: 1aal
+  url: https://github.com/1aal
+  image_url: https://avatars.githubusercontent.com/u/101848970?v=4
+date: 2026-03-25
+tags: [MSSQL, Troubleshooting, Kubernetes, High Availability, Network]
+keywords: tcp-blackhole,kubernetes,kubeblocks,kubernetes-networking,sql-server,failover,long-lived-connections,tcp-retransmission,network-troubleshooting,high-availability
+image: /img/blogs/tcp-blackhole/tcp-blackhole.png
+---
+
+# A Deep Dive into Troubleshooting and Resolving a TCP Blackhole on an OKE Cluster
+
+As the **Apecloud** team, we are dedicated to bringing traditional databases into the modern Kubernetes world through our open-source data infrastructure project, KubeBlocks<sup>[1]</sup>. A key feature we support is SQL Server on K8s with Always On. Compared to Microsoft's basic StatefulSet solution for running SQL Server in containers, KubeBlocks' MSSQL Addon offers a full suite of production-grade lifecycle management capabilities. This includes: **multi-node high-availability configuration**, **dynamic scaling**, **database/account management**, **parameter management**, **monitoring and alerting**, **full/incremental/PITR backup and recovery**, **TDE/TLS data encryption**, and so on., making it one of the most mature and comprehensive SQL Server operator solutions available<sup>[2][3]</sup>.
+
+Recently, a customer planned to deploy our SQL Server high-availability cluster in an Oracle Kubernetes Engine (OKE) environment. To ensure the reliability of our solution, we conducted a comprehensive regression test of the MSSQL Addon in the OKE environment.
+
+During tests of operations like failover and dynamic resource scaling, we observed a peculiar phenomenon unique to OKE, which differed from our self-hosted K8s clusters and other cloud providers' environments. After a Pod's rolling restart or a primary-secondary failover, the pod of the old primary node took about 15 minutes to rejoin the cluster after being recreated. This unexpected delay prompted us to investigate deeply, ultimately uncovering a "TCP blackhole" issue hidden within the cloud network. This article documents the entire process of troubleshooting and resolving this problem.
+
+## 1. The Phenomenon: "Fake Death" of Long-Lived Connections After Failover
+
+In a routine primary-secondary failover test, we set up the following environment:
+- **Original Primary Node**: Pod IP `10.0.10.129`. It was manually `kill`ed around 09:33 to simulate a failure. The new Pod IP after recreation was `10.0.10.98`.
+- **Replica 1**: Pod IP `10.0.10.227`. It became the new primary after the failover and was the machine used for packet capture analysis.
+- **Replica 2**: Pod IP `10.0.10.56`.
+
+![alt text](/img/blogs/tcp-blackhole/pod-before.png)
+*Figure 1: Pod status before the failover*
+
+![alt text](/img/blogs/tcp-blackhole/pod-after.png)
+*Figure 2: Pod status after the failover*
+
+The key timeline during the failover was as follows:
+- **09:32:49**: The failover to the new primary was triggered.
+```
+2026-03-18T15:48:05Z	INFO	SQLServer	Setting replica to SECONDARY role...
+2026-03-19T01:32:49Z	INFO	HA	Cluster has no leader, attempt to take the leader
+2026-03-19T01:32:49Z	INFO	SQLServer	Replica is now PRIMARY
+2026-03-19T01:32:49Z	INFO	HA	Take the leader success!
+2026-03-19T01:32:57Z	INFO	HA	This member is Cluster's leader
+2026-03-19T01:32:57Z	DEBUG	HA	Refresh leader ttl
+2026-03-19T01:33:57Z	INFO	HA	This member is Cluster's leader
+2026-03-19T01:33:57Z	DEBUG	HA	Refresh leader ttl
+2026-03-19T01:34:57Z	INFO	HA	This member is Cluster's leader
+2026-03-19T01:34:57Z	DEBUG	HA	Refresh leader ttl
+2026-03-19T01:35:57Z	INFO	HA	This member is Cluster's leader
+2026-03-19T01:35:57Z	DEBUG	HA	Refresh leader ttl
+```
+
+- **09:33:02**: The old primary node (IP `10.0.10.129`) was officially shut down.
+
+- **09:48:05**: The recreated primary pod (IP `10.0.10.98`) rejoined the cluster as a secondary replica.
+
+**Abnormal Phenomenon**: Starting from 09:33:02, TCP traffic from existing connections seemed to fall into a blackhole, and synchronization between the primary and secondary replicas was completely interrupted. The SQL Server logs only showed that synchronization was broken, with no connection error reports. The system could not recover automatically for a long time. It ultimately **took about 15 minutes** for the old primary node (Pod `10.0.10.98`) to rejoin the cluster as a secondary replica.
+```
+[HADR TRANSPORT] AR[16FD79D5-4819-43D0-B534-C5132DDFF886]->[20D27FE9-032A-43E7-969F-78A9976AEA33] Setting Reconnect Delay to 0 s
+[HADR TRANSPORT] LOCAL AR:[16FD79D5-4819-43D0-B534-C5132DDFF886]->[20D27FE9-032A-43E7-969F-78A9976AEA33] in 
+CHadrTransportReplica::Reset called from function [CHadrTransportReplica::ReconnectTask], primary = 0, 
+primaryConnector = 1[HADR TRANSPORT] LOCAL AR:[16FD79D5-4819-43D0-B534-C5132DDFF886]->[20D27FE9-032A-43E7-969F-78A9976AEA33] in 
+CHadrConfigState::ChangeState with session ID A23BA718-9B73-4588-893B-0F18C0275526 change from 
+HadrSessionConfig_ConfigRequest to HadrSessionConfig_ConfigRequest - function [CHadrSession::Reset][HADR TRANSPORT] 
+AR[16FD79D5-4819-43D0-B534-C5132DDFF886]->[20D27FE9-032A-43E7-969F-78A9976AEA33] 
+Session:[1DF067D5-EB9C-4A15-9216-A025B534D66F] CHadrTransportReplica State change from HadrSession_Timeout to 
+HadrSession_Configuring - function [CHadrTransportReplica::Reset_Deregistered][HADR TRANSPORT] AR[16FD79D5-4819-43D0-B534-C5132DDFF886]->[20D27FE9-032A-43E7-969F-78A9976AEA33], 
+Seesion:[1DF067D5-EB9C-4A15-9216-A025B534D66F] Queue Timeout (10) from [CHadrTransportReplica::Reset_Deregistered][HADR TRANSPORT] 
+LOCAL AR:[16FD79D5-4819-43D0-B534-C5132DDFF886]->[20D27FE9-032A-43E7-969F-78A9976AEA33] in CHadrConfigState::ChangeState 
+with session ID 1DF067D5-EB9C-4A15-9216-A025B534D66F change from HadrSessionConfig_ConfigRequest to 
+HadrSessionConfig_WaitingSynAck - function [CHadrSession::GenerateConfigMessage][HADR TRANSPORT] LOCAL AR:
+[16FD79D5-4819-43D0-B534-C5132DDFF886]->[20D27FE9-032A-43E7-969F-78A9976AEA33] in CHadrSession::GenerateConfigMessage 
+with session ID 1DF067D5-EB9C-4A15-9216-A025B534D66F Generate configure message(1) with viersion(1)[HADR TRANSPORT] AR
+[16FD79D5-4819-43D0-B534-C5132DDFF886]->[20D27FE9-032A-43E7-969F-78A9976AEA33] Transport is not in a connected state, 
+unable to send packet2026-03-18 10:22:48.60 spid27s     Using 'dbghelp.dll' version '4.0.5'
+```
+
+## 2. Packet Capture Analysis: The Classic TCP Exponential Backoff and Retransmission
+
+To understand where the traffic was going, we performed a packet capture on the communication link (`10.0.10.227:38101` -> `10.0.10.129:5022`, where 5022 is the SQL Server Always On endpoint port).
+
+The key packet sequence was as follows:
+```text
+09:32:54.234 129:5022 → 227:38101 ACK=40464 [Normal ACK]
+09:33:02.246 227:38101 → 129:5022 seq=40464:52704 len=12240 [Sending data]
+09:33:02.247 129:5022 → 227:38101 ACK=52704 [ACK received, this is the last word from 129]
+
+# Afterwards, 227 continues to send new data, but never receives an ACK from 129
+09:33:13.258 227:38101 → 129:5022 seq=52704:64944 len=12240 [Sending new data]
+09:33:13.468 227:38101 → 129:5022 seq=52704:61652 len=8948  [Retransmission 1, interval 0.4s]
+09:33:13.876 227:38101 → 129:5022 seq=52704:61652 len=8948  [Retransmission 2, interval 0.9s]
+09:33:14.740 227:38101 → 129:5022 seq=52704:61652 len=8948  [Retransmission 3, interval 1.7s]
+...
+09:36:46.964 227:38101 → 129:5022 seq=52704:61652 len=8948  [Continuous retransmissions, interval reached 106.5s]
+```
+
+**Analysis Conclusion**: This is a classic example of the **TCP retransmission mechanism**. When the sender does not receive an ACK, it triggers a Retransmission Timeout (RTO), and the retransmission interval increases exponentially (0.4s → 0.9s → 1.7s → 3.3s ... 106.5s). With the default Linux configuration, it will retransmit 15 times, taking about 15-30 minutes before finally giving up and closing the connection.
+
+## 3. Analysis: Why Didn't the Application Layer (SQL Server) Trigger a Timeout?
+
+Many might ask: SQL Server's HADR (High Availability Disaster Recovery) mechanism has a default 10-second `SESSION_TIMEOUT`. Why didn't it take effect?
+
+The trap is that `SESSION_TIMEOUT` is mainly used to detect the loss of **heartbeat pings**.
+In the current scenario:
+1. The TCP connection at the OS transport layer was still in the `ESTABLISHED` state. The kernel was busy retransmitting and did not throw a connection-closed error to the application layer.
+2. SQL Server assumed the "underlying TCP connection is still alive, just slow," and therefore kept waiting.
+3. The final result: The application layer waited indefinitely until the TCP stack finally gave up after 15 minutes. This created a so-called "ghost connection."
+
+```
+TCP Layer: Continuous retransmissions, connection not closed (ESTABLISHED)
+    ↓
+SQL Server Layer: Assumes connection is alive (TCP reports no error)
+    ↓
+HADR Layer: Waits for data synchronization, SESSION_TIMEOUT not triggered
+    ↓
+Result: Indefinite wait, until TCP finally gives up (15 retransmissions ≈ 15-20 minutes)
+```
+
+## 4. Root Cause Analysis and Cloud Network Context
+
+Combining industry experience with the characteristics of this failure, we identified the complete root cause chain:
+1. **Peculiarities of the Cloud Network Environment**: In the underlying network architecture of some cloud providers, to withstand network jitter, the network devices try to avoid sending `RST` packets to the peer. However, in scenarios with frequent container IP changes (Pod recreation), this prevents the peer from sensing the connection break, leading to the 15-minute blackhole problem.
+
+![alt text](/img/blogs/tcp-blackhole/oci-tcp_retries2.png)
+*Figure 1: Default value of tcp_retries2 parameter on the OKE host machine*
+
+2. **Abrupt Application Shutdown**: The most fundamental reason was that during the `Delete Pod` operation, the **MSSQL process did not perform a Graceful Shutdown**. The process was killed forcefully, giving neither the OS nor the application time to send a `FIN` or `RST` packet to actively close the connection. The peer (node 227 in our case) was completely unaware and kept waiting and retransmitting foolishly.
+
+## 5. The Solution: A Two-Pronged Approach
+
+To address the root causes, we adopted a comprehensive solution combining "application-layer active blocking + system-layer passive fallback."
+
+### 1. Application-Layer Fix: Implementing Graceful Shutdown (The Proactive Solution)
+The most thorough solution is to have the connection close proactively. We introduced a Graceful Shutdown patch for our MSSQL Addon. This ensures that when the application receives a stop signal, it can actively execute `close()` to release the TCP connection, sending a `FIN/RST` to the peer.
+
+### 2. System-Layer Fallback: Optimizing the `tcp_retries2` Kernel Parameter (The Passive Defense)
+
+> [!IMPORTANT]
+> In a containerized environment like Kubernetes, the lifecycle of a Pod is dynamic, and its IP address can change at any time due to scheduling, upgrades, or failures. Although implementing Graceful Shutdown is a best practice for application development, in many unexpected scenarios—such as OOMKilled, node failure, or a process crash—the application has no chance to perform a graceful shutdown. This leaves the other end of the connection unaware that its peer has disappeared, causing it to wait for a long time and creating a network blackhole. Therefore, relying solely on application-layer graceful shutdown is insufficient; a "passive defense" fallback mechanism must be established at the system level.
+
+For applications using long-lived connections (which is the default for TCP, whether HTTP/2 or HTTP/1), a 15-minute timeout issue can occur if appropriate request timeout parameters are not set. To cope with extreme physical failures like network splits or sudden power loss where a graceful shutdown cannot be performed, we need to shorten the OS's TCP timeout period.<sup>[4]</sup>
+
+The Linux kernel parameter `net.ipv4.tcp_retries2`<sup>[5]</sup> controls the retransmission behavior for data transfer failures on `ESTABLISHED` connections. A common misconception to clarify is that **`tcp_retries2` is not simply the absolute number of retries; it actually determines the boundary for the kernel to calculate the total timeout.**
+
+**TCP Timeout Calculation Logic:**
+The kernel uses an exponential backoff algorithm to calculate the retransmission timeout (RTO, initially 1s, bounded by `TCP_RTO_MIN` at 200ms and `TCP_RTO_MAX` at 120s). The formula is roughly as follows:
+- When `retries2 <= 9`, the total timeout grows exponentially: `timeout = ((2 << retries2) - 1) * 200ms`
+- When `retries2 > 9`, the total timeout grows linearly: `timeout = (2^9 - 1) * 200ms + (retries2 - 9) * 120s`
+
+Based on this algorithm:
+- **Default value 15**: The calculated total timeout is approximately **924.6 seconds (15.4 minutes)**. During these 15 minutes, the application layer will wait unknowingly, which is the direct cause of the 15-minute blackhole.
+- **Optimized value 8**: The calculated total timeout is drastically reduced to **about 25.5 seconds**.
+
+We incorporated the `tcp_retries2=8` configuration into our infrastructure delivery process (it can be injected via node initialization `sysctl` or a Pod `initContainer`). This way, even if a connection blackhole occurs, the TCP layer will wait for about 25 seconds at most before forcibly closing the connection and throwing an `ETIMEDOUT` exception to the upper application, allowing the application's failover mechanism to intervene quickly.
+
+## 6. Verification and Future Improvements
+
+After applying the fix on the OCI cluster, we conducted scenario verification and testing:
+- **Test Scenario**: Triggered a configuration change Ops on the cluster to test if the primary-secondary failover during the **rolling restart** process was normal.
+- **Test Result**: We verified the fix by comparing the performance of the `tcp_retries2` parameter at its default value (15) versus the optimized value (8).
+
+| Comparison | Scenario 1: Default Value (`tcp_retries2=15`) | Scenario 2: Optimized (`tcp_retries2=8`) |
+| :--- | :--- | :--- |
+| **Recovery Time** | **Approx. 16 minutes** | **Under 2 minutes** |
+| **Phenomenon** | After the failover, the connection was interrupted for a long time, creating a significant "traffic blackhole." The cluster could not restore synchronization for an extended period. | After the failover, the connection was restored quickly, and the cluster rapidly completed synchronization, effectively resolving the traffic blackhole problem. |
+| **GIF Demo** | ![alt text](/img/blogs/tcp-blackhole/20260323102810_rec_.gif) | ![alt text](/img/blogs/tcp-blackhole/20260323101438_rec_.gif) |
+
+**Future Improvements and Outlook**:
+This troubleshooting not only solved the immediate problem but also provided valuable experience for improving the overall robustness of our system. Moving forward, the KubeBlocks team will deepen improvements in the following areas:
+
+1.  **Promote Graceful Shutdown Practices Comprehensively**:
+    Make graceful shutdown a mandatory standard for the development and deployment of all stateful applications (including but not limited to databases like Redis, PostgreSQL, etc.). Ensure that applications can actively clean up and release resources upon exit to eliminate "ghost connections" at the source.
+
+2.  **Optimize Infrastructure Delivery Processes**:
+    Incorporate the optimization of key kernel parameters like `tcp_retries2=8` as a standard configuration item in the node initialization process to ensure consistency and reliability across the cluster environment.
+
+3.  **Implement Chaos Engineering as a Regular Practice**:
+    Incorporate failure scenarios like network partitions and forced Pod deletions into a regular chaos engineering platform. By proactively injecting faults, we can continuously test and improve the system's resilience and self-healing capabilities, shifting from reactive responses to proactive defense.
+
+References:
+1. [KubeBlocks Official Website](https://kubeblocks.com/)
+2. [KubeBlocks Official Blog - SQLServer Addon](https://www.kubeblocks.com/addons/sqlserver)
+3. [KubeBlocks Official Blog - KubeBlocks for MSSQL Always On AG Revealed](https://kubeblocks.io/blog/kubeblocks-for-mssql-always-on-ag-revealed)
+4. [The strange 15mins timeout of Kubernetes Controller HA](https://duyanghao.github.io/kubernetes-ha-http-keep-alive-bugs/)
+5. [In-depth analysis and optimization guide for net.ipv4.tcp_retries2](https://www.cnblogs.com/guoliushui/p/18971017)
