@@ -1,0 +1,245 @@
+---
+title: etcd Cluster Lifecycle Management (Stop, Start, Restart)
+description: Learn how to manage etcd cluster states in KubeBlocks including stopping, starting, and restarting operations to optimize resources.
+keywords: [KubeBlocks, etcd, Cluster Management, Stop, Start, Restart]
+sidebar_position: 1
+sidebar_label: Lifecycle Management
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# etcd Cluster Lifecycle Management
+
+This guide demonstrates how to manage an etcd cluster's operational state in **KubeBlocks**, including:
+
+- Stopping the cluster to conserve resources
+- Starting a stopped cluster
+- Restarting cluster components
+
+| Operation | Effect | Use Case |
+|-----------|--------|----------|
+| Stop | Suspends cluster, retains storage | Cost savings, maintenance |
+| Start | Resumes cluster operation | Restore service after pause |
+| Restart | Recreates pods for component | Troubleshooting, resource refresh |
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+## Stopping the Cluster
+
+Stopping an etcd cluster in KubeBlocks will:
+
+1. Terminate all running pods
+2. Retain persistent storage (PVCs)
+3. Maintain cluster configuration
+
+<Tabs>
+
+<TabItem value="opsRequest" label="OpsRequest API" default>
+
+```yaml
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: etcd-stop
+  namespace: demo
+spec:
+  clusterName: etcd-cluster
+  type: Stop
+```
+
+Apply it:
+```bash
+kubectl apply -f https://raw.githubusercontent.com/apecloud/kubeblocks-addons/refs/heads/main/examples/etcd/stop.yaml
+```
+</TabItem>
+
+<TabItem value="ClusterAPI" label="Cluster API">
+
+```bash
+kubectl patch cluster etcd-cluster -n demo --type='json' -p='[
+  {
+    "op": "add",
+    "path": "/spec/componentSpecs/0/stop",
+    "value": true
+  }
+]'
+```
+</TabItem>
+
+</Tabs>
+
+### Verify Cluster Stop
+
+```bash
+kubectl get cluster etcd-cluster -n demo -w
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME           CLUSTER-DEFINITION   TERMINATION-POLICY   STATUS     AGE
+etcd-cluster                        Delete               Stopping   3m
+etcd-cluster                        Delete               Stopped    3m42s
+```
+</details>
+
+Verify no running pods:
+```bash
+kubectl get pods -n demo -l app.kubernetes.io/instance=etcd-cluster
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+No resources found in demo namespace.
+```
+</details>
+
+Confirm persistent volumes remain:
+```bash
+kubectl get pvc -n demo -l app.kubernetes.io/instance=etcd-cluster
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                       STATUS   VOLUME       CAPACITY   ACCESS MODES   STORAGECLASS    AGE
+data-etcd-cluster-etcd-0   Bound    pvc-xxx      20Gi       RWO            kb-default-sc   5m
+data-etcd-cluster-etcd-1   Bound    pvc-xxx      20Gi       RWO            kb-default-sc   5m
+data-etcd-cluster-etcd-2   Bound    pvc-xxx      20Gi       RWO            kb-default-sc   5m
+```
+</details>
+
+## Starting the Cluster
+
+<Tabs>
+
+<TabItem value="opsRequest" label="OpsRequest API" default>
+
+```yaml
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: etcd-start
+  namespace: demo
+spec:
+  clusterName: etcd-cluster
+  type: Start
+```
+
+Apply it:
+```bash
+kubectl apply -f https://raw.githubusercontent.com/apecloud/kubeblocks-addons/refs/heads/main/examples/etcd/start.yaml
+```
+</TabItem>
+
+<TabItem value="ClusterAPI" label="Cluster API">
+
+```bash
+kubectl patch cluster etcd-cluster -n demo --type='json' -p='[
+  {
+    "op": "remove",
+    "path": "/spec/componentSpecs/0/stop"
+  }
+]'
+```
+</TabItem>
+
+</Tabs>
+
+### Verify Cluster Start
+
+```bash
+kubectl get cluster etcd-cluster -n demo -w
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME           CLUSTER-DEFINITION   TERMINATION-POLICY   STATUS     AGE
+etcd-cluster                        Delete               Updating   6m
+etcd-cluster                        Delete               Running    6m47s
+```
+</details>
+
+```bash
+kubectl get pods -n demo -l app.kubernetes.io/instance=etcd-cluster -L kubeblocks.io/role
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                  READY   STATUS    RESTARTS   AGE    ROLE
+etcd-cluster-etcd-0   2/2     Running   0          55s    follower
+etcd-cluster-etcd-1   2/2     Running   0          42s    follower
+etcd-cluster-etcd-2   2/2     Running   0          28s    leader
+```
+</details>
+
+## Restarting the Cluster
+
+Restart recreates pods without full cluster stop, useful for:
+- Resource refresh
+- Troubleshooting
+
+```yaml
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: etcd-restart
+  namespace: demo
+spec:
+  clusterName: etcd-cluster
+  type: Restart
+  restart:
+  - componentName: etcd
+```
+
+Apply it:
+```bash
+kubectl apply -f https://raw.githubusercontent.com/apecloud/kubeblocks-addons/refs/heads/main/examples/etcd/restart.yaml
+```
+
+### Verify Restart Completion
+
+```bash
+kubectl get ops etcd-restart -n demo -w
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME           TYPE      CLUSTER        STATUS    PROGRESS   AGE
+etcd-restart   Restart   etcd-cluster   Running   0/3        10s
+etcd-restart   Restart   etcd-cluster   Running   1/3        36s
+etcd-restart   Restart   etcd-cluster   Running   2/3        68s
+etcd-restart   Restart   etcd-cluster   Running   3/3        100s
+etcd-restart   Restart   etcd-cluster   Succeed   3/3        2m20s
+```
+</details>
+
+```bash
+kubectl get pods -n demo -l app.kubernetes.io/instance=etcd-cluster -L kubeblocks.io/role
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                  READY   STATUS    RESTARTS   AGE   ROLE
+etcd-cluster-etcd-0   2/2     Running   0          94s   follower
+etcd-cluster-etcd-1   2/2     Running   0          62s   follower
+etcd-cluster-etcd-2   2/2     Running   0          28s   leader
+```
+</details>
+
+## Cleanup
+
+```bash
+kubectl delete cluster etcd-cluster -n demo
+kubectl delete ns demo
+```

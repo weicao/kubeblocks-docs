@@ -1,0 +1,179 @@
+---
+title: Restore an etcd Cluster from Backup
+description: Learn how to restore a new etcd cluster from an existing datafile backup in KubeBlocks.
+keywords: [etcd, Restore, Backup, KubeBlocks, Kubernetes]
+sidebar_position: 2
+sidebar_label: Restore
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Restore an etcd Cluster from Backup
+
+This guide demonstrates how to restore an etcd cluster from a backup created by the `datafile` method. KubeBlocks restores data into a **new cluster** rather than overwriting the existing one.
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+- A `Completed` etcd backup (see [Backup](./01-backup)).
+
+## Step 1: Locate the Backup
+
+List available backups:
+
+```bash
+kubectl get backup -n demo -l app.kubernetes.io/instance=etcd-cluster
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                  POLICY                             METHOD     REPO         STATUS      TOTAL-SIZE   DURATION   DELETION-POLICY   CREATION-TIME
+etcd-cluster-backup   etcd-cluster-etcd-backup-policy    datafile   minio-repo   Completed   853          10s        Delete            2026-04-03T17:20:00Z
+```
+</details>
+
+Note the backup name (`etcd-cluster-backup`) and namespace (`demo`) — you'll need them in the next step.
+
+## Step 2: Create a Restored Cluster
+
+Restore creates a **new** etcd cluster from the backup data. The source cluster continues running unaffected.
+
+```yaml
+apiVersion: apps.kubeblocks.io/v1
+kind: Cluster
+metadata:
+  name: etcd-cluster-restore
+  namespace: demo
+  annotations:
+    # Replace "etcd-cluster-backup" with your backup name
+    # Replace "demo" with your backup namespace
+    kubeblocks.io/restore-from-backup: '{"etcd":{"name":"etcd-cluster-backup","namespace":"demo","volumeRestorePolicy":"Parallel"}}'
+spec:
+  terminationPolicy: Delete
+  componentSpecs:
+    - name: etcd
+      componentDef: etcd
+      serviceVersion: 3.6.1
+      disableExporter: false
+      replicas: 3
+      resources:
+        limits:
+          cpu: "0.5"
+          memory: "0.5Gi"
+        requests:
+          cpu: "0.5"
+          memory: "0.5Gi"
+      volumeClaimTemplates:
+        - name: data
+          spec:
+            storageClassName: ""
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 20Gi
+```
+
+Apply it:
+```bash
+kubectl apply -f https://raw.githubusercontent.com/apecloud/kubeblocks-addons/refs/heads/main/examples/etcd/restore.yaml
+```
+
+The annotation format:
+```json
+{
+  "etcd": {
+    "name": "<BACKUP_NAME>",
+    "namespace": "<BACKUP_NAMESPACE>",
+    "volumeRestorePolicy": "Parallel"
+  }
+}
+```
+
+- `etcd` — the component name (must match `spec.componentSpecs[].name`)
+- `name` — the backup CR name
+- `namespace` — namespace where the backup CR lives
+- `volumeRestorePolicy` — `Parallel` (all volumes restored simultaneously) or `Serial`
+
+## Step 3: Monitor the Restore
+
+```bash
+kubectl get cluster etcd-cluster-restore -n demo -w
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                  CLUSTER-DEFINITION   TERMINATION-POLICY   STATUS     AGE
+etcd-cluster-restore                        Delete               Creating   30s
+etcd-cluster-restore                        Delete               Running    2m1s
+```
+</details>
+
+Check pod status and roles:
+
+```bash
+kubectl get pods -n demo -l app.kubernetes.io/instance=etcd-cluster-restore -L kubeblocks.io/role
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                           READY   STATUS    RESTARTS   AGE     ROLE
+etcd-cluster-restore-etcd-0    2/2     Running   0          2m1s    leader
+etcd-cluster-restore-etcd-1    2/2     Running   0          2m1s    follower
+etcd-cluster-restore-etcd-2    2/2     Running   0          2m1s    follower
+```
+</details>
+
+## Step 4: Verify the Restored Data
+
+Connect to the restored cluster and verify that the data is intact:
+
+```bash
+kubectl exec -n demo etcd-cluster-restore-etcd-0 -c etcd -- \
+  etcdctl get test-key \
+  --endpoints=http://localhost:2379
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+test-key
+hello-kubeblocks
+```
+</details>
+
+## Troubleshooting
+
+If the restore is stuck or fails:
+
+1. Check restore resources created during the process:
+   ```bash
+   kubectl get restore -n demo
+   ```
+
+2. Describe the Component for events:
+   ```bash
+   kubectl describe cmp etcd-cluster-restore-etcd -n demo
+   ```
+
+3. Check the restore job logs:
+   ```bash
+   kubectl get job -n demo | grep restore
+   kubectl logs -n demo job/<RESTORE_JOB_NAME>
+   ```
+
+## Cleanup
+
+```bash
+kubectl delete cluster etcd-cluster-restore -n demo
+kubectl delete cluster etcd-cluster -n demo
+kubectl delete backup etcd-cluster-backup -n demo
+kubectl delete ns demo
+```

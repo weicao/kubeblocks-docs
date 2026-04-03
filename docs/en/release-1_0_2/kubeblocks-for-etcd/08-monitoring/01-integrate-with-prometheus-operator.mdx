@@ -1,0 +1,197 @@
+---
+title: Observability for etcd Clusters with the Prometheus Operator
+description: Learn how to set up observability for etcd Clusters in KubeBlocks using the Prometheus Operator. Configure monitoring and visualize metrics with Grafana.
+keywords: [KubeBlocks, etcd, Prometheus, Grafana, Observability, Metrics]
+sidebar_position: 1
+sidebar_label: Observability for etcd Clusters
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# etcd Monitoring with Prometheus Operator
+
+This guide demonstrates how to configure comprehensive monitoring for etcd clusters in KubeBlocks using:
+
+1. Prometheus Operator for metrics collection
+2. Built-in etcd metrics exporter (port 2379 at `/metrics`)
+3. Grafana for visualization
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+## Install Monitoring Stack
+
+### 1. Install Prometheus Operator
+
+```bash
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm install prometheus prometheus-community/kube-prometheus-stack \
+  -n monitoring \
+  --create-namespace
+```
+
+### 2. Verify Installation
+
+```bash
+kubectl get pods -n monitoring
+```
+
+<details>
+<summary>Example Output</summary>
+```text
+NAME                                                     READY   STATUS    RESTARTS   AGE
+alertmanager-prometheus-kube-prometheus-alertmanager-0   2/2     Running   0          114s
+prometheus-grafana-75bb7d6986-9zfkx                      3/3     Running   0          2m
+prometheus-kube-prometheus-operator-7986c9475-wkvlk      1/1     Running   0          2m
+prometheus-prometheus-kube-prometheus-prometheus-0       2/2     Running   0          114s
+```
+</details>
+
+## Deploy an etcd Cluster
+
+Deploy an etcd cluster with metrics enabled (enabled by default via `disableExporter: false`):
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/apecloud/kubeblocks-addons/refs/heads/main/examples/etcd/cluster.yaml
+```
+
+etcd exposes Prometheus metrics on port **2379** at the `/metrics` path on each pod. No separate exporter sidecar is needed — the etcd process itself serves metrics.
+
+## Verify Cluster Status
+
+```bash
+kubectl get cluster etcd-cluster -n demo
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME           CLUSTER-DEFINITION   TERMINATION-POLICY   STATUS    AGE
+etcd-cluster                        Delete               Running   3m
+```
+</details>
+
+## Verify Metrics Endpoint
+
+Check that the metrics endpoint is reachable on the etcd pods:
+
+```bash
+kubectl exec -n demo etcd-cluster-etcd-0 -c etcd -- \
+  wget -qO- http://localhost:2379/metrics 2>/dev/null | head -5
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+# HELP etcd_cluster_version Which version is running. 1 for 'cluster_version' label with current cluster version
+# TYPE etcd_cluster_version gauge
+etcd_cluster_version{cluster_version="3.6",server_version="3.6.1"} 1
+# HELP etcd_debugging_auth_revision The current revision of auth store.
+# TYPE etcd_debugging_auth_revision gauge
+```
+</details>
+
+## Configure PodMonitor
+
+Create a `PodMonitor` to configure Prometheus to scrape etcd metrics:
+
+```yaml
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: etcd-cluster-pod-monitor
+  namespace: demo
+  labels:
+    release: prometheus   # matches prometheus.spec.podMonitorSelector
+spec:
+  jobLabel: app.kubernetes.io/managed-by
+  podTargetLabels:
+  - app.kubernetes.io/instance
+  - app.kubernetes.io/managed-by
+  - apps.kubeblocks.io/component-name
+  - apps.kubeblocks.io/pod-name
+  podMetricsEndpoints:
+    - path: /metrics
+      port: client       # port 2379
+      scheme: http
+  namespaceSelector:
+    matchNames:
+      - demo
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: etcd-cluster
+      apps.kubeblocks.io/component-name: etcd
+```
+
+Apply it:
+```bash
+kubectl apply -f https://raw.githubusercontent.com/apecloud/kubeblocks-addons/refs/heads/main/examples/etcd/pod-monitor.yaml
+```
+
+:::note
+The `release: prometheus` label must match the `podMonitorSelector` configured in your Prometheus resource. Run the following to check:
+
+```bash
+kubectl get prometheus -n monitoring -o jsonpath='{.items[0].spec.podMonitorSelector}' | jq .
+```
+:::
+
+## Verify Monitoring
+
+Wait 1–2 minutes for Prometheus to discover the targets, then check:
+
+```bash
+kubectl port-forward -n monitoring svc/prometheus-kube-prometheus-prometheus 9090:9090 &
+curl -s 'http://localhost:9090/api/v1/targets' | \
+  python3 -c "import json,sys; d=json.load(sys.stdin); \
+  t=[x for x in d['data']['activeTargets'] if 'etcd' in str(x).lower()]; \
+  print(f'{len(t)} etcd targets found'); [print(x['labels']['pod'],x['health']) for x in t]"
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+3 etcd targets found
+etcd-cluster-etcd-0 up
+etcd-cluster-etcd-1 up
+etcd-cluster-etcd-2 up
+```
+</details>
+
+## Key etcd Metrics
+
+Once scraping is active, the following metrics are available in Prometheus:
+
+| Metric | Description |
+|--------|-------------|
+| `etcd_cluster_version` | Current cluster version |
+| `etcd_server_is_leader` | 1 if this member is the leader |
+| `etcd_server_proposals_applied_total` | Total number of consensus proposals applied |
+| `etcd_server_proposals_pending` | Current number of pending proposals |
+| `etcd_server_proposals_failed_total` | Total number of failed proposals |
+| `etcd_disk_wal_fsync_duration_seconds` | Latency distributions of fsync called by WAL |
+| `etcd_disk_backend_commit_duration_seconds` | Latency distributions of commit called by backend |
+| `etcd_network_peer_sent_bytes_total` | Total bytes sent to peers |
+| `etcd_mvcc_db_total_size_in_bytes` | Total size of the underlying database |
+
+## Access Grafana
+
+```bash
+kubectl port-forward -n monitoring svc/prometheus-grafana 3000:80
+```
+
+Open `http://localhost:3000` (default credentials: `admin` / `prom-operator`).
+
+Import the official etcd dashboard (ID: **3070**) from Grafana's dashboard repository for pre-built etcd visualizations.
+
+## Cleanup
+
+```bash
+kubectl delete podmonitor etcd-cluster-pod-monitor -n demo
+kubectl delete cluster etcd-cluster -n demo
+kubectl delete ns demo
+```

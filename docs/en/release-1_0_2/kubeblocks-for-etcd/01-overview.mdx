@@ -1,0 +1,70 @@
+---
+title: Overview of KubeBlocks etcd Addon
+description: Learn about the features and capabilities of the KubeBlocks etcd addon, including lifecycle management, backup and restore, and supported versions.
+keywords: [etcd, KubeBlocks, operator, key-value store, distributed coordination, features, lifecycle management]
+sidebar_position: 1
+sidebar_label: Overview
+---
+
+# Overview of KubeBlocks etcd Addon
+
+etcd is a strongly consistent, distributed key-value store that provides reliable storage for distributed systems. It is the primary data store for Kubernetes itself and is widely used as a coordination backbone for distributed applications.
+
+Key characteristics of etcd:
+- **Raft consensus** for strong consistency across the cluster
+- **MVCC** (Multi-Version Concurrency Control) for transactional reads and writes
+- **Watch API** for real-time notification of key changes
+- **TLS encryption** for secure peer and client communication
+
+The **KubeBlocks etcd Addon** provides a complete solution for deploying and managing etcd clusters in Kubernetes environments. Key features include:
+
+- Raft-based deployment with leader/follower topology
+- Comprehensive lifecycle management
+- Reliable backup and restore operations
+- Support for TLS-encrypted clusters
+- Support for multiple etcd versions
+
+## Key Features
+
+### Lifecycle Management
+
+KubeBlocks simplifies etcd operations with comprehensive lifecycle management:
+
+| Feature                   | Description                                                                 |
+|---------------------------|-----------------------------------------------------------------------------|
+| **Horizontal Scaling**    | Scale cluster members in/out (see [known limitation](./04-operations/03-horizontal-scaling)) |
+| **Vertical Scaling**      | Adjust CPU/memory resources for etcd instances                             |
+| **Volume Expansion**      | Dynamically increase storage capacity without downtime                     |
+| **Restart Operations**    | Controlled cluster restarts with minimal disruption                        |
+| **Start/Stop**            | Temporarily suspend/resume cluster operations                              |
+| **Switchover**            | Transfer leadership to a specific member                                   |
+| **Monitoring**            | Integrated Prometheus metrics collection via built-in exporter             |
+
+### Backup and Restore
+
+KubeBlocks supports backup and restore for etcd using `etcdctl snapshot save`:
+
+| Backup Type    | Method     | Description                                                         |
+|----------------|------------|---------------------------------------------------------------------|
+| **Full Backup**| `datafile` | Saves an etcd snapshot to a backup repository using `etcdctl`       |
+
+### TLS Support
+
+KubeBlocks can automatically provision TLS certificates (via cert-manager) for both peer-to-peer and client-to-server communication by setting `tls: true` in the Cluster spec.
+
+### Supported Versions
+
+KubeBlocks etcd Addon supports these versions:
+
+| Major Version | Supported Minor Versions |
+|---------------|--------------------------|
+| etcd 3        | 3.5.6, 3.5.15, 3.6.1    |
+
+:::note
+etcd does **not** support downgrading between minor versions. Data written by a newer version (e.g. 3.6.x) cannot be read by an older version (e.g. 3.5.x) due to storage format changes.
+:::
+
+The list of supported versions can be found by running:
+```bash
+kubectl get componentversion etcd
+```

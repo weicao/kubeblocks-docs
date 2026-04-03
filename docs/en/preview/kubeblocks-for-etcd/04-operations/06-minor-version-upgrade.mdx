@@ -1,0 +1,176 @@
+---
+title: Upgrading the Minor Version of an etcd Cluster in KubeBlocks
+description: Learn how to upgrade an etcd cluster to a newer minor version managed by KubeBlocks with minimal downtime.
+keywords: [KubeBlocks, etcd, Upgrade, Version Upgrade, Rolling Upgrade, Kubernetes]
+sidebar_position: 6
+sidebar_label: Minor Version Upgrade
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Upgrading the Minor Version of an etcd Cluster in KubeBlocks
+
+This guide walks you through upgrading an etcd cluster to a newer minor version managed by KubeBlocks.
+
+KubeBlocks performs a **rolling upgrade**: followers are upgraded one by one first, and the leader is upgraded last. This ensures the cluster maintains quorum and client connections are not interrupted during the upgrade.
+
+:::caution
+**No Downgrade Support**
+
+etcd does **not** support downgrading between minor versions. Once data is written by a newer version (e.g., 3.6.x), it cannot be read by an older version (e.g., 3.5.x) due to storage format changes. Always test upgrades in a non-production environment first and take a backup before upgrading.
+:::
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+## List Available etcd Versions
+
+```bash
+kubectl get componentversion etcd
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME   VERSIONS             STATUS      AGE
+etcd   3.6.1,3.5.15,3.5.6   Available   6h
+```
+</details>
+
+## Step 1: Check the Current Version
+
+```bash
+kubectl get cluster etcd-cluster -n demo \
+  -o jsonpath='{.spec.componentSpecs[0].serviceVersion}' && echo ""
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+3.5.15
+```
+</details>
+
+Check the current pod roles:
+
+```bash
+kubectl get pods -n demo -l app.kubernetes.io/instance=etcd-cluster -L kubeblocks.io/role
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                  READY   STATUS    RESTARTS   AGE   ROLE
+etcd-cluster-etcd-0   2/2     Running   0          5m    follower
+etcd-cluster-etcd-1   2/2     Running   0          5m    follower
+etcd-cluster-etcd-2   2/2     Running   0          5m    leader
+```
+</details>
+
+## Step 2: Apply the Upgrade
+
+<Tabs>
+
+  <TabItem value="opsRequest" label="OpsRequest API" default>
+
+  Upgrade from `3.5.15` to `3.6.1`:
+
+  ```yaml
+  apiVersion: operations.kubeblocks.io/v1alpha1
+  kind: OpsRequest
+  metadata:
+    name: etcd-upgrade
+    namespace: demo
+  spec:
+    clusterName: etcd-cluster
+    type: Upgrade
+    upgrade:
+      components:
+      - componentName: etcd
+        serviceVersion: "3.6.1"
+  ```
+
+  Apply it:
+  ```bash
+  kubectl apply -f https://raw.githubusercontent.com/apecloud/kubeblocks-addons/refs/heads/main/examples/etcd/upgrade.yaml
+  ```
+
+  Monitor the progress:
+  ```bash
+  kubectl get ops etcd-upgrade -n demo -w
+  ```
+
+  <details open>
+  <summary>Example Output</summary>
+  ```text
+  NAME           TYPE      CLUSTER        STATUS    PROGRESS   AGE
+  etcd-upgrade   Upgrade   etcd-cluster   Running   0/3        6s
+  etcd-upgrade   Upgrade   etcd-cluster   Running   1/3        12s
+  etcd-upgrade   Upgrade   etcd-cluster   Running   2/3        18s
+  etcd-upgrade   Upgrade   etcd-cluster   Running   3/3        24s
+  etcd-upgrade   Upgrade   etcd-cluster   Succeed   3/3        28s
+  ```
+  </details>
+
+  </TabItem>
+
+  <TabItem value="ClusterAPI" label="Cluster API">
+
+  Update the `serviceVersion` field in the Cluster resource:
+
+  ```bash
+  kubectl patch cluster etcd-cluster -n demo --type=json \
+    -p='[{"op": "replace", "path": "/spec/componentSpecs/0/serviceVersion", "value": "3.6.1"}]'
+  ```
+
+  Monitor the cluster status:
+  ```bash
+  kubectl get cluster etcd-cluster -n demo -w
+  ```
+
+  </TabItem>
+
+</Tabs>
+
+## Step 3: Verify the Upgrade
+
+Check that all pods are running with the new version:
+
+```bash
+kubectl get pods -n demo -l app.kubernetes.io/instance=etcd-cluster -L kubeblocks.io/role
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                  READY   STATUS    RESTARTS   AGE   ROLE
+etcd-cluster-etcd-0   2/2     Running   0          8m    follower
+etcd-cluster-etcd-1   2/2     Running   0          8m    leader
+etcd-cluster-etcd-2   2/2     Running   0          8m    follower
+```
+</details>
+
+Confirm the image version:
+
+```bash
+kubectl get pods -n demo etcd-cluster-etcd-0 \
+  -o jsonpath='{.spec.containers[?(@.name=="etcd")].image}' && echo ""
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+docker.io/apecloud/etcd:3.6.1
+```
+</details>
+
+## Cleanup
+
+```bash
+kubectl delete cluster etcd-cluster -n demo
+kubectl delete ns demo
+```
