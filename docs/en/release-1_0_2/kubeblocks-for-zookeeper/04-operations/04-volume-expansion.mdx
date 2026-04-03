@@ -1,0 +1,143 @@
+---
+title: Volume Expansion in a ZooKeeper Cluster
+description: Learn how to expand persistent storage volumes in a ZooKeeper cluster managed by KubeBlocks without downtime.
+keywords: [KubeBlocks, ZooKeeper, Volume Expansion, Storage, Kubernetes]
+sidebar_position: 4
+sidebar_label: Volume Expansion
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Volume Expansion for ZooKeeper Clusters with KubeBlocks
+
+This guide demonstrates how to expand the persistent storage volumes of a ZooKeeper cluster managed by KubeBlocks.
+
+:::note
+Volume expansion requires your StorageClass to support volume expansion (`allowVolumeExpansion: true`).
+:::
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+## Expand Volume
+
+ZooKeeper uses two persistent volume types:
+- `data` — stores ZooKeeper data snapshots
+- `snapshot-log` — stores transaction logs
+
+<Tabs>
+  <TabItem value="opsRequest" label="OpsRequest API" default>
+
+  Expand the `data` volume from 20Gi to 30Gi:
+
+  ```yaml
+  apiVersion: operations.kubeblocks.io/v1alpha1
+  kind: OpsRequest
+  metadata:
+    name: zookeeper-volumeexpansion
+    namespace: demo
+  spec:
+    clusterName: zookeeper-cluster
+    type: VolumeExpansion
+    volumeExpansion:
+    - componentName: zookeeper
+      volumeClaimTemplates:
+      - name: data
+        storage: 30Gi
+  ```
+
+  Apply it:
+  ```bash
+  kubectl apply -f https://raw.githubusercontent.com/apecloud/kubeblocks-addons/refs/heads/main/examples/zookeeper/volumeexpand.yaml
+  ```
+
+  Monitor progress:
+  ```bash
+  kubectl get ops zookeeper-volumeexpansion -n demo -w
+  ```
+
+  <details open>
+  <summary>Example Output</summary>
+  ```text
+  NAME                        TYPE              CLUSTER             STATUS    PROGRESS   AGE
+  zookeeper-volumeexpansion   VolumeExpansion   zookeeper-cluster   Running   0/3        10s
+  zookeeper-volumeexpansion   VolumeExpansion   zookeeper-cluster   Succeed   3/3        64s
+  ```
+  </details>
+
+  </TabItem>
+
+  <TabItem value="ClusterAPI" label="Cluster API">
+
+  Update the storage request in the Cluster resource:
+
+  ```yaml
+  apiVersion: apps.kubeblocks.io/v1
+  kind: Cluster
+  metadata:
+    name: zookeeper-cluster
+    namespace: demo
+  spec:
+    terminationPolicy: Delete
+    componentSpecs:
+      - name: zookeeper
+        componentDef: zookeeper
+        serviceVersion: 3.9.2
+        replicas: 3
+        resources:
+          requests:
+            cpu: "0.5"
+            memory: "0.5Gi"
+          limits:
+            cpu: "0.5"
+            memory: "0.5Gi"
+        volumeClaimTemplates:
+          - name: data
+            spec:
+              storageClassName: ""
+              accessModes:
+                - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 30Gi  # Updated from 20Gi
+          - name: snapshot-log
+            spec:
+              storageClassName: ""
+              accessModes:
+                - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 20Gi
+  ```
+  </TabItem>
+</Tabs>
+
+## Verify
+
+```bash
+kubectl get pvc -n demo -l app.kubernetes.io/instance=zookeeper-cluster
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                                         STATUS   VOLUME       CAPACITY   ACCESS MODES   STORAGECLASS    AGE
+data-zookeeper-cluster-zookeeper-0           Bound    pvc-xxx      30Gi       RWO            kb-default-sc   14m
+data-zookeeper-cluster-zookeeper-1           Bound    pvc-xxx      30Gi       RWO            kb-default-sc   13m
+data-zookeeper-cluster-zookeeper-2           Bound    pvc-xxx      30Gi       RWO            kb-default-sc   13m
+snapshot-log-zookeeper-cluster-zookeeper-0   Bound    pvc-xxx      20Gi       RWO            kb-default-sc   14m
+snapshot-log-zookeeper-cluster-zookeeper-1   Bound    pvc-xxx      20Gi       RWO            kb-default-sc   13m
+snapshot-log-zookeeper-cluster-zookeeper-2   Bound    pvc-xxx      20Gi       RWO            kb-default-sc   13m
+```
+</details>
+
+## Cleanup
+
+```bash
+kubectl delete cluster zookeeper-cluster -n demo
+kubectl delete ns demo
+```

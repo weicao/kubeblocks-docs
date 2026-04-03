@@ -1,0 +1,228 @@
+---
+title: Observability for ZooKeeper Clusters with the Prometheus Operator
+description: Learn how to set up observability for ZooKeeper Clusters in KubeBlocks using the Prometheus Operator. Configure monitoring and visualize metrics with Grafana.
+keywords: [KubeBlocks, ZooKeeper, Prometheus, Grafana, Observability, Metrics]
+sidebar_position: 1
+sidebar_label: Observability for ZooKeeper Clusters
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# ZooKeeper Monitoring with Prometheus Operator
+
+This guide demonstrates how to configure comprehensive monitoring for ZooKeeper clusters in KubeBlocks using:
+
+1. Prometheus Operator for metrics collection
+2. Built-in ZooKeeper metrics exporter (port 7000)
+3. Grafana for visualization
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+## Install Monitoring Stack
+
+### 1. Install Prometheus Operator
+
+```bash
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm install prometheus prometheus-community/kube-prometheus-stack \
+  -n monitoring \
+  --create-namespace
+```
+
+### 2. Verify Installation
+
+```bash
+kubectl get pods -n monitoring
+```
+
+<details>
+<summary>Example Output</summary>
+```text
+NAME                                                     READY   STATUS    RESTARTS   AGE
+alertmanager-prometheus-kube-prometheus-alertmanager-0   2/2     Running   0          114s
+prometheus-grafana-75bb7d6986-9zfkx                      3/3     Running   0          2m
+prometheus-kube-prometheus-operator-7986c9475-wkvlk      1/1     Running   0          2m
+prometheus-kube-state-metrics-645c667b6-2s4qx            1/1     Running   0          2m
+prometheus-prometheus-kube-prometheus-prometheus-0       2/2     Running   0          114s
+```
+</details>
+
+## Deploy a ZooKeeper Cluster
+
+Deploy a ZooKeeper cluster with metrics enabled (enabled by default):
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/apecloud/kubeblocks-addons/refs/heads/main/examples/zookeeper/cluster.yaml
+```
+
+ZooKeeper exposes Prometheus metrics on port **7000** at `/metrics` path on each pod.
+
+## Verify Cluster Status
+
+```bash
+kubectl get cluster zookeeper-cluster -n demo
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                CLUSTER-DEFINITION   TERMINATION-POLICY   STATUS    AGE
+zookeeper-cluster                        Delete               Running   3m
+```
+</details>
+
+## Verify Metrics Endpoint
+
+```bash
+kubectl exec -n demo zookeeper-cluster-zookeeper-0 -- \
+  curl -s http://localhost:7000/metrics | head -10
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+# HELP read_final_proc_time_ms read_final_proc_time_ms
+# TYPE read_final_proc_time_ms summary
+read_final_proc_time_ms{quantile="0.5",} NaN
+read_final_proc_time_ms{quantile="0.9",} NaN
+read_final_proc_time_ms{quantile="0.99",} NaN
+read_final_proc_time_ms_count 0.0
+read_final_proc_time_ms_sum 0.0
+# HELP zookeeper_version Version of Zookeeper.
+# TYPE zookeeper_version gauge
+zookeeper_version{version="3.9.2-...",} 1.0
+```
+</details>
+
+## Configure Metrics Collection
+
+### Create PodMonitor
+
+```yaml
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: zk-cluster-pod-monitor
+  namespace: demo
+  labels:               # Must match 'prometheus.spec.podMonitorSelector'
+    release: prometheus
+spec:
+  jobLabel: app.kubernetes.io/managed-by
+  podTargetLabels:
+  - app.kubernetes.io/instance
+  - app.kubernetes.io/managed-by
+  - apps.kubeblocks.io/component-name
+  - apps.kubeblocks.io/pod-name
+  podMetricsEndpoints:
+    - path: /metrics
+      port: metrics       # Port named 'metrics' on port 7000
+      scheme: http
+  namespaceSelector:
+    matchNames:
+      - demo
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: zookeeper-cluster
+      apps.kubeblocks.io/component-name: zookeeper
+```
+
+Apply it:
+```bash
+kubectl apply -f https://raw.githubusercontent.com/apecloud/kubeblocks-addons/refs/heads/main/examples/zookeeper/pod-monitor.yaml
+```
+
+**PodMonitor Configuration Guide**
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `port` | Yes | Must be `metrics` (port 7000 on each ZooKeeper pod) |
+| `namespaceSelector` | Yes | Targets namespace where ZooKeeper runs |
+| `labels` | Yes | Must match Prometheus's `podMonitorSelector` |
+| `path` | No | Metrics endpoint path (default: `/metrics`) |
+
+## Verify Monitoring Setup
+
+### Check Prometheus Targets
+
+```bash
+kubectl port-forward svc/prometheus-kube-prometheus-prometheus -n monitoring 9090:9090
+```
+
+Open: http://localhost:9090/targets
+
+Look for targets with `app_kubernetes_io_instance="zookeeper-cluster"`. Since `jobLabel: app.kubernetes.io/managed-by` is set, the job name will be `kubeblocks`. All 3 ZooKeeper pod targets (one per ensemble member) should show state **UP**, each scraping port 7000.
+
+### Test Metrics Collection
+
+```bash
+curl -sG "http://localhost:9090/api/v1/query" \
+  --data-urlencode 'query=up{app_kubernetes_io_instance="zookeeper-cluster"}' | jq
+```
+
+<details open>
+<summary>Example Output</summary>
+```json
+{
+  "status": "success",
+  "data": {
+    "resultType": "vector",
+    "result": [
+      {
+        "metric": {
+          "__name__": "up",
+          "app_kubernetes_io_instance": "zookeeper-cluster",
+          "app_kubernetes_io_managed_by": "kubeblocks",
+          "apps_kubeblocks_io_component_name": "zookeeper",
+          "apps_kubeblocks_io_pod_name": "zookeeper-cluster-zookeeper-0",
+          "container": "zookeeper",
+          "endpoint": "metrics",
+          "instance": "10.0.6.134:7000",
+          "job": "kubeblocks",
+          "namespace": "demo",
+          "pod": "zookeeper-cluster-zookeeper-0"
+        },
+        "value": [1746000000, "1"]
+      }
+    ]
+  }
+}
+```
+</details>
+
+## Visualize in Grafana
+
+### Access Grafana
+
+```bash
+kubectl port-forward svc/prometheus-grafana -n monitoring 3000:80
+```
+
+Open http://localhost:3000 and log in:
+- Username: `admin`
+- Password: `prom-operator` (default)
+
+### Key ZooKeeper Metrics to Monitor
+
+| Metric | Description |
+|--------|-------------|
+| `zookeeper_quorum_size` | Current quorum size |
+| `zookeeper_outstanding_requests` | Queued requests |
+| `zookeeper_watch_count` | Number of active watches |
+| `zookeeper_avg_latency` | Average request latency (ms) |
+| `zookeeper_packets_sent` | Total packets sent |
+| `zookeeper_packets_received` | Total packets received |
+| `zookeeper_num_alive_connections` | Active client connections |
+| `zookeeper_approximate_data_size` | Size of data in ZooKeeper (bytes) |
+
+## Cleanup
+
+```bash
+kubectl delete cluster zookeeper-cluster -n demo
+kubectl delete podmonitor zk-cluster-pod-monitor -n demo
+kubectl delete ns demo
+```

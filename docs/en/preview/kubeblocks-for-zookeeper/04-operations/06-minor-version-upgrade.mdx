@@ -1,0 +1,170 @@
+---
+title: Upgrading the Minor Version of a ZooKeeper Cluster in KubeBlocks
+description: Learn how to upgrade a ZooKeeper cluster to a newer minor version managed by KubeBlocks with minimal downtime.
+keywords: [KubeBlocks, ZooKeeper, Upgrade, Version Upgrade, Rolling Upgrade, Kubernetes]
+sidebar_position: 6
+sidebar_label: Minor Version Upgrade
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Upgrading the Minor Version of a ZooKeeper Cluster in KubeBlocks
+
+This guide walks you through upgrading a ZooKeeper cluster to a newer minor version managed by KubeBlocks.
+
+KubeBlocks performs a **rolling upgrade**: followers are upgraded one by one first, and the leader is upgraded last. This ensures the ensemble maintains quorum and client connections are not interrupted during the upgrade.
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+## List Available ZooKeeper Versions
+
+```bash
+kubectl get componentversion zookeeper
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME        VERSIONS                               STATUS      AGE
+zookeeper   3.9.4,3.9.2,3.8.4,3.7.2,3.6.4,3.4.14   Available   6h
+```
+</details>
+
+## Step 1: Check the Current Version
+
+```bash
+kubectl get cluster zookeeper-cluster -n demo \
+  -o jsonpath='{.spec.componentSpecs[0].serviceVersion}' && echo ""
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+3.9.2
+```
+</details>
+
+Check the current pod roles:
+
+```bash
+kubectl get pods -n demo -l app.kubernetes.io/instance=zookeeper-cluster -L kubeblocks.io/role
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                            READY   STATUS    RESTARTS   AGE    ROLE
+zookeeper-cluster-zookeeper-0   2/2     Running   0          12m    follower
+zookeeper-cluster-zookeeper-1   2/2     Running   0          13m    follower
+zookeeper-cluster-zookeeper-2   2/2     Running   0          14m    leader
+```
+</details>
+
+## Step 2: Apply the Upgrade
+
+<Tabs>
+
+  <TabItem value="opsRequest" label="OpsRequest API" default>
+
+  Upgrade from `3.9.2` to `3.9.4`:
+
+  ```yaml
+  apiVersion: operations.kubeblocks.io/v1alpha1
+  kind: OpsRequest
+  metadata:
+    name: zk-upgrade
+    namespace: demo
+  spec:
+    clusterName: zookeeper-cluster
+    type: Upgrade
+    upgrade:
+      components:
+      - componentName: zookeeper
+        serviceVersion: "3.9.4"
+  ```
+
+  Apply it:
+  ```bash
+  kubectl apply -f https://raw.githubusercontent.com/apecloud/kubeblocks-addons/refs/heads/main/examples/zookeeper/upgrade.yaml
+  ```
+
+  Monitor the progress:
+  ```bash
+  kubectl get ops zk-upgrade -n demo -w
+  ```
+
+  <details open>
+  <summary>Example Output</summary>
+  ```text
+  NAME         TYPE      CLUSTER             STATUS    PROGRESS   AGE
+  zk-upgrade   Upgrade   zookeeper-cluster   Running   0/3        6s
+  zk-upgrade   Upgrade   zookeeper-cluster   Running   1/3        74s
+  zk-upgrade   Upgrade   zookeeper-cluster   Running   2/3        2m25s
+  zk-upgrade   Upgrade   zookeeper-cluster   Running   3/3        3m34s
+  zk-upgrade   Upgrade   zookeeper-cluster   Succeed   3/3        3m34s
+  ```
+  </details>
+
+  </TabItem>
+
+  <TabItem value="ClusterAPI" label="Cluster API">
+
+  Update the `serviceVersion` field in the Cluster resource:
+
+  ```bash
+  kubectl patch cluster zookeeper-cluster -n demo --type=json \
+    -p='[{"op": "replace", "path": "/spec/componentSpecs/0/serviceVersion", "value": "3.9.4"}]'
+  ```
+
+  Monitor the cluster status:
+  ```bash
+  kubectl get cluster zookeeper-cluster -n demo -w
+  ```
+
+  </TabItem>
+
+</Tabs>
+
+## Step 3: Verify the Upgrade
+
+Check that all pods are running with the new version:
+
+```bash
+kubectl get pods -n demo -l app.kubernetes.io/instance=zookeeper-cluster -L kubeblocks.io/role
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                            READY   STATUS    RESTARTS   AGE    ROLE
+zookeeper-cluster-zookeeper-0   2/2     Running   0          135m   follower
+zookeeper-cluster-zookeeper-1   2/2     Running   0          137m   leader
+zookeeper-cluster-zookeeper-2   2/2     Running   0          138m   follower
+```
+</details>
+
+Confirm the image version:
+
+```bash
+kubectl get pods -n demo zookeeper-cluster-zookeeper-0 \
+  -o jsonpath='{.spec.containers[?(@.name=="zookeeper")].image}' && echo ""
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+docker.io/apecloud/zookeeper:3.9.4
+```
+</details>
+
+## Cleanup
+
+```bash
+kubectl delete cluster zookeeper-cluster -n demo
+kubectl delete ns demo
+```

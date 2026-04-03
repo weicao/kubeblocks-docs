@@ -1,0 +1,397 @@
+---
+title: ZooKeeper Quickstart
+description: Comprehensive guide to deploying and managing ZooKeeper clusters with KubeBlocks, including installation, configuration, and operational best practices.
+keywords: [Kubernetes Operator, ZooKeeper, KubeBlocks, Helm, Cluster Management, Quick Start]
+sidebar_position: 2
+sidebar_label: Quickstart
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# ZooKeeper Quickstart
+
+This guide provides a comprehensive walkthrough for deploying and managing ZooKeeper clusters using the **KubeBlocks ZooKeeper Add-on**, covering:
+- System prerequisites and add-on installation
+- Cluster creation and configuration
+- Operational management including start/stop procedures
+- Connection methods and cluster monitoring
+
+## Prerequisites
+
+### System Requirements
+
+Before proceeding, verify your environment meets these requirements:
+
+- A functional Kubernetes cluster (v1.21+ recommended)
+- `kubectl` v1.21+ installed and configured with cluster access
+- Helm installed ([installation guide](https://helm.sh/docs/intro/install/))
+- KubeBlocks installed ([installation guide](../user_docs/overview/install-kubeblocks))
+
+### Verify ZooKeeper Add-on
+
+Check if the ZooKeeper Add-on is installed:
+
+```bash
+helm list -n kb-system | grep zookeeper
+```
+
+<details open>
+<summary>Example Output:</summary>
+
+```bash
+NAME                    NAMESPACE   REVISION    UPDATED                     STATUS      CHART
+kb-addon-zookeeper      kb-system   1           2026-04-03                  deployed    zookeeper-1.0.2
+```
+</details>
+
+If the add-on isn't installed, choose an installation method:
+
+<Tabs>
+
+  <TabItem value="helm" label="helm" default>
+  ```bash
+  # Add Helm repo
+  helm repo add kubeblocks https://apecloud.github.io/helm-charts
+  # For users in Mainland China, if GitHub is inaccessible or slow, use this alternative repo:
+  #helm repo add kubeblocks https://jihulab.com/api/v4/projects/150246/packages/helm/stable
+
+  # Update helm repo
+  helm repo update
+  # Search available Add-on versions
+  helm search repo kubeblocks/zookeeper --versions
+  # Install your desired version (replace <VERSION> with your chosen version)
+  helm upgrade -i kb-addon-zookeeper kubeblocks/zookeeper --version <VERSION> -n kb-system
+  ```
+  </TabItem>
+
+  <TabItem value="kbcli" label="kbcli">
+
+  ```bash
+  # Add an index (kubeblocks is added by default)
+  kbcli addon index add kubeblocks https://github.com/apecloud/block-index.git
+  # Update the index
+  kbcli addon index update kubeblocks
+  ```
+
+  To search and install an addon:
+
+  ```bash
+  # Search Add-on
+  kbcli addon search zookeeper
+  # Install Add-on with your desired version (replace <VERSION> with your chosen version)
+  kbcli addon install zookeeper --version <VERSION>
+  ```
+
+  To enable or disable an addon:
+
+  ```bash
+  # Enable Add-on
+  kbcli addon enable zookeeper
+  # Disable Add-on
+  kbcli addon disable zookeeper
+  ```
+
+  </TabItem>
+</Tabs>
+
+:::note
+**Version Compatibility**
+
+Always verify that the ZooKeeper Add-on version matches your KubeBlocks major version to avoid compatibility issues.
+
+:::
+
+### Verify Supported ZooKeeper Versions
+
+**List available ZooKeeper versions:**
+
+```bash
+kubectl get cmpv zookeeper
+```
+<details open>
+<summary>Example Output</summary>
+```text
+NAME        VERSIONS                               STATUS      AGE
+zookeeper   3.9.4,3.9.2,3.8.4,3.7.2,3.6.4,3.4.14   Available   5m
+```
+</details>
+
+### Storage Configuration
+
+ZooKeeper requires persistent storage. Verify available options:
+
+```bash
+kubectl get storageclass
+```
+
+Recommended storage characteristics:
+- Minimum 20Gi capacity per volume (ZooKeeper uses two volumes: `data` and `snapshot-log`)
+- ReadWriteOnce access mode
+- Supports volume expansion
+
+## Deploy a ZooKeeper Cluster
+
+Deploy a basic ZooKeeper ensemble with 3 nodes:
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/apecloud/kubeblocks-addons/refs/heads/main/examples/zookeeper/cluster.yaml
+```
+
+This creates:
+- A 3-node ZooKeeper ensemble (the recommended minimum for quorum)
+- Default resource allocations (0.5 CPU, 0.5Gi memory)
+- 20Gi persistent storage per volume (data + snapshot-log)
+
+```yaml
+apiVersion: apps.kubeblocks.io/v1
+kind: Cluster
+metadata:
+  name: zookeeper-cluster
+  namespace: demo
+spec:
+  # Specifies the behavior when a Cluster is deleted.
+  # Valid options are: [DoNotTerminate, Delete, WipeOut]
+  # - `DoNotTerminate`: Prevents deletion of the Cluster. This policy ensures that all resources remain intact.
+  # - `Delete`: Extends the `Halt` policy by also removing PVCs, leading to a thorough cleanup while removing all persistent data.
+  # - `WipeOut`: An aggressive policy that deletes all Cluster resources, including volume snapshots and backups in external storage.
+  terminationPolicy: Delete
+  componentSpecs:
+    - name: zookeeper
+      componentDef: zookeeper
+      # ServiceVersion specifies the version of the Service expected to be
+      # provisioned by this Component.
+      # Valid options are: [3.4.14,3.6.4,3.7.2,3.8.4,3.9.2,3.9.4]
+      serviceVersion: "3.9.2"
+      # Update `replicas` to your need.
+      # ZooKeeper requires an odd number of nodes for quorum (e.g., 3, 5, 7)
+      replicas: 3
+      # Specifies the resources required by the Component.
+      resources:
+        limits:
+          cpu: '0.5'
+          memory: 0.5Gi
+        requests:
+          cpu: '0.5'
+          memory: 0.5Gi
+      # Specifies a list of PersistentVolumeClaim templates that define the storage
+      # requirements for the Component.
+      volumeClaimTemplates:
+        - name: data
+          spec:
+            storageClassName: ""
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 20Gi
+        - name: snapshot-log
+          spec:
+            storageClassName: ""
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 20Gi
+```
+
+For more API fields and descriptions, refer to the [API Reference](../user_docs/references/api-reference/cluster).
+
+## Verify Cluster Status
+
+When deploying a ZooKeeper ensemble, KubeBlocks automatically configures:
+- One **leader** (handles write operations)
+- Multiple **followers** (participate in quorum, serve reads)
+
+Confirm successful deployment:
+
+```bash
+kubectl get cluster zookeeper-cluster -n demo
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                CLUSTER-DEFINITION   TERMINATION-POLICY   STATUS    AGE
+zookeeper-cluster                        Delete               Running   3m
+```
+</details>
+
+```bash
+kubectl get pods -n demo -l app.kubernetes.io/instance=zookeeper-cluster -L kubeblocks.io/role
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                            READY   STATUS    RESTARTS   AGE     ROLE
+zookeeper-cluster-zookeeper-0   2/2     Running   0          2m54s   follower
+zookeeper-cluster-zookeeper-1   2/2     Running   0          2m18s   leader
+zookeeper-cluster-zookeeper-2   2/2     Running   0          94s     follower
+```
+</details>
+
+## Access the ZooKeeper Cluster
+
+KubeBlocks automatically provisions:
+1. Admin credentials stored in Secret `zookeeper-cluster-zookeeper-account-admin`
+2. ClusterIP Service `zookeeper-cluster-zookeeper` (routes to leader)
+3. ClusterIP Service `zookeeper-cluster-zookeeper-readable` (routes to all nodes)
+
+### Retrieve Credentials
+
+```bash
+# Get username
+NAME=$(kubectl get secret -n demo zookeeper-cluster-zookeeper-account-admin \
+  -o jsonpath='{.data.username}' | base64 --decode)
+
+# Get password
+PASSWD=$(kubectl get secret -n demo zookeeper-cluster-zookeeper-account-admin \
+  -o jsonpath='{.data.password}' | base64 --decode)
+```
+
+### Connection Methods
+
+<Tabs>
+<TabItem value="Direct Pod Access" label="Direct Pod Access" default>
+
+Connect directly to a pod using the `srvr` command to verify it's running:
+
+```bash
+kubectl exec -n demo zookeeper-cluster-zookeeper-0 -- \
+  bash -c "echo 'srvr' | nc localhost 2181"
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+Zookeeper version: 3.9.2-e454e8c7283100c7caec6dcae2bc82aaecb63023, built on 2024-02-12 20:59 UTC
+Latency min/avg/max: 0/0.0/0
+Received: 35
+Sent: 34
+Connections: 1
+Outstanding: 0
+Zxid: 0x400000009
+Mode: follower
+Node count: 5
+```
+</details>
+
+</TabItem>
+
+<TabItem value="Local Port Forwarding" label="Local Port Forwarding">
+
+1. Forward client port:
+    ```bash
+    kubectl port-forward svc/zookeeper-cluster-zookeeper 2181:2181 -n demo
+    ```
+
+2. Connect using zkCli or any ZooKeeper client:
+    ```bash
+    zkCli.sh -server 127.0.0.1:2181
+    ```
+</TabItem>
+</Tabs>
+
+### ZooKeeper Ports
+
+| Port  | Name     | Description                          |
+|-------|----------|--------------------------------------|
+| 2181  | client   | Client connections                   |
+| 2888  | quorum   | Follower connections to leader       |
+| 3888  | election | Leader election                      |
+| 8080  | admin    | Admin server (HTTP)                  |
+| 7000  | metrics  | Prometheus metrics endpoint          |
+
+## Stop the ZooKeeper Cluster
+
+Stopping a cluster temporarily suspends operations while preserving all data and configuration:
+
+**Key Effects:**
+- Compute resources (Pods) are released
+- Persistent storage (PVCs) remains intact
+- Cluster configuration is preserved
+
+<Tabs>
+<TabItem value="OpsRequest" label="OpsRequest API" default>
+```bash
+kubectl apply -f https://raw.githubusercontent.com/apecloud/kubeblocks-addons/refs/heads/main/examples/zookeeper/stop.yaml
+```
+
+```yaml
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: zookeeper-stop
+  namespace: demo
+spec:
+  clusterName: zookeeper-cluster
+  type: Stop
+```
+</TabItem>
+
+<TabItem value="ClusterAPI" label="Cluster API">
+Alternatively, stop by setting `spec.componentSpecs.stop` to true:
+
+```bash
+kubectl patch cluster zookeeper-cluster -n demo --type='json' -p='[
+{
+  "op": "add",
+  "path": "/spec/componentSpecs/0/stop",
+  "value": true
+}
+]'
+```
+</TabItem>
+</Tabs>
+
+## Start the ZooKeeper Cluster
+
+<Tabs>
+<TabItem value="OpsRequest" label="OpsRequest API" default>
+```bash
+kubectl apply -f https://raw.githubusercontent.com/apecloud/kubeblocks-addons/refs/heads/main/examples/zookeeper/start.yaml
+```
+
+```yaml
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: zookeeper-start
+  namespace: demo
+spec:
+  clusterName: zookeeper-cluster
+  type: Start
+```
+</TabItem>
+
+<TabItem value="ClusterAPI" label="Cluster API">
+```bash
+kubectl patch cluster zookeeper-cluster -n demo --type='json' -p='[
+{
+  "op": "remove",
+  "path": "/spec/componentSpecs/0/stop"
+}
+]'
+```
+</TabItem>
+</Tabs>
+
+## Delete ZooKeeper Cluster
+
+Choose carefully based on your data retention needs:
+
+| Policy          | Resources Removed | Data Removed | Recommended For |
+|-----------------|-------------------|--------------|-----------------|
+| DoNotTerminate  | None              | None         | Critical production clusters |
+| Delete          | All resources     | PVCs deleted | Non-critical environments |
+| WipeOut         | All resources     | Everything*  | Test environments only |
+
+*Includes snapshots and backups in external storage
+
+For test environments, use this complete cleanup:
+
+```bash
+kubectl patch cluster zookeeper-cluster -p '{"spec":{"terminationPolicy":"WipeOut"}}' --type="merge" -n demo
+kubectl delete cluster zookeeper-cluster -n demo
+```

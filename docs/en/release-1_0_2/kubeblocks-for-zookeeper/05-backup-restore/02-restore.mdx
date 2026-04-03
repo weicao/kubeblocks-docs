@@ -1,0 +1,198 @@
+---
+title: Restore a ZooKeeper Cluster from Backup
+description: Learn how to restore a new ZooKeeper cluster from an existing zoocreeper backup in KubeBlocks.
+keywords: [ZooKeeper, Restore, Backup, KubeBlocks, Kubernetes]
+sidebar_position: 2
+sidebar_label: Restore
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Restore a ZooKeeper Cluster from Backup
+
+This guide demonstrates how to restore a ZooKeeper cluster from a backup created by the `zoocreeper` method. KubeBlocks restores data into a **new cluster** rather than overwriting the existing one.
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+- A `Completed` ZooKeeper backup (see [Backup](./01-backup)).
+
+## Step 1: Locate the Backup
+
+List available backups:
+
+```bash
+kubectl get backup -n demo -l app.kubernetes.io/instance=zookeeper-cluster
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                POLICY                                      METHOD       REPO         STATUS      TOTAL-SIZE   DURATION   DELETION-POLICY   CREATION-TIME
+zk-cluster-backup   zookeeper-cluster-zookeeper-backup-policy   zoocreeper   minio-repo   Completed   588          17s        Delete            2026-04-03T12:37:31Z
+```
+</details>
+
+Note the backup name (`zk-cluster-backup`) and namespace (`demo`) — you'll need them in the next step.
+
+## Step 2: Create a Restored Cluster
+
+Restore creates a **new** ZooKeeper cluster from the backup data. The source cluster continues running unaffected.
+
+```yaml
+apiVersion: apps.kubeblocks.io/v1
+kind: Cluster
+metadata:
+  name: zk-cluster-restore
+  namespace: demo
+  annotations:
+    # Replace "zk-cluster-backup" with your backup name
+    # Replace "demo" with your backup namespace
+    kubeblocks.io/restore-from-backup: '{"zookeeper":{"name":"zk-cluster-backup","namespace":"demo","volumeRestorePolicy":"Parallel"}}'
+spec:
+  terminationPolicy: Delete
+  componentSpecs:
+    - name: zookeeper
+      componentDef: zookeeper
+      serviceVersion: "3.9.2"
+      replicas: 3
+      resources:
+        limits:
+          cpu: '0.5'
+          memory: 0.5Gi
+        requests:
+          cpu: '0.5'
+          memory: 0.5Gi
+      volumeClaimTemplates:
+        - name: data
+          spec:
+            storageClassName: ""
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 20Gi
+        - name: snapshot-log
+          spec:
+            storageClassName: ""
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 20Gi
+```
+
+Apply it:
+```bash
+kubectl apply -f https://raw.githubusercontent.com/apecloud/kubeblocks-addons/refs/heads/main/examples/zookeeper/restore.yaml
+```
+
+The annotation format:
+```json
+{
+  "zookeeper": {
+    "name": "<BACKUP_NAME>",
+    "namespace": "<BACKUP_NAMESPACE>",
+    "volumeRestorePolicy": "Parallel"
+  }
+}
+```
+
+- `zookeeper` — the component name (must match `spec.componentSpecs[].name`)
+- `name` — the backup CR name
+- `namespace` — namespace where the backup CR lives
+- `volumeRestorePolicy` — `Parallel` (all volumes restored simultaneously) or `Serial`
+
+## Step 3: Monitor the Restore
+
+```bash
+kubectl get cluster zk-cluster-restore -n demo -w
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                 CLUSTER-DEFINITION   TERMINATION-POLICY   STATUS     AGE
+zk-cluster-restore                        Delete               Creating   95s
+zk-cluster-restore                        Delete               Running    2m41s
+```
+</details>
+
+Check pod status and roles:
+
+```bash
+kubectl get pods -n demo -l app.kubernetes.io/instance=zk-cluster-restore -L kubeblocks.io/role
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                             READY   STATUS    RESTARTS   AGE     ROLE
+zk-cluster-restore-zookeeper-0   2/2     Running   0          2m40s   follower
+zk-cluster-restore-zookeeper-1   2/2     Running   0          2m20s   follower
+zk-cluster-restore-zookeeper-2   2/2     Running   0          2m      leader
+```
+</details>
+
+## Step 4: Verify the Restored Data
+
+Connect to the restored cluster and verify that the data is intact:
+
+```bash
+kubectl exec -n demo zk-cluster-restore-zookeeper-2 -- \
+  bash -c "echo 'ls /' | /opt/bitnami/zookeeper/bin/zkCli.sh -server localhost:2181 2>/dev/null | grep -v WATCHER | grep -v WatchedEvent | grep -v '\[zk:' | grep -v INFO | grep -v Exiting | grep -v '^$' | grep -v Connecting | grep -v Welcome | grep -v JLine"
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+[test-node, zookeeper]
+```
+</details>
+
+Verify a specific node:
+
+```bash
+kubectl exec -n demo zk-cluster-restore-zookeeper-2 -- \
+  bash -c "echo 'get /test-node' | /opt/bitnami/zookeeper/bin/zkCli.sh -server localhost:2181 2>/dev/null | tail -3"
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+hello-kubeblocks
+```
+</details>
+
+## Troubleshooting
+
+If the restore is stuck or fails:
+
+1. Check restore resources created during the process:
+   ```bash
+   kubectl get restore -n demo
+   ```
+
+2. Describe the Component for events:
+   ```bash
+   kubectl describe cmp zk-cluster-restore-zookeeper -n demo
+   ```
+
+3. Check the restore job logs:
+   ```bash
+   kubectl get job -n demo | grep restore
+   kubectl logs -n demo job/<RESTORE_JOB_NAME>
+   ```
+
+## Cleanup
+
+```bash
+kubectl delete cluster zk-cluster-restore -n demo
+kubectl delete cluster zookeeper-cluster -n demo
+kubectl delete backup zk-cluster-backup -n demo
+kubectl delete ns demo
+```
