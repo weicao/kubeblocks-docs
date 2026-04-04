@@ -1,0 +1,59 @@
+---
+title: KubeBlocks for RocketMQ
+description: Overview of RocketMQ support in KubeBlocks, including architecture, components, and key features.
+keywords: [KubeBlocks, RocketMQ, overview, messaging, distributed]
+sidebar_position: 1
+sidebar_label: Overview
+---
+
+# KubeBlocks for RocketMQ
+
+Apache RocketMQ is a distributed messaging and streaming platform with low latency, high performance, high reliability, trillion-level capacity, and flexible scalability. KubeBlocks provides production-ready RocketMQ cluster management on Kubernetes.
+
+## Architecture
+
+A RocketMQ cluster managed by KubeBlocks consists of four components:
+
+| Component | Role | Description |
+|-----------|------|-------------|
+| **NameServer** (`namesrv`) | Routing | Lightweight service discovery and routing. Producers and consumers connect here to find brokers. |
+| **Broker** (`broker`) | Messaging | Stores and delivers messages. Deployed as shards, each shard has a master and optional slaves. |
+| **Dashboard** (`dashboard`) | Management UI | Web console for cluster administration, topic management, and consumer group monitoring. |
+| **Exporter** (`exporter`) | Observability | Prometheus metrics exporter for broker statistics (topics, queues, consumer lag). |
+
+```
+Producers → NameServer (routing) → Broker Shard 0 (master + slaves)
+Consumers ↗                      → Broker Shard 1 (master + slaves)
+                                   ...
+```
+
+## Broker Sharding
+
+Brokers in KubeBlocks use a **sharding** model. Each shard is an independent broker group with one master and zero or more slaves:
+
+- **2 shards × 1 replica** = 2 broker pods (masters only, no HA)
+- **2 shards × 2 replicas** = 4 broker pods (1 master + 1 slave per shard)
+
+Shards handle different partitions of topics, allowing horizontal capacity scaling.
+
+## Supported Versions
+
+| RocketMQ Version | KubeBlocks Addon Version |
+|-----------------|--------------------------|
+| 4.9.6 | 1.0.2 |
+
+## Key Features
+
+- **Master-Slave replication**: Each broker shard supports master-slave async replication
+- **Dynamic parameter reconfiguration**: 165+ broker parameters can be updated live without restart
+- **Role detection**: KubeBlocks automatically detects master/slave roles via role probe
+- **Graceful scale-in**: Broker shard removal checks for unconsumed messages before deletion
+- **ACL support**: Optional access control with HMAC-SHA1 request signing
+- **Prometheus monitoring**: Built-in JMX exporter (JVM metrics) and RocketMQ exporter (broker metrics)
+- **Web Dashboard**: Optional RocketMQ Dashboard for cluster management
+
+## Limitations
+
+- **No backup/restore**: KubeBlocks does not provide built-in backup for RocketMQ data. Use Kubernetes volume snapshots for data protection.
+- **No switchover**: Manual master-slave failover is not supported via KubeBlocks OpsRequests. RocketMQ handles failover at the broker level.
+- **Broker replica scaling**: You cannot increase/decrease replicas within a shard via OpsRequest; adjust shards count instead.
