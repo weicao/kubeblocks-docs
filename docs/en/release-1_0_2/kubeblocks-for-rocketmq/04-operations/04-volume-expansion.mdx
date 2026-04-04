@@ -1,0 +1,80 @@
+---
+title: Volume Expansion for RocketMQ
+description: Learn how to expand the storage volume for RocketMQ broker pods in KubeBlocks.
+keywords: [KubeBlocks, RocketMQ, volume expansion, storage, PVC]
+sidebar_position: 4
+sidebar_label: Volume Expansion
+---
+
+# Volume Expansion for RocketMQ
+
+Volume expansion increases the storage allocated to broker pods. The underlying StorageClass must support volume expansion.
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+:::note
+Volume expansion requires a StorageClass with `allowVolumeExpansion: true`. Verify this before proceeding:
+```bash
+kubectl get storageclass
+```
+:::
+
+## Expand the Broker Volume
+
+The broker `data` PVC stores message logs. Use the sharding group name `broker` to expand from 10Gi to 20Gi:
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: rocketmq-volumeexpansion
+  namespace: demo
+spec:
+  clusterName: rocketmq-cluster
+  type: VolumeExpansion
+  volumeExpansion:
+    - componentName: broker
+      volumeClaimTemplates:
+        - name: data
+          storage: 20Gi
+EOF
+```
+
+Monitor progress:
+
+```bash
+kubectl get opsrequest rocketmq-volumeexpansion -n demo -w
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                      TYPE              CLUSTER            STATUS    PROGRESS   AGE
+rocketmq-volumeexpansion  VolumeExpansion   rocketmq-cluster   Succeed   1/1        60s
+```
+</details>
+
+Verify the new storage size:
+
+```bash
+kubectl get pvc -n demo -l app.kubernetes.io/instance=rocketmq-cluster
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                                    STATUS   VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+data-rocketmq-cluster-broker-t9j-0     Bound    ...      20Gi       RWO            standard       10m
+```
+</details>
+
+## Cleanup
+
+```bash
+kubectl delete opsrequest rocketmq-volumeexpansion -n demo --ignore-not-found
+```

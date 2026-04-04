@@ -1,0 +1,112 @@
+---
+title: Manage Services for RocketMQ
+description: Learn how to expose RocketMQ services externally in KubeBlocks.
+keywords: [KubeBlocks, RocketMQ, expose, service, LoadBalancer, external access]
+sidebar_position: 6
+sidebar_label: Manage Services
+---
+
+# Manage Services for RocketMQ
+
+By default, RocketMQ services are only accessible within the cluster. Use an OpsRequest to expose the NameServer externally via a LoadBalancer service.
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+:::note
+A LoadBalancer requires cloud provider support (e.g., AWS ELB, Aliyun SLB). On bare-metal or local clusters, use `NodePort` instead.
+:::
+
+## Expose the NameServer
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: rocketmq-expose-enable
+  namespace: demo
+spec:
+  type: Expose
+  clusterName: rocketmq-cluster
+  expose:
+    - componentName: namesrv
+      services:
+        - name: internet
+          serviceType: LoadBalancer
+          ports:
+            - name: nameserver
+              port: 9876
+              targetPort: nameserver
+          annotations:
+            service.beta.kubernetes.io/alibaba-cloud-loadbalancer-address-type: internet
+            service.beta.kubernetes.io/alibaba-cloud-loadbalancer-charge-type: ""
+            service.beta.kubernetes.io/alibaba-cloud-loadbalancer-spec: slb.s1.small
+      switch: Enable
+EOF
+```
+
+:::note
+Adjust the `annotations` for your cloud provider. Remove them entirely for NodePort or bare-metal clusters.
+:::
+
+Monitor progress:
+
+```bash
+kubectl get opsrequest rocketmq-expose-enable -n demo -w
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                    TYPE     CLUSTER            STATUS    PROGRESS   AGE
+rocketmq-expose-enable  Expose   rocketmq-cluster   Succeed   1/1        15s
+```
+</details>
+
+Get the external endpoint:
+
+```bash
+kubectl get service -n demo -l app.kubernetes.io/instance=rocketmq-cluster
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                                        TYPE           CLUSTER-IP      EXTERNAL-IP     PORT(S)          AGE
+rocketmq-cluster-namesrv-internet           LoadBalancer   10.100.55.20    47.x.x.x        9876:30xxx/TCP   30s
+rocketmq-cluster-namesrv-namesrv-internal   ClusterIP      10.100.42.31    <none>          9876/TCP         10m
+```
+</details>
+
+The external NameServer address is `47.x.x.x:9876`.
+
+## Disable External Access
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: rocketmq-expose-disable
+  namespace: demo
+spec:
+  type: Expose
+  clusterName: rocketmq-cluster
+  expose:
+    - componentName: namesrv
+      services:
+        - name: internet
+          serviceType: LoadBalancer
+      switch: Disable
+EOF
+```
+
+## Cleanup
+
+```bash
+kubectl delete opsrequest rocketmq-expose-enable rocketmq-expose-disable -n demo --ignore-not-found
+```
