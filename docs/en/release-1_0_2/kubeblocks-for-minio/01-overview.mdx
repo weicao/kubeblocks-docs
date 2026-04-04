@@ -39,7 +39,7 @@ Starting from the 2025 release, MinIO uses source-only distribution. KubeBlocks 
 - **S3-compatible API** — Drop-in replacement for Amazon S3
 - **Web Console** — Browser-based management UI on port 9001
 - **Auto credential management** — Root credentials generated and stored as a Kubernetes Secret
-- **Horizontal scaling** — Add or remove nodes (in multiples of 2)
+- **Horizontal scale-out** — Add nodes (in multiples of 2)
 - **Vertical scaling** — Adjust CPU and memory
 - **TLS encryption** — Optional TLS for both API and console
 - **Prometheus metrics** — Built-in metrics at `/minio/v2/metrics/cluster`
@@ -47,7 +47,7 @@ Starting from the 2025 release, MinIO uses source-only distribution. KubeBlocks 
 
 ## Limitations
 
-- **Volume expansion not supported** — Storage size cannot be changed after deployment
+- **Scale-in not supported** — Once nodes are added, they cannot be removed. MinIO's distributed erasure coding does not support pool removal.
 - **Replica count must be a multiple of 2** — Erasure coding requires balanced stripe sizes
 - **No parameter reconfiguration** — Server configuration changes require cluster rebuild
 - **No switchover** — Distributed object store; all nodes are peers

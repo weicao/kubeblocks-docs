@@ -1,6 +1,6 @@
 ---
 title: Horizontal Scaling for MinIO
-description: Learn how to add or remove MinIO nodes in KubeBlocks.
+description: Learn how to add MinIO nodes in KubeBlocks.
 keywords: [KubeBlocks, MinIO, horizontal scaling, replicas]
 sidebar_position: 3
 sidebar_label: Horizontal Scaling
@@ -8,10 +8,10 @@ sidebar_label: Horizontal Scaling
 
 # Horizontal Scaling for MinIO
 
-MinIO uses distributed erasure coding across all nodes. The replica count must always be a **multiple of 2** (2, 4, 6, ..., up to 32).
+MinIO uses distributed erasure coding and supports **scale-out only**. The replica count must always be a **multiple of 2** (2, 4, 6, ..., up to 32).
 
-:::note
-MinIO tracks replica history internally. When scaling out, new nodes join the pool. When scaling in, data is rebalanced automatically before nodes are removed.
+:::caution
+MinIO does not support scale-in. Once nodes are added to the distributed cluster, they cannot be removed. Attempting to scale in will corrupt the cluster's internal state.
 :::
 
 ## Scale Out
@@ -49,33 +49,8 @@ minio-scale-out   HorizontalScaling   minio-cluster   Succeed   2/2        2m
 ```
 </details>
 
-## Scale In
-
-Remove 2 replicas (e.g., from 4 to 2):
-
-```bash
-kubectl apply -f - <<EOF
-apiVersion: operations.kubeblocks.io/v1alpha1
-kind: OpsRequest
-metadata:
-  name: minio-scale-in
-  namespace: demo
-spec:
-  clusterName: minio-cluster
-  type: HorizontalScaling
-  horizontalScaling:
-    - componentName: minio
-      scaleIn:
-        replicaChanges: 2
-EOF
-```
-
-:::caution
-Scaling in removes nodes from the pool. Ensure your data has sufficient redundancy before scaling in. Do not scale below 2 replicas.
-:::
-
 ## Cleanup
 
 ```bash
-kubectl delete opsrequest minio-scale-out minio-scale-in -n demo --ignore-not-found
+kubectl delete opsrequest minio-scale-out -n demo --ignore-not-found
 ```
