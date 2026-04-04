@@ -1,0 +1,73 @@
+---
+title: KubeBlocks for ClickHouse
+description: Overview of ClickHouse support in KubeBlocks, including architecture, topologies, and key features.
+keywords: [KubeBlocks, ClickHouse, overview, OLAP, columnar]
+sidebar_position: 1
+sidebar_label: Overview
+---
+
+# KubeBlocks for ClickHouse
+
+ClickHouse is an open-source column-oriented OLAP database management system designed for real-time analytics. KubeBlocks provides production-ready ClickHouse cluster management on Kubernetes.
+
+## Architecture
+
+KubeBlocks supports two ClickHouse deployment topologies:
+
+### Standalone
+
+A single ClickHouse shard (or multiple independent shards) without a coordinator. Suitable for development, testing, or simple analytics workloads that do not require replicated tables.
+
+```
+Client → ClickHouse Shard 0 (1+ replicas)
+       → ClickHouse Shard 1 (1+ replicas)
+       → ...
+```
+
+### Cluster (with ClickHouse Keeper)
+
+ClickHouse with **ClickHouse Keeper** as the distributed coordination service. Keeper replaces ZooKeeper and enables replicated tables across shards and replicas.
+
+```
+Client → ClickHouse Shard 0 (replicas)  ←→  ClickHouse Keeper (quorum)
+       → ClickHouse Shard 1 (replicas)  ←→
+```
+
+| Component | Role | Description |
+|-----------|------|-------------|
+| **ClickHouse** (`clickhouse`) | Query engine | Columnar storage and query processing. Deployed as shards, each shard can have multiple replicas. |
+| **ClickHouse Keeper** (`ch-keeper`) | Coordination | Lightweight ZooKeeper-compatible service for replication coordination. Required for replicated tables. |
+
+## Sharding Model
+
+ClickHouse shards use the KubeBlocks sharding model:
+
+- **`shards: N`** × **`replicas: M`** = N×M ClickHouse pods
+- Each shard is an independent ClickHouse instance group
+- Replicas within a shard share data via Keeper for replicated tables
+- Horizontal scaling can add/remove both shards and replicas independently
+
+## Supported Versions
+
+| ClickHouse Version | KubeBlocks Addon Version |
+|-------------------|--------------------------|
+| 25.4.4 | 1.0.3 |
+| 24.8.3 | 1.0.3 |
+| 22.8.21 | 1.0.3 |
+
+## Key Features
+
+- **Dual topology**: Standalone (no coordinator) and Cluster (with ClickHouse Keeper)
+- **Flexible sharding**: Scale shards and replicas independently
+- **ClickHouse Keeper**: Built-in ZooKeeper-compatible coordinator with leader election and switchover
+- **Dynamic reconfiguration**: Update ClickHouse server and user parameters without restart
+- **Multiple protocols**: HTTP (8123), native TCP (9000), MySQL-compatible (9004), PostgreSQL-compatible (9005)
+- **Prometheus monitoring**: Built-in metrics endpoint at port 8001
+- **Backup/Restore**: Full and incremental backups via `clickhouse-backup`
+- **TLS support**: Optional TLS for all communication channels
+
+## Limitations
+
+- **Replicated tables require Keeper**: The `standalone` topology does not support ClickHouse replicated tables (`ReplicatedMergeTree`). Use the `cluster` topology with Keeper for replication.
+- **Admin secret required**: KubeBlocks does not auto-generate the admin password. You must pre-create a Kubernetes Secret containing the password before deploying.
+- **Post-shard-scale-out step**: After adding new shards, a `post-scale-out-shard-for-clickhouse` OpsRequest must be run to register new shards in the cluster configuration.

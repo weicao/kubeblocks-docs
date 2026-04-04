@@ -1,0 +1,103 @@
+---
+title: Manage Services for ClickHouse
+description: Learn how to expose ClickHouse services externally in KubeBlocks.
+keywords: [KubeBlocks, ClickHouse, expose, service, LoadBalancer, external access]
+sidebar_position: 7
+sidebar_label: Manage Services
+---
+
+# Manage Services for ClickHouse
+
+By default, ClickHouse services are only accessible within the cluster. Use an OpsRequest to expose the ClickHouse HTTP or native TCP port externally.
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+:::note
+A LoadBalancer requires cloud provider support. On bare-metal or local clusters, use `serviceType: NodePort` instead and remove the `annotations` block.
+:::
+
+## Expose ClickHouse Externally
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: clickhouse-expose-enable
+  namespace: demo
+spec:
+  type: Expose
+  clusterName: clickhouse-cluster
+  expose:
+    - componentName: clickhouse
+      services:
+        - name: internet
+          serviceType: NodePort
+          ports:
+            - name: http
+              port: 8123
+              targetPort: http
+      switch: Enable
+EOF
+```
+
+Monitor progress:
+
+```bash
+kubectl get opsrequest clickhouse-expose-enable -n demo -w
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                       TYPE     CLUSTER              STATUS    PROGRESS   AGE
+clickhouse-expose-enable   Expose   clickhouse-cluster   Succeed   1/1        15s
+```
+</details>
+
+Get the external endpoint:
+
+```bash
+kubectl get service -n demo -l app.kubernetes.io/instance=clickhouse-cluster
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                                        TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)           AGE
+clickhouse-cluster-clickhouse-0             ClusterIP   10.100.xx.xx    <none>        8123/TCP,...      10m
+clickhouse-cluster-clickhouse-0-headless    ClusterIP   None            <none>        ...               10m
+clickhouse-cluster-clickhouse-internet      NodePort    10.100.yy.yy    <none>        8123:3xxxx/TCP    15s
+```
+</details>
+
+## Disable External Access
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: clickhouse-expose-disable
+  namespace: demo
+spec:
+  type: Expose
+  clusterName: clickhouse-cluster
+  expose:
+    - componentName: clickhouse
+      services:
+        - name: internet
+          serviceType: NodePort
+      switch: Disable
+EOF
+```
+
+## Cleanup
+
+```bash
+kubectl delete opsrequest clickhouse-expose-enable clickhouse-expose-disable -n demo --ignore-not-found
+```

@@ -1,0 +1,83 @@
+---
+title: Integrate ClickHouse with Prometheus Operator
+description: Learn how to configure Prometheus monitoring for ClickHouse clusters managed by KubeBlocks.
+keywords: [KubeBlocks, ClickHouse, Prometheus, monitoring, PodMonitor, metrics]
+sidebar_position: 1
+sidebar_label: Prometheus Integration
+---
+
+# Integrate ClickHouse with Prometheus Operator
+
+ClickHouse clusters managed by KubeBlocks expose Prometheus metrics on port `8001` (`http-metrics`) via the built-in HTTP metrics endpoint.
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+- Prometheus Operator installed in your cluster
+- Prometheus configured with `podMonitorSelector` matching label `release: prometheus`
+
+## Create a PodMonitor
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: clickhouse-pod-monitor
+  namespace: demo
+  labels:
+    release: prometheus
+spec:
+  jobLabel: app.kubernetes.io/managed-by
+  podTargetLabels:
+    - app.kubernetes.io/instance
+    - app.kubernetes.io/managed-by
+    - apps.kubeblocks.io/component-name
+    - apps.kubeblocks.io/pod-name
+  podMetricsEndpoints:
+    - path: /metrics
+      port: http-metrics
+      scheme: http
+  namespaceSelector:
+    matchNames:
+      - demo
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: clickhouse-cluster
+EOF
+```
+
+Verify the PodMonitor is created:
+
+```bash
+kubectl get podmonitor clickhouse-pod-monitor -n demo
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                      AGE
+clickhouse-pod-monitor    10s
+```
+</details>
+
+## Key Metrics
+
+| Metric | Description |
+|--------|-------------|
+| `ClickHouseMetrics_Query` | Number of executing queries |
+| `ClickHouseMetrics_Connection` | Number of connections |
+| `ClickHouseAsyncMetrics_MemoryResident` | Resident memory usage |
+| `ClickHouseProfileEvents_Query` | Total queries executed |
+| `ClickHouseProfileEvents_SelectQuery` | Total SELECT queries |
+| `ClickHouseProfileEvents_InsertQuery` | Total INSERT queries |
+| `ClickHouseProfileEvents_ReadCompressedBytes` | Compressed bytes read |
+
+## Cleanup
+
+```bash
+kubectl delete podmonitor clickhouse-pod-monitor -n demo --ignore-not-found
+```

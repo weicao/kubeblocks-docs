@@ -1,0 +1,177 @@
+---
+title: Horizontal Scaling for ClickHouse
+description: Learn how to scale ClickHouse replicas within a shard and scale the number of shards in KubeBlocks.
+keywords: [KubeBlocks, ClickHouse, horizontal scaling, shards, replicas]
+sidebar_position: 3
+sidebar_label: Horizontal Scaling
+---
+
+# Horizontal Scaling for ClickHouse
+
+KubeBlocks supports two dimensions of ClickHouse horizontal scaling:
+1. **Replica scaling** — add/remove replicas within existing shards
+2. **Shard scaling** — add/remove entire shards
+
+:::note
+After adding new shards, you must run the `post-scale-out-shard-for-clickhouse` OpsRequest to register the new shards in the cluster configuration. See [Scale Out Shards](#scale-out-shards) below.
+:::
+
+:::caution
+**Known issue (addon v1.0.3 / KubeBlocks 1.0.2):** HorizontalScaling OpsRequests for ClickHouse sharding components may remain in `Pending` state. As an alternative, scale shards by directly patching the Cluster spec:
+```bash
+kubectl patch cluster clickhouse-cluster -n demo --type=merge \
+  -p '{"spec":{"shardings":[{"name":"clickhouse","shards":2}]}}'
+```
+:::
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+## Scale Out Replicas
+
+Add one replica to all existing shards:
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: ch-scale-out
+  namespace: demo
+spec:
+  clusterName: clickhouse-cluster
+  type: HorizontalScaling
+  horizontalScaling:
+    - componentName: clickhouse
+      scaleOut:
+        replicaChanges: 1
+EOF
+```
+
+Monitor progress:
+
+```bash
+kubectl get opsrequest ch-scale-out -n demo -w
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME          TYPE                CLUSTER              STATUS    PROGRESS   AGE
+ch-scale-out  HorizontalScaling   clickhouse-cluster   Succeed   1/1        60s
+```
+</details>
+
+## Scale In Replicas
+
+Remove one replica from all existing shards:
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: ch-scale-in
+  namespace: demo
+spec:
+  clusterName: clickhouse-cluster
+  type: HorizontalScaling
+  horizontalScaling:
+    - componentName: clickhouse
+      scaleIn:
+        replicaChanges: 1
+EOF
+```
+
+## Scale Out Shards
+
+Increase the number of shards (e.g., from 1 to 2):
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: ch-scale-out-sharding
+  namespace: demo
+spec:
+  clusterName: clickhouse-cluster
+  type: HorizontalScaling
+  horizontalScaling:
+    - componentName: clickhouse
+      shards: 2
+EOF
+```
+
+After the scale-out completes, run the post-processing operation to register the new shard:
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: ch-post-scale-out-shard
+  namespace: demo
+spec:
+  clusterName: clickhouse-cluster
+  type: Custom
+  custom:
+    opsDefinitionName: post-scale-out-shard-for-clickhouse
+    components:
+      - componentName: clickhouse
+EOF
+```
+
+## Scale In Shards
+
+Decrease the number of shards (e.g., from 2 to 1):
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: ch-scale-in-sharding
+  namespace: demo
+spec:
+  clusterName: clickhouse-cluster
+  type: HorizontalScaling
+  horizontalScaling:
+    - componentName: clickhouse
+      shards: 1
+EOF
+```
+
+## Scale ClickHouse Keeper Replicas
+
+For clusters using the `cluster` topology, scale Keeper replicas (add 2 for a 3-node quorum):
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: ch-keeper-scale-out
+  namespace: demo
+spec:
+  clusterName: clickhouse-cluster
+  type: HorizontalScaling
+  horizontalScaling:
+    - componentName: ch-keeper
+      scaleOut:
+        replicaChanges: 2
+EOF
+```
+
+:::note
+Keeper requires an odd number of replicas for quorum (1, 3, 5...). Adding 2 replicas to a 1-replica Keeper gives a 3-node quorum.
+:::
+
+## Cleanup
+
+```bash
+kubectl delete opsrequest ch-scale-out ch-scale-in ch-scale-out-sharding ch-scale-in-sharding ch-post-scale-out-shard ch-keeper-scale-out -n demo --ignore-not-found
+```

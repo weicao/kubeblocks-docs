@@ -1,0 +1,92 @@
+---
+title: Volume Expansion for ClickHouse
+description: Learn how to expand the storage volume for ClickHouse pods in KubeBlocks.
+keywords: [KubeBlocks, ClickHouse, volume expansion, storage, PVC]
+sidebar_position: 4
+sidebar_label: Volume Expansion
+---
+
+# Volume Expansion for ClickHouse
+
+Volume expansion increases the storage allocated to ClickHouse pods. The underlying StorageClass must support volume expansion.
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+:::note
+Volume expansion requires a StorageClass with `allowVolumeExpansion: true`. Verify this before proceeding:
+```bash
+kubectl get storageclass
+```
+:::
+
+## Expand the ClickHouse Data Volume
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: clickhouse-volumeexpansion
+  namespace: demo
+spec:
+  clusterName: clickhouse-cluster
+  type: VolumeExpansion
+  volumeExpansion:
+    - componentName: clickhouse
+      volumeClaimTemplates:
+        - name: data
+          storage: 20Gi
+EOF
+```
+
+Monitor progress:
+
+```bash
+kubectl get opsrequest clickhouse-volumeexpansion -n demo -w
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                        TYPE              CLUSTER              STATUS    PROGRESS   AGE
+clickhouse-volumeexpansion  VolumeExpansion   clickhouse-cluster   Succeed   1/1        60s
+```
+</details>
+
+Verify the new storage size:
+
+```bash
+kubectl get pvc -n demo -l app.kubernetes.io/instance=clickhouse-cluster
+```
+
+## Expand the Keeper Data Volume
+
+For clusters using the `cluster` topology:
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: clickhouse-volumeexpansion-keeper
+  namespace: demo
+spec:
+  clusterName: clickhouse-cluster
+  type: VolumeExpansion
+  volumeExpansion:
+    - componentName: ch-keeper
+      volumeClaimTemplates:
+        - name: data
+          storage: 20Gi
+EOF
+```
+
+## Cleanup
+
+```bash
+kubectl delete opsrequest clickhouse-volumeexpansion clickhouse-volumeexpansion-keeper -n demo --ignore-not-found
+```

@@ -1,0 +1,89 @@
+---
+title: ClickHouse Keeper Switchover
+description: Learn how to perform a Keeper leader switchover in KubeBlocks.
+keywords: [KubeBlocks, ClickHouse, Keeper, switchover, leader]
+sidebar_position: 6
+sidebar_label: Switchover
+---
+
+# ClickHouse Keeper Switchover
+
+ClickHouse Keeper uses a Raft-based consensus protocol with a leader/follower model. KubeBlocks supports triggering a leader switchover for planned maintenance.
+
+:::note
+Switchover is only available for clusters using the `cluster` topology (with ClickHouse Keeper). It is not applicable to `standalone` deployments.
+:::
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+## Check Keeper Leader
+
+Before switchover, identify the current leader:
+
+```bash
+kubectl get pods -n demo -l app.kubernetes.io/instance=clickhouse-cluster \
+  -l apps.kubeblocks.io/component-name=ch-keeper \
+  -L kubeblocks.io/role
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                               READY   STATUS    RESTARTS   AGE   ROLE
+clickhouse-cluster-ch-keeper-0     2/2     Running   0          10m   leader
+clickhouse-cluster-ch-keeper-1     2/2     Running   0          10m   follower
+clickhouse-cluster-ch-keeper-2     2/2     Running   0          10m   follower
+```
+</details>
+
+## Trigger a Switchover
+
+Transfer the leader role away from `clickhouse-cluster-ch-keeper-0`:
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: keeper-switchover
+  namespace: demo
+spec:
+  clusterName: clickhouse-cluster
+  type: Switchover
+  switchover:
+    - componentName: ch-keeper
+      instanceName: "clickhouse-cluster-ch-keeper-0"
+EOF
+```
+
+Monitor progress:
+
+```bash
+kubectl get opsrequest keeper-switchover -n demo -w
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME               TYPE         CLUSTER              STATUS    PROGRESS   AGE
+keeper-switchover  Switchover   clickhouse-cluster   Succeed   1/1        15s
+```
+</details>
+
+Verify the new leader:
+
+```bash
+kubectl get pods -n demo -l app.kubernetes.io/instance=clickhouse-cluster \
+  -l apps.kubeblocks.io/component-name=ch-keeper \
+  -L kubeblocks.io/role
+```
+
+## Cleanup
+
+```bash
+kubectl delete opsrequest keeper-switchover -n demo --ignore-not-found
+```
