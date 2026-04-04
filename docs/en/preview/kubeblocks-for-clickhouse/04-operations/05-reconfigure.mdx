@@ -16,10 +16,6 @@ import Prerequisites from '../_tpl/_prerequisites.mdx'
 
 <Prerequisites />
 
-:::caution
-**Known issue (addon v1.0.3 / KubeBlocks 1.0.2):** Reconfiguring may remain in `Running` state indefinitely. This is caused by a missing `ComponentParameter` CR for ClickHouse sharding components. Track progress at [kubeblocks-addons#2544](https://github.com/apecloud/kubeblocks-addons/issues/2544). As a workaround, update parameters directly via `clickhouse-client` or the ClickHouse HTTP API inside the pod.
-:::
-
 ## Update a ClickHouse Parameter
 
 The following example updates `clickhouse.profiles.web.max_bytes_to_read`, which limits the maximum bytes read per query for the `web` profile:
