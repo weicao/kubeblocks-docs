@@ -47,7 +47,7 @@ Starting from the 2025 release, MinIO uses source-only distribution. KubeBlocks 
 
 ## Limitations
 
-- **Scale-in not supported** — Once nodes are added, they cannot be removed. MinIO's distributed erasure coding does not support pool removal.
+- **Scale-in not supported** — Once nodes are added, they cannot be removed. KubeBlocks blocks scale-in OpsRequests to prevent data loss.
 - **Minimum 2 replicas per pool** — Each scale-out adds a new pool; each pool requires at least 2 nodes
 - **No parameter reconfiguration** — Server configuration changes require cluster rebuild
 - **No switchover** — Distributed object store; all nodes are peers

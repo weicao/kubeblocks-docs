@@ -11,7 +11,7 @@ sidebar_label: Horizontal Scaling
 MinIO uses distributed erasure coding and supports **scale-out only**. Each scale-out adds a new pool; each pool requires a minimum of 2 nodes.
 
 :::caution
-MinIO does not support scale-in. Once nodes are added to a distributed pool, they cannot be removed. Attempting to scale in will permanently delete the PVCs of the removed nodes and cause data loss.
+MinIO does not support scale-in. Once nodes are added to a distributed pool, they cannot be removed. KubeBlocks blocks scale-in OpsRequests for MinIO — any attempt will remain in `Running` state indefinitely without removing any nodes or data.
 :::
 
 ## Scale Out
