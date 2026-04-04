@@ -8,7 +8,7 @@ sidebar_label: Horizontal Scaling
 
 # Horizontal Scaling for MinIO
 
-MinIO uses distributed erasure coding and supports **scale-out only**. The replica count must always be a **multiple of 2** (2, 4, 6, ..., up to 32).
+MinIO uses distributed erasure coding and supports **scale-out only**. Each scale-out adds a new pool; each pool requires a minimum of 2 nodes.
 
 :::caution
 MinIO does not support scale-in. Once nodes are added to the distributed cluster, they cannot be removed. Attempting to scale in will corrupt the cluster's internal state.

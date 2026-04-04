@@ -20,7 +20,7 @@ MinIO runs in distributed erasure coding mode where all replicas form a single p
 - The S3 API (port 9000) and Web Console (port 9001) are exposed as services
 
 :::note
-MinIO requires a **minimum of 2 replicas**. For production, use at least 4 replicas distributed across multiple Kubernetes nodes. The replica count must always be a **multiple of 2**.
+MinIO requires a **minimum of 2 replicas**. For production, use at least 4 replicas distributed across multiple Kubernetes nodes.
 :::
 
 ## Supported Versions
@@ -39,7 +39,7 @@ Starting from the 2025 release, MinIO uses source-only distribution. KubeBlocks 
 - **S3-compatible API** — Drop-in replacement for Amazon S3
 - **Web Console** — Browser-based management UI on port 9001
 - **Auto credential management** — Root credentials generated and stored as a Kubernetes Secret
-- **Horizontal scale-out** — Add nodes (in multiples of 2)
+- **Horizontal scale-out** — Add nodes to grow storage and throughput capacity
 - **Vertical scaling** — Adjust CPU and memory
 - **TLS encryption** — Optional TLS for both API and console
 - **Prometheus metrics** — Built-in metrics at `/minio/v2/metrics/cluster`
@@ -48,6 +48,6 @@ Starting from the 2025 release, MinIO uses source-only distribution. KubeBlocks 
 ## Limitations
 
 - **Scale-in not supported** — Once nodes are added, they cannot be removed. MinIO's distributed erasure coding does not support pool removal.
-- **Replica count must be a multiple of 2** — Erasure coding requires balanced stripe sizes
+- **Minimum 2 replicas per pool** — Each scale-out adds a new pool; each pool requires at least 2 nodes
 - **No parameter reconfiguration** — Server configuration changes require cluster rebuild
 - **No switchover** — Distributed object store; all nodes are peers
