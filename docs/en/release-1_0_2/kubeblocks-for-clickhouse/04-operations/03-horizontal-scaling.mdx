@@ -16,14 +16,6 @@ KubeBlocks supports two dimensions of ClickHouse horizontal scaling:
 After adding new shards, you must run the `post-scale-out-shard-for-clickhouse` OpsRequest to register the new shards in the cluster configuration. See [Scale Out Shards](#scale-out-shards) below.
 :::
 
-:::caution
-**Known issue (addon v1.0.3 / KubeBlocks 1.0.2):** HorizontalScaling OpsRequests for ClickHouse sharding components may remain in `Pending` state. As an alternative, scale shards by directly patching the Cluster spec:
-```bash
-kubectl patch cluster clickhouse-cluster -n demo --type=merge \
-  -p '{"spec":{"shardings":[{"name":"clickhouse","shards":2}]}}'
-```
-:::
-
 ## Prerequisites
 
 import Prerequisites from '../_tpl/_prerequisites.mdx'
