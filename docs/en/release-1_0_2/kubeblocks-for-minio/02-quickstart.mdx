@@ -1,0 +1,136 @@
+---
+title: MinIO Quickstart
+description: Deploy and connect to a MinIO cluster managed by KubeBlocks.
+keywords: [KubeBlocks, MinIO, quickstart, deploy, S3, object storage]
+sidebar_position: 2
+sidebar_label: Quickstart
+---
+
+# MinIO Quickstart
+
+This guide walks you through deploying a MinIO cluster with KubeBlocks and connecting to it via the S3 API and Web Console.
+
+## Prerequisites
+
+import Prerequisites from './_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+## Deploy a MinIO Cluster
+
+Deploy a 2-replica MinIO cluster (minimum for distributed mode):
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: apps.kubeblocks.io/v1
+kind: Cluster
+metadata:
+  name: minio-cluster
+  namespace: demo
+spec:
+  terminationPolicy: Delete
+  componentSpecs:
+    - name: minio
+      componentDef: minio
+      replicas: 2
+      resources:
+        limits:
+          cpu: "1"
+          memory: "1Gi"
+        requests:
+          cpu: "1"
+          memory: "1Gi"
+      volumeClaimTemplates:
+        - name: data
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 20Gi
+EOF
+```
+
+:::note
+To pre-create buckets on startup, add an environment variable:
+```yaml
+env:
+  - name: MINIO_BUCKETS
+    value: "my-bucket,another-bucket"
+```
+:::
+
+## Verify Cluster Status
+
+```bash
+kubectl get cluster minio-cluster -n demo
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME            CLUSTER-DEFINITION   TERMINATION-POLICY   STATUS    AGE
+minio-cluster                        Delete               Running   2m
+```
+</details>
+
+```bash
+kubectl get pods -n demo -l app.kubernetes.io/instance=minio-cluster
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                      READY   STATUS    RESTARTS   AGE
+minio-cluster-minio-0     2/2     Running   0          2m
+minio-cluster-minio-1     2/2     Running   0          2m
+```
+</details>
+
+## Get Credentials
+
+Root credentials are auto-generated and stored in a Kubernetes Secret:
+
+```bash
+MINIO_USER=$(kubectl get secret minio-cluster-minio-account-root -n demo \
+  -o jsonpath='{.data.username}' | base64 -d)
+MINIO_PASS=$(kubectl get secret minio-cluster-minio-account-root -n demo \
+  -o jsonpath='{.data.password}' | base64 -d)
+
+echo "Username: $MINIO_USER"
+echo "Password: $MINIO_PASS"
+```
+
+## Connect via S3 API
+
+Port-forward the S3 API port and use the AWS CLI or MinIO client:
+
+```bash
+kubectl port-forward svc/minio-cluster-minio 9000:9000 -n demo &
+
+# Using AWS CLI (compatible with S3)
+aws s3 ls --endpoint-url http://localhost:9000 \
+  --no-sign-request 2>/dev/null || \
+aws configure set aws_access_key_id "$MINIO_USER" && \
+aws configure set aws_secret_access_key "$MINIO_PASS"
+
+# Or using the MinIO client (mc)
+mc alias set local http://localhost:9000 "$MINIO_USER" "$MINIO_PASS"
+mc ls local/
+```
+
+## Connect via Web Console
+
+Port-forward the Console port and access in a browser:
+
+```bash
+kubectl port-forward svc/minio-cluster-minio 9001:9001 -n demo
+```
+
+Then open [http://localhost:9001](http://localhost:9001) and log in with the root credentials.
+
+## Cleanup
+
+```bash
+kubectl delete cluster minio-cluster -n demo
+```

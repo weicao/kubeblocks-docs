@@ -1,0 +1,116 @@
+---
+title: Stop, Start, and Restart MinIO
+description: Learn how to stop, start, and restart a MinIO cluster in KubeBlocks.
+keywords: [KubeBlocks, MinIO, stop, start, restart]
+sidebar_position: 1
+sidebar_label: Stop / Start / Restart
+---
+
+# Stop, Start, and Restart MinIO
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+## Stop
+
+Stopping a cluster shuts down all pods while retaining data volumes:
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: minio-stop
+  namespace: demo
+spec:
+  clusterName: minio-cluster
+  type: Stop
+EOF
+```
+
+Monitor progress:
+
+```bash
+kubectl get opsrequest minio-stop -n demo -w
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME         TYPE   CLUSTER         STATUS    PROGRESS   AGE
+minio-stop   Stop   minio-cluster   Succeed   2/2        30s
+```
+</details>
+
+## Start
+
+Start a previously stopped cluster:
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: minio-start
+  namespace: demo
+spec:
+  clusterName: minio-cluster
+  type: Start
+EOF
+```
+
+Monitor progress:
+
+```bash
+kubectl get opsrequest minio-start -n demo -w
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME          TYPE    CLUSTER         STATUS    PROGRESS   AGE
+minio-start   Start   minio-cluster   Succeed   2/2        60s
+```
+</details>
+
+## Restart
+
+Restart all MinIO pods (rolling restart):
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: minio-restart
+  namespace: demo
+spec:
+  clusterName: minio-cluster
+  type: Restart
+  restart:
+    - componentName: minio
+EOF
+```
+
+Monitor progress:
+
+```bash
+kubectl get opsrequest minio-restart -n demo -w
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME            TYPE      CLUSTER         STATUS    PROGRESS   AGE
+minio-restart   Restart   minio-cluster   Succeed   2/2        60s
+```
+</details>
+
+## Cleanup
+
+```bash
+kubectl delete opsrequest minio-stop minio-start minio-restart -n demo --ignore-not-found
+```

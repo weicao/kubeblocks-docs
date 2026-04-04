@@ -1,0 +1,11 @@
+- A functional Kubernetes cluster (v1.21+ recommended)
+- `kubectl` v1.21+ installed and configured with cluster access
+- KubeBlocks installed ([installation guide](../user_docs/overview/install-kubeblocks))
+- MinIO Add-on enabled:
+  ```bash
+  helm install minio kubeblocks/minio --version 1.1.0-alpha.0 -n kb-system
+  ```
+- A namespace for the cluster (examples use `demo`):
+  ```bash
+  kubectl create ns demo
+  ```
