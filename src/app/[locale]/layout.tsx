@@ -20,17 +20,37 @@ const geist = Geist({
   subsets: ['latin'],
 });
 
+const DEFAULT_DESCRIPTION =
+  'Meet KubeBlocks, the open-source, unified database operator for Kubernetes. Simplify cloud-native data management with a single API for MySQL, PostgreSQL, MongoDB, Kafka, and more. Tame operator sprawl and streamline Day-2 operations.';
+
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
   title: {
     default: 'KubeBlocks',
     template: '%s | KubeBlocks',
   },
-  description:
-    'Meet KubeBlocks, the open-source, unified database operator for Kubernetes. Simplify cloud-native data management with a single API for MySQL, PostgreSQL, MongoDB, Kafka, and more. Tame operator sprawl and streamline Day-2 operations.',
-  robots: {
-    index: true,
-    follow: true,
+  description: DEFAULT_DESCRIPTION,
+  robots: { index: true, follow: true },
+  alternates: {
+    languages: {
+      'en': '/',
+      'x-default': '/',
+    },
+  },
+  openGraph: {
+    type: 'website',
+    siteName: 'KubeBlocks',
+    locale: 'en_US',
+    title: 'KubeBlocks',
+    description: DEFAULT_DESCRIPTION,
+    images: [{ url: '/logo.png', width: 512, height: 512, alt: 'KubeBlocks' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    site: '@KubeBlocks',
+    title: 'KubeBlocks',
+    description: DEFAULT_DESCRIPTION,
+    images: ['/logo.png'],
   },
 };
 
@@ -46,6 +66,15 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} suppressHydrationWarning className={geist.className}>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://www.googletagmanager.com" />
+        <link rel="dns-prefetch" href="https://github.com" />
+        <link rel="me" href="https://github.com/apecloud" />
+        <link rel="me" href="https://twitter.com/KubeBlocks" />
+        <link rel="author" href="/humans.txt" />
+      </head>
       <body>
         <Script src="/c.js" />
         <I18nProvider locale={locale as 'en'}>

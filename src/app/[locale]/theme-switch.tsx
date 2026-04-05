@@ -36,6 +36,7 @@ export default function ThemeSwitcher() {
       onClick={() => {
         setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
       }}
+      aria-label={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
     >
       {icon}
     </IconButton>

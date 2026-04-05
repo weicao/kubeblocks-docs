@@ -170,6 +170,7 @@ export default function Customers() {
                     marginInline: 1,
                     img: {
                       display: 'inline-block',
+                      filter: theme.palette.mode === 'light' ? 'brightness(0) opacity(0.6)' : 'none',
                     },
                     borderRadius: 2,
                     transitionDuration: '0.3s',

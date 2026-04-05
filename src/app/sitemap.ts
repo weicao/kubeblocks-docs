@@ -55,6 +55,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   addStaticRoute('/', 'en', 1, 'daily');
   addStaticRoute('/blog', 'en', 0.8, 'daily');
+  addStaticRoute('/databases', 'en', 0.8, 'monthly');
+  addStaticRoute('/docs', 'en', 0.8, 'weekly');
+  addStaticRoute('/reports', 'en', 0.7, 'monthly');
 
   getStaticParams().forEach((item) => {
     const localeDir = path.join(DOCS_DIR, item.locale);
@@ -78,7 +81,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       const categories = fs.readdirSync(versionDir);
 
       categories.forEach((category) => {
-        if (category.startsWith('_') || category === 'release_notes') {
+        if (category.startsWith('_')) {
           return;
         }
 
@@ -87,6 +90,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
           return;
         }
 
+        const isReleaseNotes = category === 'release_notes';
         const files = getMdxFiles(categoryDir);
         files.forEach((filePath) => {
           const relative = filePath
@@ -103,8 +107,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
           sitemap.push({
             url: `${siteUrl}${withLocalePath(item.locale, routePath)}`,
             lastModified: fileLastModified,
-            changeFrequency: 'weekly',
-            priority: 0.6,
+            changeFrequency: 'monthly',
+            priority: isReleaseNotes ? 0.4 : 0.6,
           });
         });
       });
@@ -136,6 +140,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   addStaticRoute('/llms.txt', 'en', 0.5, 'weekly');
   addStaticRoute('/llms-full.txt', 'en', 0.4, 'weekly');
+  addStaticRoute('/blog/feed.xml', 'en', 0.3, 'daily');
+  addStaticRoute('/sitemap-images.xml', 'en', 0.3, 'weekly');
 
   return sitemap;
 }
