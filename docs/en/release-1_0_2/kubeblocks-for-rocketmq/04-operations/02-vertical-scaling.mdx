@@ -1,0 +1,92 @@
+---
+title: Vertical Scaling for RocketMQ
+description: Learn how to adjust CPU and memory resources for RocketMQ components in KubeBlocks.
+keywords: [KubeBlocks, RocketMQ, vertical scaling, CPU, memory]
+sidebar_position: 2
+sidebar_label: Vertical Scaling
+---
+
+# Vertical Scaling for RocketMQ
+
+Vertical scaling adjusts the CPU and memory allocated to a component's pods. KubeBlocks performs a rolling restart to apply the new resource limits.
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+## Scale the NameServer
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: rocketmq-verticalscale-namesrv
+  namespace: demo
+spec:
+  clusterName: rocketmq-cluster
+  type: VerticalScaling
+  verticalScaling:
+    - componentName: namesrv
+      requests:
+        cpu: "1"
+        memory: "1Gi"
+      limits:
+        cpu: "1"
+        memory: "1Gi"
+EOF
+```
+
+## Scale the Broker
+
+Use the sharding group name `broker` in the OpsRequest:
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: rocketmq-verticalscale-broker
+  namespace: demo
+spec:
+  clusterName: rocketmq-cluster
+  type: VerticalScaling
+  verticalScaling:
+    - componentName: broker
+      requests:
+        cpu: "1"
+        memory: "2Gi"
+      limits:
+        cpu: "1"
+        memory: "2Gi"
+EOF
+```
+
+Monitor progress:
+
+```bash
+kubectl get opsrequest rocketmq-verticalscale-namesrv -n demo -w
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                              TYPE              CLUSTER            STATUS    PROGRESS   AGE
+rocketmq-verticalscale-namesrv   VerticalScaling   rocketmq-cluster   Succeed   1/1        45s
+```
+</details>
+
+Verify the new resource allocation on the NameServer pod:
+
+```bash
+kubectl get pod rocketmq-cluster-namesrv-0 -n demo \
+  -o jsonpath='{.spec.containers[0].resources}' | python3 -m json.tool
+```
+
+## Cleanup
+
+```bash
+kubectl delete opsrequest rocketmq-verticalscale-namesrv rocketmq-verticalscale-broker -n demo --ignore-not-found
+```

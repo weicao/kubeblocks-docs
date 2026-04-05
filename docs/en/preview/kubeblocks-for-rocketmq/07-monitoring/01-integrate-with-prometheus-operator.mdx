@@ -1,0 +1,113 @@
+---
+title: Integrate RocketMQ with Prometheus Operator
+description: Learn how to configure Prometheus monitoring for RocketMQ clusters managed by KubeBlocks.
+keywords: [KubeBlocks, RocketMQ, Prometheus, monitoring, PodMonitor, metrics]
+sidebar_position: 1
+sidebar_label: Prometheus Integration
+---
+
+# Integrate RocketMQ with Prometheus Operator
+
+RocketMQ clusters managed by KubeBlocks expose two metric sources:
+
+| Sidecar | Port | Metrics |
+|---------|------|---------|
+| `jmx-exporter` | `metrics` (5556) | JVM metrics (GC, heap, threads) |
+| `rocketmq-exporter` | `metrics` (5557) | Broker metrics (topics, queues, consumer lag) |
+
+Both are exposed on pods via the `metrics` named port.
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+- Prometheus Operator installed in your cluster
+- Prometheus configured with `podMonitorSelector` matching label `release: prometheus`
+
+## Create a PodMonitor
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: rocketmq-cluster-pod-monitor
+  namespace: demo
+  labels:
+    release: prometheus
+spec:
+  jobLabel: app.kubernetes.io/managed-by
+  podTargetLabels:
+    - app.kubernetes.io/instance
+    - app.kubernetes.io/managed-by
+    - apps.kubeblocks.io/component-name
+    - apps.kubeblocks.io/pod-name
+  podMetricsEndpoints:
+    - path: /metrics
+      port: metrics
+      scheme: http
+  namespaceSelector:
+    matchNames:
+      - demo
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: rocketmq-cluster
+EOF
+```
+
+:::note
+If your Prometheus uses a different `podMonitorSelector` label, update the `labels` field accordingly.
+:::
+
+Verify the PodMonitor is created:
+
+```bash
+kubectl get podmonitor rocketmq-cluster-pod-monitor -n demo
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                            AGE
+rocketmq-cluster-pod-monitor   10s
+```
+</details>
+
+## Verify Metrics Are Scraped
+
+Check which pods are being scraped:
+
+```bash
+kubectl get pods -n demo -l app.kubernetes.io/instance=rocketmq-cluster \
+  -o custom-columns='NAME:.metadata.name,READY:.status.containerStatuses[*].name'
+```
+
+Within a few minutes, Prometheus will discover the pods and begin scraping. Confirm in the Prometheus UI under **Status → Targets**.
+
+## Key Metrics
+
+### Broker Metrics (rocketmq-exporter)
+
+| Metric | Description |
+|--------|-------------|
+| `rocketmq_broker_tps` | Messages produced per second |
+| `rocketmq_broker_qps` | Messages consumed per second |
+| `rocketmq_consumer_tps` | Consumer group throughput |
+| `rocketmq_group_get_latency_by_storetime` | Consumer lag by store time |
+| `rocketmq_topic_retry_nums` | Retry queue depth per topic |
+
+### JVM Metrics (jmx-exporter)
+
+| Metric | Description |
+|--------|-------------|
+| `jvm_memory_bytes_used` | JVM heap / non-heap usage |
+| `jvm_gc_collection_seconds` | GC pause duration |
+| `jvm_threads_current` | Active thread count |
+
+## Cleanup
+
+```bash
+kubectl delete podmonitor rocketmq-cluster-pod-monitor -n demo --ignore-not-found
+```

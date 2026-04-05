@@ -1,0 +1,264 @@
+---
+title: RocketMQ Quickstart
+description: Deploy and connect to a RocketMQ cluster managed by KubeBlocks.
+keywords: [KubeBlocks, RocketMQ, quickstart, deploy, connect]
+sidebar_position: 2
+sidebar_label: Quickstart
+---
+
+# RocketMQ Quickstart
+
+This guide walks you through deploying a RocketMQ cluster with KubeBlocks, verifying it, sending a test message, and cleaning up.
+
+## Prerequisites
+
+- A functional Kubernetes cluster (v1.21+ recommended)
+- `kubectl` v1.21+ installed and configured with cluster access
+- KubeBlocks installed ([installation guide](../user_docs/overview/install-kubeblocks))
+- RocketMQ Add-on enabled
+
+## Deploy a RocketMQ Cluster
+
+The following example deploys a minimal RocketMQ cluster with:
+- 1 NameServer
+- 1 Broker shard (master only, no slaves)
+- 1 Dashboard (web console)
+- 1 Exporter (Prometheus metrics)
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/apecloud/kubeblocks-addons/refs/heads/main/examples/rocketmq/cluster.yaml
+```
+
+Or create it directly:
+
+```yaml
+apiVersion: apps.kubeblocks.io/v1
+kind: Cluster
+metadata:
+  name: rocketmq-cluster
+  namespace: demo
+spec:
+  clusterDef: rocketmq
+  topology: master-slave
+  terminationPolicy: Delete
+  componentSpecs:
+    - name: namesrv
+      replicas: 1
+      serviceVersion: 4.9.6
+      resources:
+        limits:
+          cpu: "1"
+          memory: "1Gi"
+        requests:
+          cpu: "0.5"
+          memory: "1Gi"
+    - name: exporter
+      replicas: 1
+      serviceVersion: 0.0.3
+      resources:
+        limits:
+          cpu: "0.5"
+          memory: "512Mi"
+        requests:
+          cpu: "0.1"
+          memory: "512Mi"
+    - name: dashboard
+      replicas: 1
+      serviceVersion: 2.0.1
+      resources:
+        limits:
+          cpu: "0.5"
+          memory: "512Mi"
+        requests:
+          cpu: "0.1"
+          memory: "512Mi"
+  shardings:
+    - name: broker
+      shards: 1          # number of broker groups
+      template:
+        name: rocketmq-broker
+        replicas: 1      # 1 = master only; 2 = master + 1 slave
+        serviceVersion: 4.9.6
+        resources:
+          limits:
+            cpu: "1"
+            memory: "2Gi"
+          requests:
+            cpu: "0.5"
+            memory: "1Gi"
+        volumeClaimTemplates:
+          - name: data
+            spec:
+              accessModes:
+                - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 10Gi
+```
+
+:::note
+The `shardings` field defines broker groups. Each shard is an independent broker with its own master and slaves. Setting `shards: 2` with `replicas: 2` gives 2 master-slave pairs (4 broker pods total).
+:::
+
+## Verify Cluster Status
+
+```bash
+kubectl get cluster rocketmq-cluster -n demo
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME               CLUSTER-DEFINITION   TERMINATION-POLICY   STATUS    AGE
+rocketmq-cluster   rocketmq             Delete               Running   5m
+```
+</details>
+
+Wait until `STATUS` is `Running`. Check the pods:
+
+```bash
+kubectl get pods -n demo -l app.kubernetes.io/instance=rocketmq-cluster
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                              READY   STATUS    RESTARTS   AGE
+rocketmq-cluster-broker-t9j-0    4/4     Running   0          5m
+rocketmq-cluster-dashboard-0     1/1     Running   0          5m
+rocketmq-cluster-exporter-0      1/1     Running   0          5m
+rocketmq-cluster-namesrv-0       3/3     Running   0          5m
+```
+</details>
+
+:::note
+**Broker component naming**: KubeBlocks assigns broker shards a short hash suffix (e.g., `broker-t9j`). To discover the actual component name, run:
+```bash
+kubectl get component -n demo -l app.kubernetes.io/instance=rocketmq-cluster | grep broker
+```
+Use this name wherever broker component operations require a `componentName` (e.g., vertical scaling, OpsRequests).
+:::
+
+## Check Broker Role
+
+Verify the broker role (master/slave). First, get the broker component name:
+
+```bash
+kubectl get pods -n demo -l app.kubernetes.io/instance=rocketmq-cluster \
+  -l apps.kubeblocks.io/component-name=broker-t9j \
+  -L kubeblocks.io/role
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                             READY   STATUS    RESTARTS   AGE   ROLE
+rocketmq-cluster-broker-t9j-0   4/4     Running   0          5m    master
+```
+</details>
+
+## Get Connection Info
+
+Get the NameServer address for producers and consumers:
+
+```bash
+kubectl get service -n demo -l app.kubernetes.io/instance=rocketmq-cluster
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                          TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+rocketmq-cluster-dashboard    ClusterIP   10.100.xx.xx    <none>        8080/TCP   5m
+rocketmq-cluster-namesrv      ClusterIP   10.100.42.31    <none>        9876/TCP   5m
+```
+</details>
+
+The NameServer address for in-cluster applications is:
+```
+rocketmq-cluster-namesrv.demo.svc.cluster.local:9876
+```
+
+## Get Credentials
+
+KubeBlocks auto-generates credentials for the `rocketmq-admin` account. The broker credential secret name includes the component hash:
+
+```bash
+# List all secrets for the cluster
+kubectl get secret -n demo -l app.kubernetes.io/instance=rocketmq-cluster
+
+# Get the broker admin credentials (secret name includes broker hash)
+BROKER_SECRET=$(kubectl get secret -n demo \
+  -l app.kubernetes.io/instance=rocketmq-cluster \
+  -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' | grep broker)
+
+kubectl get secret -n demo $BROKER_SECRET \
+  -o jsonpath='{.data.username}' | base64 -d && echo
+kubectl get secret -n demo $BROKER_SECRET \
+  -o jsonpath='{.data.password}' | base64 -d && echo
+```
+
+## Send a Test Message
+
+Use `mqadmin` inside the broker pod to verify connectivity:
+
+```bash
+kubectl exec -n demo rocketmq-cluster-broker-t9j-0 -c rocketmq-broker -- \
+  bash -c 'export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 && \
+  /home/rocketmq/rocketmq-4.9.6/bin/mqadmin clusterList \
+  -n rocketmq-cluster-namesrv.demo.svc.cluster.local:9876'
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+#Cluster Name     #Broker Name    #BID  #Addr            #Version  #InTPS(LOAD)  #OutTPS(LOAD)  #PCWait(ms)  #Hour  #SPACE
+rocketmq-cluster  broker-t9j      0     10.0.x.x:10911   V4_9_6    0.00(0,0ms)   0.00(0,0ms)    0            449    0.4023
+```
+</details>
+
+## Access the Dashboard
+
+Port-forward to the Dashboard web UI:
+
+```bash
+kubectl port-forward -n demo svc/rocketmq-cluster-dashboard 8080:8080
+```
+
+Open `http://localhost:8080` in your browser.
+
+Get the dashboard credentials:
+
+```bash
+kubectl get secret -n demo rocketmq-cluster-dashboard-account-console-admin \
+  -o jsonpath='{.data.username}' | base64 -d && echo
+kubectl get secret -n demo rocketmq-cluster-dashboard-account-console-admin \
+  -o jsonpath='{.data.password}' | base64 -d && echo
+```
+
+## Stop the Cluster
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/apecloud/kubeblocks-addons/refs/heads/main/examples/rocketmq/stop.yaml
+```
+
+<details>
+<summary>Example Output</summary>
+```text
+NAME               CLUSTER-DEFINITION   TERMINATION-POLICY   STATUS    AGE
+rocketmq-cluster   rocketmq             Delete               Stopped   3m
+```
+</details>
+
+## Start the Cluster
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/apecloud/kubeblocks-addons/refs/heads/main/examples/rocketmq/start.yaml
+```
+
+## Delete the Cluster
+
+```bash
+kubectl delete cluster rocketmq-cluster -n demo
+kubectl delete ns demo
+```

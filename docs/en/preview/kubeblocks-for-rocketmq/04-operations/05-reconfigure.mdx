@@ -1,0 +1,98 @@
+---
+title: Reconfigure RocketMQ Broker Parameters
+description: Learn how to dynamically update RocketMQ broker configuration parameters in KubeBlocks without restarting pods.
+keywords: [KubeBlocks, RocketMQ, reconfigure, broker, parameters, dynamic]
+sidebar_position: 5
+sidebar_label: Reconfigure
+---
+
+# Reconfigure RocketMQ Broker Parameters
+
+KubeBlocks supports dynamic reconfiguration of 165+ broker parameters via `mqadmin updateBrokerConfig`. Changes take effect without a broker restart.
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+## Update a Broker Parameter
+
+The following example enables multi-dispatch (`enableMultiDispatch`), which allows a message to be dispatched to multiple consumer groups simultaneously:
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: rocketmq-reconfiguring
+  namespace: demo
+spec:
+  type: Reconfiguring
+  clusterName: rocketmq-cluster
+  reconfigures:
+    - componentName: broker
+      parameters:
+        - key: enableMultiDispatch
+          value: "true"
+EOF
+```
+
+Monitor progress:
+
+```bash
+kubectl get opsrequest rocketmq-reconfiguring -n demo -w
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                    TYPE            CLUSTER            STATUS    PROGRESS   AGE
+rocketmq-reconfiguring  Reconfiguring   rocketmq-cluster   Succeed   1/1        10s
+```
+</details>
+
+Verify the parameter was applied inside the broker (replace `broker-t9j-0` with your actual broker pod name):
+
+```bash
+kubectl exec -n demo rocketmq-cluster-broker-t9j-0 -c rocketmq-broker -- \
+  bash -c 'export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 && \
+  /home/rocketmq/rocketmq-4.9.6/bin/mqadmin getBrokerConfig \
+  -n rocketmq-cluster-namesrv.demo.svc.cluster.local:9876 \
+  -b $(hostname -i):10911 2>/dev/null | grep enableMultiDispatch'
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+enableMultiDispatch=true
+```
+</details>
+
+## Revert a Parameter
+
+Set the parameter back to its default value:
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: rocketmq-reconfiguring-revert
+  namespace: demo
+spec:
+  type: Reconfiguring
+  clusterName: rocketmq-cluster
+  reconfigures:
+    - componentName: broker
+      parameters:
+        - key: enableMultiDispatch
+          value: "false"
+EOF
+```
+
+## Cleanup
+
+```bash
+kubectl delete opsrequest rocketmq-reconfiguring rocketmq-reconfiguring-revert -n demo --ignore-not-found
+```

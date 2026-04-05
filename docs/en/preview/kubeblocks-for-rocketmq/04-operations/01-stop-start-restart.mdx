@@ -1,0 +1,128 @@
+---
+title: Stop, Start, and Restart a RocketMQ Cluster
+description: Learn how to stop, start, and restart RocketMQ clusters managed by KubeBlocks.
+keywords: [KubeBlocks, RocketMQ, stop, start, restart]
+sidebar_position: 1
+sidebar_label: Stop / Start / Restart
+---
+
+# Stop, Start, and Restart a RocketMQ Cluster
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+## Stop the Cluster
+
+Stopping a cluster suspends all pods while retaining PVCs and data. This is useful for saving compute costs during idle periods.
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: rocketmq-stop
+  namespace: demo
+spec:
+  clusterName: rocketmq-cluster
+  type: Stop
+EOF
+```
+
+Monitor progress:
+
+```bash
+kubectl get cluster rocketmq-cluster -n demo -w
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME               CLUSTER-DEFINITION   TERMINATION-POLICY   STATUS     AGE
+rocketmq-cluster   rocketmq             Delete               Stopping   10s
+rocketmq-cluster   rocketmq             Delete               Stopped    45s
+```
+</details>
+
+All pods are terminated while PVCs remain intact.
+
+## Start the Cluster
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: rocketmq-start
+  namespace: demo
+spec:
+  clusterName: rocketmq-cluster
+  type: Start
+EOF
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME               CLUSTER-DEFINITION   TERMINATION-POLICY   STATUS    AGE
+rocketmq-cluster   rocketmq             Delete               Running   2m
+```
+</details>
+
+## Restart a Component
+
+You can restart individual components without affecting the others. For example, restart the NameServer:
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: rocketmq-restart-namesrv
+  namespace: demo
+spec:
+  clusterName: rocketmq-cluster
+  type: Restart
+  restart:
+    - componentName: namesrv
+EOF
+```
+
+To restart the broker, use the sharding group name `broker`:
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: rocketmq-restart-broker
+  namespace: demo
+spec:
+  clusterName: rocketmq-cluster
+  type: Restart
+  restart:
+    - componentName: broker
+EOF
+```
+
+Monitor the OpsRequest:
+
+```bash
+kubectl get opsrequest -n demo -w
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                       TYPE      CLUSTER            STATUS    PROGRESS   AGE
+rocketmq-restart-namesrv   Restart   rocketmq-cluster   Succeed   1/1        30s
+```
+</details>
+
+## Cleanup
+
+```bash
+kubectl delete opsrequest rocketmq-stop rocketmq-start rocketmq-restart-namesrv -n demo --ignore-not-found
+```

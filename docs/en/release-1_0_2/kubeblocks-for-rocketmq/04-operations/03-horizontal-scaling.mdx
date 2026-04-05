@@ -1,0 +1,113 @@
+---
+title: Horizontal Scaling for RocketMQ
+description: Learn how to scale out or scale in RocketMQ NameServer replicas in KubeBlocks.
+keywords: [KubeBlocks, RocketMQ, horizontal scaling, scale out, scale in]
+sidebar_position: 3
+sidebar_label: Horizontal Scaling
+---
+
+# Horizontal Scaling for RocketMQ
+
+Horizontal scaling changes the number of pod replicas for a component. KubeBlocks supports scaling the **NameServer** component. Broker scaling uses the sharding model (see note below).
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+## Scale Out the NameServer
+
+Add one more NameServer replica:
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: rocketmq-name-server-scale-out
+  namespace: demo
+spec:
+  clusterName: rocketmq-cluster
+  type: HorizontalScaling
+  horizontalScaling:
+    - componentName: namesrv
+      scaleOut:
+        replicaChanges: 1
+EOF
+```
+
+Monitor progress:
+
+```bash
+kubectl get opsrequest rocketmq-name-server-scale-out -n demo -w
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                              TYPE                CLUSTER            STATUS    PROGRESS   AGE
+rocketmq-name-server-scale-out   HorizontalScaling   rocketmq-cluster   Succeed   1/1        30s
+```
+</details>
+
+Verify the new replica count:
+
+```bash
+kubectl get pods -n demo -l app.kubernetes.io/instance=rocketmq-cluster \
+  -l apps.kubeblocks.io/component-name=namesrv
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                         READY   STATUS    RESTARTS   AGE
+rocketmq-cluster-namesrv-0   2/2     Running   0          10m
+rocketmq-cluster-namesrv-1   2/2     Running   0          1m
+```
+</details>
+
+## Scale In the NameServer
+
+Remove one NameServer replica:
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: rocketmq-name-server-scale-in
+  namespace: demo
+spec:
+  clusterName: rocketmq-cluster
+  type: HorizontalScaling
+  horizontalScaling:
+    - componentName: namesrv
+      scaleIn:
+        replicaChanges: 1
+EOF
+```
+
+Monitor progress:
+
+```bash
+kubectl get opsrequest rocketmq-name-server-scale-in -n demo -w
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                             TYPE                CLUSTER            STATUS    PROGRESS   AGE
+rocketmq-name-server-scale-in   HorizontalScaling   rocketmq-cluster   Succeed   1/1        25s
+```
+</details>
+
+:::note
+**Broker shards cannot be scaled via HorizontalScaling OpsRequest.** To add more broker capacity, change `shards` in the Cluster spec directly. Increasing `replicas` within a shard (master + slave) must also be done via the Cluster spec, not OpsRequest.
+:::
+
+## Cleanup
+
+```bash
+kubectl delete opsrequest rocketmq-name-server-scale-out rocketmq-name-server-scale-in -n demo --ignore-not-found
+```
