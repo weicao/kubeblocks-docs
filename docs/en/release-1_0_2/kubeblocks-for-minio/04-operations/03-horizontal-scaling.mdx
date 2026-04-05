@@ -1,0 +1,56 @@
+---
+title: Horizontal Scaling for MinIO
+description: Learn how to add MinIO nodes in KubeBlocks.
+keywords: [KubeBlocks, MinIO, horizontal scaling, replicas]
+sidebar_position: 3
+sidebar_label: Horizontal Scaling
+---
+
+# Horizontal Scaling for MinIO
+
+MinIO uses distributed erasure coding and supports **scale-out only**. Each scale-out adds a new pool; each pool requires a minimum of 2 nodes.
+
+:::caution
+MinIO does not support scale-in. Once nodes are added to a distributed pool, they cannot be removed. KubeBlocks blocks scale-in OpsRequests for MinIO — any attempt will remain in `Running` state indefinitely without removing any nodes or data.
+:::
+
+## Scale Out
+
+Add 2 replicas (e.g., from 2 to 4):
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: minio-scale-out
+  namespace: demo
+spec:
+  clusterName: minio-cluster
+  type: HorizontalScaling
+  horizontalScaling:
+    - componentName: minio
+      scaleOut:
+        replicaChanges: 2
+EOF
+```
+
+Monitor progress:
+
+```bash
+kubectl get opsrequest minio-scale-out -n demo -w
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME              TYPE                CLUSTER         STATUS    PROGRESS   AGE
+minio-scale-out   HorizontalScaling   minio-cluster   Succeed   2/2        2m
+```
+</details>
+
+## Cleanup
+
+```bash
+kubectl delete opsrequest minio-scale-out -n demo --ignore-not-found
+```

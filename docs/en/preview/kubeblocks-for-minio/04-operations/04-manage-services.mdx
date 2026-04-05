@@ -1,0 +1,106 @@
+---
+title: Manage Services for MinIO
+description: Learn how to expose MinIO services externally in KubeBlocks.
+keywords: [KubeBlocks, MinIO, expose, service, LoadBalancer, NodePort]
+sidebar_position: 4
+sidebar_label: Manage Services
+---
+
+# Manage Services for MinIO
+
+By default, MinIO services are only accessible within the cluster. Use an OpsRequest to expose the S3 API or Web Console externally.
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+:::note
+A LoadBalancer requires cloud provider support. On bare-metal or local clusters, use `serviceType: NodePort` instead and remove the `annotations` block.
+:::
+
+## Expose MinIO Externally
+
+Expose the S3 API port (9000) via NodePort:
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: minio-expose-enable
+  namespace: demo
+spec:
+  type: Expose
+  clusterName: minio-cluster
+  expose:
+    - componentName: minio
+      services:
+        - name: internet
+          serviceType: NodePort
+          roleSelector: readwrite
+          ports:
+            - name: api
+              port: 9000
+              targetPort: api
+      switch: Enable
+EOF
+```
+
+Monitor progress:
+
+```bash
+kubectl get opsrequest minio-expose-enable -n demo -w
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                   TYPE     CLUSTER         STATUS    PROGRESS   AGE
+minio-expose-enable    Expose   minio-cluster   Succeed   1/1        15s
+```
+</details>
+
+Get the external endpoint:
+
+```bash
+kubectl get service -n demo -l app.kubernetes.io/instance=minio-cluster
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)           AGE
+minio-cluster-minio          ClusterIP   10.100.xx.xx    <none>        9000/TCP,9001/TCP 5m
+minio-cluster-minio-headless ClusterIP   None            <none>        9000/TCP,9001/TCP 5m
+minio-cluster-minio-internet NodePort    10.100.yy.yy    <none>        9000:3xxxx/TCP    15s
+```
+</details>
+
+## Disable External Access
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: minio-expose-disable
+  namespace: demo
+spec:
+  type: Expose
+  clusterName: minio-cluster
+  expose:
+    - componentName: minio
+      services:
+        - name: internet
+          serviceType: NodePort
+      switch: Disable
+EOF
+```
+
+## Cleanup
+
+```bash
+kubectl delete opsrequest minio-expose-enable minio-expose-disable -n demo --ignore-not-found
+```

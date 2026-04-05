@@ -1,0 +1,60 @@
+---
+title: Vertical Scaling for MinIO
+description: Learn how to adjust CPU and memory resources for a MinIO cluster in KubeBlocks.
+keywords: [KubeBlocks, MinIO, vertical scaling, CPU, memory]
+sidebar_position: 2
+sidebar_label: Vertical Scaling
+---
+
+# Vertical Scaling for MinIO
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+## Scale Up Resources
+
+Increase CPU and memory for all MinIO pods:
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: minio-vscale
+  namespace: demo
+spec:
+  clusterName: minio-cluster
+  type: VerticalScaling
+  verticalScaling:
+    - componentName: minio
+      requests:
+        cpu: "2"
+        memory: "2Gi"
+      limits:
+        cpu: "2"
+        memory: "2Gi"
+EOF
+```
+
+Monitor progress:
+
+```bash
+kubectl get opsrequest minio-vscale -n demo -w
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME           TYPE              CLUSTER         STATUS    PROGRESS   AGE
+minio-vscale   VerticalScaling   minio-cluster   Succeed   2/2        90s
+```
+</details>
+
+## Cleanup
+
+```bash
+kubectl delete opsrequest minio-vscale -n demo --ignore-not-found
+```

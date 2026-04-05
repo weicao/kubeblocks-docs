@@ -1,0 +1,53 @@
+---
+title: KubeBlocks for MinIO Overview
+description: Overview of the MinIO addon for KubeBlocks, including features, architecture, and supported versions.
+keywords: [KubeBlocks, MinIO, object storage, S3, overview]
+sidebar_position: 1
+sidebar_label: Overview
+---
+
+# KubeBlocks for MinIO Overview
+
+MinIO is a high-performance, Kubernetes-native object storage system compatible with the Amazon S3 API. KubeBlocks manages MinIO as a stateful distributed cluster with automatic credential management, health checking, and lifecycle operations.
+
+## Architecture
+
+MinIO runs in distributed erasure coding mode where all replicas form a single pool:
+
+- Each replica is a MinIO server node
+- Data is striped across all nodes using erasure coding for redundancy
+- All nodes must be running for writes; reads tolerate up to N/2 failures
+- The S3 API (port 9000) and Web Console (port 9001) are exposed as services
+
+:::note
+MinIO requires a **minimum of 2 replicas**. For production, use at least 4 replicas distributed across multiple Kubernetes nodes.
+:::
+
+## Supported Versions
+
+| Version | Notes |
+|---------|-------|
+| 2025.10.15 | Default |
+| 2024.6.29 | |
+
+:::note
+Starting from the 2025 release, MinIO uses source-only distribution. KubeBlocks uses the `coollabsio/minio` community-maintained image which provides pre-built binaries.
+:::
+
+## Features
+
+- **S3-compatible API** — Drop-in replacement for Amazon S3
+- **Web Console** — Browser-based management UI on port 9001
+- **Auto credential management** — Root credentials generated and stored as a Kubernetes Secret
+- **Horizontal scale-out** — Add nodes to grow storage and throughput capacity
+- **Vertical scaling** — Adjust CPU and memory
+- **TLS encryption** — Optional TLS for both API and console
+- **Prometheus metrics** — Built-in metrics at `/minio/v2/metrics/cluster`
+- **Initial bucket creation** — Automatically create buckets on startup via `MINIO_BUCKETS` env var
+
+## Limitations
+
+- **Scale-in not supported** — Once nodes are added, they cannot be removed. KubeBlocks blocks scale-in OpsRequests to prevent data loss.
+- **Minimum 2 replicas per pool** — Each scale-out adds a new pool; each pool requires at least 2 nodes
+- **No parameter reconfiguration** — Server configuration changes require cluster rebuild
+- **No switchover** — Distributed object store; all nodes are peers

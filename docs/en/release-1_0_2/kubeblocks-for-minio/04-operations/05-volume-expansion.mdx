@@ -1,0 +1,78 @@
+---
+title: Volume Expansion for MinIO
+description: Learn how to expand storage for a MinIO cluster in KubeBlocks.
+keywords: [KubeBlocks, MinIO, volume expansion, storage]
+sidebar_position: 5
+sidebar_label: Volume Expansion
+---
+
+# Volume Expansion for MinIO
+
+Increase the storage capacity of each MinIO node's data volume.
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+:::note
+Volume expansion requires the StorageClass to support `allowVolumeExpansion: true`. The new storage size must be larger than the current size; shrinking is not supported.
+:::
+
+## Expand Storage
+
+Expand the data volume from 20Gi to 30Gi:
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: minio-volume-expand
+  namespace: demo
+spec:
+  clusterName: minio-cluster
+  type: VolumeExpansion
+  volumeExpansion:
+    - componentName: minio
+      volumeClaimTemplates:
+        - name: data
+          storage: "30Gi"
+EOF
+```
+
+Monitor progress:
+
+```bash
+kubectl get opsrequest minio-volume-expand -n demo -w
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                  TYPE              CLUSTER         STATUS    PROGRESS   AGE
+minio-volume-expand   VolumeExpansion   minio-cluster   Succeed   2/2        71s
+```
+</details>
+
+Verify the PVC sizes have been updated:
+
+```bash
+kubectl get pvc -n demo -l app.kubernetes.io/instance=minio-cluster
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                         STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS    AGE
+data-minio-cluster-minio-0   Bound    pvc-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx   30Gi       RWO            kb-default-sc   10m
+data-minio-cluster-minio-1   Bound    pvc-yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy   30Gi       RWO            kb-default-sc   10m
+```
+</details>
+
+## Cleanup
+
+```bash
+kubectl delete opsrequest minio-volume-expand -n demo --ignore-not-found
+```

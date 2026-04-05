@@ -1,0 +1,86 @@
+---
+title: Integrate MinIO with Prometheus Operator
+description: Learn how to configure Prometheus monitoring for MinIO clusters managed by KubeBlocks.
+keywords: [KubeBlocks, MinIO, Prometheus, monitoring, PodMonitor, metrics]
+sidebar_position: 1
+sidebar_label: Prometheus Integration
+---
+
+# Integrate MinIO with Prometheus Operator
+
+MinIO clusters managed by KubeBlocks expose Prometheus metrics at `/minio/v2/metrics/cluster` on port `9000` (`api`). Authentication is disabled (`MINIO_PROMETHEUS_AUTH_TYPE=public`).
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+- Prometheus Operator installed in your cluster
+- Prometheus configured with `podMonitorSelector` matching label `release: prometheus`
+
+## Create a PodMonitor
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: minio-pod-monitor
+  namespace: demo
+  labels:
+    release: prometheus
+spec:
+  jobLabel: app.kubernetes.io/managed-by
+  podTargetLabels:
+    - app.kubernetes.io/instance
+    - app.kubernetes.io/managed-by
+    - apps.kubeblocks.io/component-name
+    - apps.kubeblocks.io/pod-name
+  podMetricsEndpoints:
+    - path: /minio/v2/metrics/cluster
+      port: api
+      scheme: http
+  namespaceSelector:
+    matchNames:
+      - demo
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: minio-cluster
+EOF
+```
+
+Verify the PodMonitor is created:
+
+```bash
+kubectl get podmonitor minio-pod-monitor -n demo
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                 AGE
+minio-pod-monitor    10s
+```
+</details>
+
+## Key Metrics
+
+| Metric | Description |
+|--------|-------------|
+| `minio_bucket_objects_count` | Number of objects in a bucket |
+| `minio_bucket_usage_total_bytes` | Total bytes used per bucket |
+| `minio_cluster_capacity_raw_total_bytes` | Total raw cluster capacity |
+| `minio_cluster_capacity_usable_total_bytes` | Total usable cluster capacity |
+| `minio_cluster_capacity_usable_free_bytes` | Available usable capacity |
+| `minio_node_disk_total_bytes` | Total disk capacity per node |
+| `minio_s3_requests_total` | Total S3 API requests |
+| `minio_s3_errors_total` | Total S3 API errors |
+| `minio_s3_traffic_received_bytes` | Bytes received via S3 |
+| `minio_s3_traffic_sent_bytes` | Bytes sent via S3 |
+
+## Cleanup
+
+```bash
+kubectl delete podmonitor minio-pod-monitor -n demo --ignore-not-found
+```
