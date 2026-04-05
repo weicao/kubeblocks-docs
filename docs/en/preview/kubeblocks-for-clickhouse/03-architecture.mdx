@@ -1,0 +1,89 @@
+---
+title: ClickHouse Architecture in KubeBlocks
+description: Learn how KubeBlocks deploys and manages ClickHouse clusters on Kubernetes, including the resource hierarchy, pod layout, ZooKeeper-based coordination, and traffic routing.
+keywords: [ClickHouse, KubeBlocks, architecture, Kubernetes, ZooKeeper, sharding, replication]
+sidebar_position: 3
+sidebar_label: Architecture
+---
+
+# ClickHouse Architecture in KubeBlocks
+
+This page describes how KubeBlocks deploys a ClickHouse cluster on Kubernetes — covering the resource hierarchy, pod internals, distributed coordination via ZooKeeper, and traffic routing.
+
+## Resource Hierarchy
+
+KubeBlocks models a ClickHouse cluster as a hierarchy of Kubernetes custom resources:
+
+```
+Cluster  →  Component  →  InstanceSet  →  Pod × N
+```
+
+| Resource | Role |
+|----------|------|
+| **Cluster** | User-facing declaration — specifies topology, shards, replicas, storage, and resources |
+| **Component** | Generated automatically; references a `ComponentDefinition` that describes container specs, lifecycle actions, and services |
+| **InstanceSet** | KubeBlocks custom workload (replaces `StatefulSet`); manages pods with stable identities and role awareness |
+| **Pod** | Actual running instance; each pod gets a unique ordinal and its own PVC |
+
+A typical ClickHouse deployment includes two component types: the **ClickHouse** component (data nodes) and a **ZooKeeper** component (coordination). Each ClickHouse shard may have one or more replicas.
+
+## Containers Inside Each Pod
+
+Every ClickHouse data pod runs three containers:
+
+| Container | Port | Purpose |
+|-----------|------|---------|
+| `clickhouse` | 8123 (HTTP), 9000 (TCP native) | ClickHouse database engine handling queries and replication |
+| `kbagent` | 5001 | Role probe endpoint — KubeBlocks queries `GET /v1.0/getrole` periodically |
+| `metrics-exporter` | 9187 | Prometheus metrics exporter |
+
+Each pod mounts its own **PVC** for the ClickHouse data directory (`/var/lib/clickhouse`), providing independent persistent storage per replica.
+
+## Distributed Coordination via ZooKeeper
+
+ClickHouse uses **ZooKeeper** for distributed coordination across replicas and shards. ZooKeeper is deployed as a separate KubeBlocks Component within the same Cluster:
+
+| ZooKeeper Role | Purpose |
+|----------------|---------|
+| **Replica synchronization** | Coordinates data part replication between replicas of the same shard |
+| **DDL replication** | Distributes schema changes (`CREATE`, `DROP`, `ALTER`) across the cluster |
+| **Distributed query coordination** | Tracks which parts exist on which replicas for query planning |
+| **Leader state** | Maintains metadata for `ReplicatedMergeTree` and other replicated table engines |
+
+ClickHouse data pods connect to ZooKeeper using the `{cluster}-zookeeper` service. The ZooKeeper ensemble itself follows a majority-quorum protocol (typically 3 nodes) to remain available during single-node failures.
+
+## Sharding and Replication
+
+ClickHouse achieves horizontal scale-out through **sharding** and within-shard **replication**:
+
+| Concept | Description |
+|---------|-------------|
+| **Shard** | A subset of data; different shards hold different rows of the same table |
+| **Replica** | A full copy of a shard's data stored on a separate pod; provides redundancy |
+| **Distributed table** | A virtual table that fans queries out to all shards and aggregates results |
+| **ReplicatedMergeTree** | Table engine used on each shard replica; ZooKeeper tracks parts across replicas |
+
+When a replica fails, ZooKeeper detects the absence of its heartbeat. When the replica recovers, it fetches missing parts from other replicas automatically — no manual intervention required.
+
+## Traffic Routing
+
+KubeBlocks creates two services for each ClickHouse component:
+
+| Service | Type | Ports | Selector |
+|---------|------|-------|----------|
+| `{cluster}-clickhouse` | ClusterIP | 8123 (HTTP), 9000 (TCP) | all pods in the component |
+| `{cluster}-clickhouse-headless` | Headless | — | all pods |
+
+Because all replicas in a shard can serve reads and the Distributed table engine handles query routing internally, the ClusterIP service forwards to any available pod. For direct pod addressing (e.g., replication traffic between replicas), pods communicate using the headless service DNS:
+
+```
+{pod-name}.{cluster}-clickhouse-headless.{namespace}.svc.cluster.local
+```
+
+## System Accounts
+
+KubeBlocks automatically manages the following ClickHouse system account. Passwords are auto-generated and stored in a Secret named `{cluster}-{component}-account-{name}`.
+
+| Account | Role | Purpose |
+|---------|------|---------|
+| `default` | Admin (superuser) | Default ClickHouse administrative account used for cluster setup, DDL operations, and inter-replica communication |

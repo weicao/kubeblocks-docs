@@ -1,0 +1,91 @@
+---
+title: Kafka Architecture in KubeBlocks
+description: Learn how KubeBlocks deploys and manages Apache Kafka clusters on Kubernetes, including the resource hierarchy, pod layout, KRaft mode, and partition leader election.
+keywords: [Kafka, KubeBlocks, architecture, Kubernetes, KRaft, high availability, partition leader, broker]
+sidebar_position: 3
+sidebar_label: Architecture
+---
+
+# Kafka Architecture in KubeBlocks
+
+This page describes how KubeBlocks deploys an Apache Kafka cluster on Kubernetes — covering the resource hierarchy, pod internals, KRaft-based consensus, and traffic routing.
+
+## Resource Hierarchy
+
+KubeBlocks models a Kafka cluster as a hierarchy of Kubernetes custom resources:
+
+```
+Cluster  →  Component  →  InstanceSet  →  Pod × N
+```
+
+| Resource | Role |
+|----------|------|
+| **Cluster** | User-facing declaration — specifies topology, broker count, controller count, storage, and resources |
+| **Component** | Generated automatically; references a `ComponentDefinition` describing container specs, lifecycle actions, and services |
+| **InstanceSet** | KubeBlocks custom workload (replaces `StatefulSet`); manages pods with stable identities and role awareness |
+| **Pod** | Actual running Kafka node; each pod gets a unique ordinal and its own PVC |
+
+KubeBlocks supports Kafka in **KRaft mode** (Kafka Raft Metadata), which eliminates the dependency on an external ZooKeeper ensemble. Nodes can serve as **brokers**, **controllers**, or **combined** (both roles) depending on the chosen topology.
+
+## Containers Inside Each Pod
+
+Every Kafka pod runs three containers:
+
+| Container | Port | Purpose |
+|-----------|------|---------|
+| `kafka` | 9092 (broker plaintext), 9093 (controller quorum) | Kafka node serving producer/consumer traffic and/or participating in KRaft metadata consensus |
+| `kbagent` | 5001 | Role probe endpoint — KubeBlocks queries `GET /v1.0/getrole` periodically |
+| `metrics-exporter` | 9187 | Prometheus metrics exporter (JMX-based) |
+
+Each pod mounts its own **PVC** for the Kafka log directory (`/var/lib/kafka/data`), providing independent persistent storage per broker.
+
+## KRaft Mode: No ZooKeeper Required
+
+Since Kafka 3.3 (KIP-833), the KRaft metadata quorum fully replaces ZooKeeper. KubeBlocks deploys Kafka exclusively in KRaft mode:
+
+| KRaft Concept | Description |
+|---------------|-------------|
+| **Controller quorum** | A set of controller nodes runs Raft consensus to manage cluster metadata (topic configs, partition assignments, ISR lists) |
+| **Active controller** | The Raft leader among controllers; all metadata writes go through it |
+| **Broker** | Stores partition log data and serves producer/consumer requests; fetches metadata from the active controller |
+| **Combined node** | Runs both controller and broker roles; suitable for smaller clusters |
+| **Metadata log** | An internal Kafka topic (`__cluster_metadata`) replicated by the controller quorum; brokers tail this log to stay current |
+
+The controller quorum requires a majority of controller nodes to be available for metadata operations. A quorum of 3 controllers tolerates 1 failure; 5 controllers tolerate 2.
+
+## Partition Leader Election
+
+Kafka data availability is governed by per-partition leader election:
+
+| Concept | Description |
+|---------|-------------|
+| **Partition leader** | The single broker responsible for all reads and writes for a given partition |
+| **Follower replicas** | Brokers that replicate from the leader; form the In-Sync Replica (ISR) set |
+| **ISR (In-Sync Replicas)** | Replicas fully caught up with the leader; only ISR members are eligible to become leader |
+| **Leader election** | When the leader broker fails, the active controller selects a new leader from the ISR set |
+| **Unclean leader election** | Disabled by default; enabling it risks data loss but speeds recovery when the ISR is empty |
+
+## Traffic Routing
+
+KubeBlocks creates two services for each Kafka cluster:
+
+| Service | Type | Ports | Selector |
+|---------|------|-------|----------|
+| `{cluster}-kafka-broker` | ClusterIP | 9092 (broker) | all broker pods |
+| `{cluster}-kafka-headless` | Headless | 9092, 9093 | all pods |
+
+Kafka clients initially connect to any broker (via the ClusterIP service) to fetch cluster metadata, then connect directly to partition leaders using the headless service addresses. Each broker advertises its stable pod DNS name as its listener address so clients can route directly:
+
+```
+{pod-name}.{cluster}-kafka-headless.{namespace}.svc.cluster.local:9092
+```
+
+## Automatic Failover
+
+When a Kafka broker or controller fails:
+
+1. **Broker failure** — the active controller detects the broker's session timeout and removes it from ISR lists
+2. **Partition leader election** — for each partition where the failed broker was leader, the controller elects a new leader from the remaining ISR members
+3. **Producer/consumer continuity** — clients refresh metadata and reconnect to new partition leaders; brief retries are normal
+4. **Controller failure** — if a controller node fails, the remaining controller quorum elects a new active controller via Raft within seconds
+5. **KubeBlocks recovery** — KubeBlocks restarts the failed pod; on startup, the broker fetches metadata from the controller quorum and resumes replication

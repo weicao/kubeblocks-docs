@@ -1,0 +1,92 @@
+---
+title: etcd Architecture in KubeBlocks
+description: Learn how KubeBlocks deploys and manages etcd clusters on Kubernetes, including the resource hierarchy, pod layout, Raft consensus, and automatic leader election.
+keywords: [etcd, KubeBlocks, architecture, Kubernetes, Raft, high availability, leader election]
+sidebar_position: 3
+sidebar_label: Architecture
+---
+
+# etcd Architecture in KubeBlocks
+
+This page describes how KubeBlocks deploys an etcd cluster on Kubernetes — covering the resource hierarchy, pod internals, Raft-based consensus, and traffic routing.
+
+## Resource Hierarchy
+
+KubeBlocks models an etcd cluster as a hierarchy of Kubernetes custom resources:
+
+```
+Cluster  →  Component  →  InstanceSet  →  Pod × N
+```
+
+| Resource | Role |
+|----------|------|
+| **Cluster** | User-facing declaration — specifies the number of etcd members, storage size, and resources |
+| **Component** | Generated automatically; references a `ComponentDefinition` that describes container specs, lifecycle actions, and services |
+| **InstanceSet** | KubeBlocks custom workload (replaces `StatefulSet`); manages pods with stable identities and role awareness |
+| **Pod** | Actual running etcd member; each pod gets a unique ordinal, a stable DNS name, and its own PVC |
+
+etcd requires an **odd number of members** (typically 3 or 5) to maintain a quorum. KubeBlocks enforces this constraint during cluster provisioning and scaling.
+
+## Containers Inside Each Pod
+
+Every etcd pod runs three containers:
+
+| Container | Port | Purpose |
+|-----------|------|---------|
+| `etcd` | 2379 (client), 2380 (peer) | etcd member serving client requests and participating in Raft consensus |
+| `kbagent` | 5001 | Role probe endpoint — KubeBlocks queries `GET /v1.0/getrole` periodically to identify leader vs. follower |
+| `metrics-exporter` | 9187 | Prometheus metrics exporter (also accessible on etcd's built-in `/metrics` endpoint on port 2381) |
+
+Each pod mounts its own **PVC** for the etcd data directory (`/var/lib/etcd/data`), ensuring member data survives pod restarts.
+
+## High Availability via Raft Consensus
+
+etcd achieves HA through the **Raft consensus algorithm**, which guarantees linearizable reads and writes across a majority of cluster members:
+
+| Raft Concept | Description |
+|-------------|-------------|
+| **Leader** | Receives all client write requests; replicates log entries to followers before acknowledging |
+| **Follower** | Replicates the leader's log; forwards client reads (or returns the leader's address) |
+| **Candidate** | Temporarily assumes this role during a leader election after a heartbeat timeout |
+| **Quorum** | A majority (`(N/2) + 1`) of members must acknowledge a log entry before it is committed |
+
+A cluster of 3 members can tolerate **1 failure**; a cluster of 5 members can tolerate **2 failures**.
+
+### Leader Election
+
+When the leader pod fails or becomes unreachable:
+
+1. Followers detect the missing heartbeat after the election timeout (default 500–1000 ms)
+2. One follower increments its term and transitions to Candidate, requesting votes from peers
+3. The Candidate that collects a quorum of votes becomes the new leader
+4. The new leader immediately begins sending heartbeats and resumes write operations
+
+Total election time is typically **1–3 seconds** under normal network conditions.
+
+## Traffic Routing
+
+KubeBlocks creates two services for each etcd cluster:
+
+| Service | Type | Port | Selector |
+|---------|------|------|----------|
+| `{cluster}-etcd` | ClusterIP | 2379 (client) | `kubeblocks.io/role=leader` |
+| `{cluster}-etcd-headless` | Headless | 2379, 2380 | all pods |
+
+The ClusterIP service uses `roleSelector: leader` so that client traffic always reaches the current etcd leader. KubeBlocks probes each pod via `kbagent` and updates the `kubeblocks.io/role` label accordingly; the service Endpoints are updated automatically when leadership changes.
+
+Peer-to-peer Raft traffic (port 2380) flows over the headless service, where each member is addressed by its stable pod DNS name:
+
+```
+{pod-name}.{cluster}-etcd-headless.{namespace}.svc.cluster.local:2380
+```
+
+## Automatic Failover
+
+When an etcd member fails, the cluster responds without any manual intervention:
+
+1. **Member becomes unreachable** — remaining members detect the missing heartbeat
+2. **Raft election** — if the lost member was the leader, a new election completes in seconds
+3. **Writes resume** — the new leader processes client requests as long as quorum is maintained
+4. **KubeBlocks detects role change** — the `kbagent` probe returns the new leader; pod labels are updated
+5. **Service Endpoints switch** — the ClusterIP service automatically routes to the new leader pod
+6. **Member recovery** — when the failed pod restarts, it rejoins the cluster and replays missed log entries from the leader

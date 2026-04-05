@@ -1,0 +1,94 @@
+---
+title: MongoDB High Availability Architecture in KubeBlocks
+description: Learn how KubeBlocks deploys and manages MongoDB replica sets on Kubernetes, including the resource hierarchy, pod layout, replica set protocol, traffic routing, and automatic failover.
+keywords: [MongoDB, KubeBlocks, high availability, replica set, architecture, Kubernetes, failover]
+sidebar_position: 3.5
+sidebar_label: Architecture
+---
+
+# MongoDB High Availability Architecture in KubeBlocks
+
+This page describes how KubeBlocks deploys a MongoDB replica set on Kubernetes — covering the resource hierarchy, pod internals, replica set HA protocol, traffic routing, and automatic failover.
+
+## Resource Hierarchy
+
+KubeBlocks models a MongoDB cluster as a hierarchy of Kubernetes custom resources:
+
+```
+Cluster  →  Component  →  InstanceSet  →  Pod × N
+```
+
+| Resource | Role |
+|----------|------|
+| **Cluster** | User-facing declaration — specifies topology, replica count, storage size, and resources |
+| **Component** | Generated automatically; references a `ComponentDefinition` that describes container specs, lifecycle actions, and services |
+| **InstanceSet** | KubeBlocks custom workload (replaces `StatefulSet`); manages pods with stable identities and role awareness |
+| **Pod** | Actual running MongoDB instance; each pod gets a unique ordinal and its own PVC |
+
+## Containers Inside Each Pod
+
+Every MongoDB pod runs three containers:
+
+| Container | Port | Purpose |
+|-----------|------|---------|
+| `mongodb` | 27017 (MongoDB wire protocol) | MongoDB database engine; participates in replica set replication and election |
+| `kbagent` | 5001 | Role probe endpoint — KubeBlocks queries `GET /v1.0/getrole` every second to determine primary vs. secondary |
+| `metrics-exporter` | 9187 | Prometheus metrics exporter |
+
+Each pod mounts its own **PVC** for the MongoDB data directory (`/data/db`), providing independent persistent storage per replica.
+
+## High Availability via MongoDB Replica Set Protocol
+
+KubeBlocks deploys MongoDB as a **replica set** — a group of `mongod` instances that maintain the same dataset using MongoDB's built-in oplog-based replication:
+
+| Replica Set Concept | Description |
+|--------------------|-------------|
+| **Primary** | Receives all write operations; records changes to the oplog; at most one primary exists at a time |
+| **Secondary** | Replicates the primary's oplog asynchronously; can serve read operations when `readPreference` is set accordingly |
+| **Arbiter** | Participates in elections but holds no data; used to achieve an odd number of voting members without additional storage cost |
+| **Oplog** | A capped collection (`local.oplog.rs`) that records all write operations; secondaries tail this to stay in sync |
+| **Election protocol** | Raft-based; a primary is elected when a majority of voting members agree; requires `(N/2 + 1)` votes |
+
+A replica set of 3 members (1 primary + 2 secondaries) tolerates **1 failure** and maintains a voting majority.
+
+## Traffic Routing
+
+KubeBlocks creates two services for each MongoDB cluster:
+
+| Service | Type | Port | Selector |
+|---------|------|------|----------|
+| `{cluster}-mongodb` | ClusterIP | 27017 | `kubeblocks.io/role=primary` |
+| `{cluster}-mongodb-headless` | Headless | 27017 | all pods |
+
+The key mechanism is `roleSelector: primary` on the ClusterIP service. KubeBlocks probes each pod via `kbagent` every second and updates the pod label `kubeblocks.io/role`. The service Endpoints always point at the current primary — no VIP or external load balancer required.
+
+- **Write traffic**: connect to `{cluster}-mongodb:27017`
+- **Direct replica access** (for read replicas or replica set health): use the headless service DNS `{pod-name}.{cluster}-mongodb-headless.{namespace}.svc.cluster.local:27017`
+
+## Automatic Failover
+
+When the primary pod fails, the following sequence restores write access automatically:
+
+1. **Primary becomes unreachable** — secondaries stop receiving heartbeats
+2. **Election triggered** — after the `electionTimeoutMillis` (default 10 s), an eligible secondary calls for a new election
+3. **Voting** — each secondary votes for the candidate with the most up-to-date oplog position; the candidate that collects a majority of votes wins
+4. **New primary elected** — the winner steps up, rolls back any uncommitted writes, and begins accepting new writes
+5. **KubeBlocks detects role change** — `kbagent` probe returns `primary` for the new winner; pod labels are updated
+6. **Service Endpoints switch** — the ClusterIP service routes traffic to the new primary
+
+Total failover time is typically within **10–30 seconds**, bounded by the election timeout and oplog catch-up time.
+
+For a **planned switchover**, KubeBlocks calls `rs.stepDown()` on the current primary via `kbagent`, triggering a graceful election with no data loss.
+
+## System Accounts
+
+KubeBlocks automatically creates and manages the following MongoDB system accounts. Passwords are auto-generated and stored in Secrets named `{cluster}-{component}-account-{name}`.
+
+| Account | Role | Purpose |
+|---------|------|---------|
+| `root` | Superuser | Default administrative account; full access to all databases |
+| `kbadmin` | Superuser | KubeBlocks internal management operations |
+| `kbdataprotection` | Admin | Backup and restore operations via `mongodump`/`mongorestore` |
+| `kbprobe` | Monitor (read-only) | Health check queries; used by `kbagent` for role detection |
+| `kbmonitoring` | Monitor | Prometheus metrics collection via `mongodb_exporter` |
+| `kbreplicator` | Replication | Manages oplog tailing for replica set synchronization |

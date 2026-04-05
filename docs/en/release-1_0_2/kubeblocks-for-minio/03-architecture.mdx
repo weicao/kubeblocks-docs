@@ -1,0 +1,91 @@
+---
+title: MinIO Architecture in KubeBlocks
+description: Learn how KubeBlocks deploys and manages MinIO distributed object storage on Kubernetes, including the resource hierarchy, pod layout, erasure coding, and data durability.
+keywords: [MinIO, KubeBlocks, architecture, Kubernetes, erasure coding, object storage, distributed]
+sidebar_position: 3
+sidebar_label: Architecture
+---
+
+# MinIO Architecture in KubeBlocks
+
+This page describes how KubeBlocks deploys a MinIO distributed object storage cluster on Kubernetes — covering the resource hierarchy, pod internals, erasure coding, and traffic routing.
+
+## Resource Hierarchy
+
+KubeBlocks models a MinIO cluster as a hierarchy of Kubernetes custom resources:
+
+```
+Cluster  →  Component  →  InstanceSet  →  Pod × N
+```
+
+| Resource | Role |
+|----------|------|
+| **Cluster** | User-facing declaration — specifies the number of server nodes, drives per node, storage size, and resources |
+| **Component** | Generated automatically; references a `ComponentDefinition` that describes container specs, lifecycle actions, and services |
+| **InstanceSet** | KubeBlocks custom workload (replaces `StatefulSet`); manages pods with stable identities |
+| **Pod** | Actual running MinIO server node; each pod gets a unique ordinal and its own PVC |
+
+MinIO requires a minimum of **4 pods** (nodes) for a distributed deployment to enable erasure coding. All pods in a deployment are peers — there is no primary/replica distinction.
+
+## Containers Inside Each Pod
+
+Every MinIO pod runs three containers:
+
+| Container | Port | Purpose |
+|-----------|------|---------|
+| `minio` | 9000 (S3 API), 9001 (web console) | MinIO object storage server handling S3-compatible API requests |
+| `kbagent` | 5001 | Health probe endpoint — KubeBlocks queries `GET /v1.0/getrole` periodically |
+| `metrics-exporter` | 9187 | Prometheus metrics exporter |
+
+Each pod mounts its own **PVC** (`/data`), which MinIO treats as a single drive. Multiple PVCs per pod can be configured for higher throughput in advanced deployments.
+
+## Erasure Coding and Data Durability
+
+MinIO uses **Reed-Solomon erasure coding** instead of traditional replication. Data objects are split into data shards and parity shards across all drives in the deployment:
+
+| Erasure Coding Concept | Description |
+|------------------------|-------------|
+| **Data shards** | Portions of the original object stored across drives |
+| **Parity shards** | Redundancy blocks calculated from the data shards; used to reconstruct lost or corrupted data |
+| **Default split** | MinIO automatically determines an optimal EC ratio (e.g., EC:4 means 4 data + 4 parity shards in an 8-node cluster) |
+| **Read quorum** | `N/2` drives must be available to read an object |
+| **Write quorum** | `N/2 + 1` drives must be available to write an object |
+| **Drive failure tolerance** | Up to `N/2` drives (or nodes) can fail without data loss or service interruption |
+
+Unlike primary/replica replication, erasure coding stores no full copies of any object on any single node. Storage efficiency is significantly higher than 3× replication while providing equivalent or better durability.
+
+## Peer Discovery and Distributed Coordination
+
+MinIO nodes discover each other at startup using the headless service DNS. Each node is started with the full list of peer addresses:
+
+```
+http://{cluster}-minio-{0..N-1}.{cluster}-minio-headless.{namespace}.svc.cluster.local:9000/data
+```
+
+MinIO uses an internal distributed locking mechanism to coordinate object writes and ensure read-after-write consistency across all nodes. There is no external coordinator — all consensus is handled within the MinIO process.
+
+## Traffic Routing
+
+KubeBlocks creates two services for each MinIO cluster:
+
+| Service | Type | Ports | Selector |
+|---------|------|-------|----------|
+| `{cluster}-minio` | ClusterIP | 9000 (S3 API), 9001 (console) | all pods |
+| `{cluster}-minio-headless` | Headless | 9000 | all pods |
+
+Because all MinIO nodes are peers and can handle any S3 API request, the ClusterIP service load-balances across all available pods. Client applications connect using the standard S3 API on port 9000:
+
+```
+http://{cluster}-minio.{namespace}.svc.cluster.local:9000
+```
+
+The web console on port 9001 provides a management interface for bucket management, object browsing, and access key administration.
+
+## Data Durability Without Traditional Failover
+
+MinIO does not require a traditional failover mechanism because erasure coding ensures continuous availability:
+
+- **Node failure**: MinIO transparently reconstructs requested objects from the remaining shards on healthy nodes
+- **Node recovery**: When a failed node restarts and its drives become available, MinIO performs a background **healing** process to repair any degraded objects
+- **Drive failure**: Healing runs continuously in the background, rebuilding parity from remaining drives
+- **No data loss**: As long as fewer than `N/2` nodes fail simultaneously, all objects remain fully readable and writable

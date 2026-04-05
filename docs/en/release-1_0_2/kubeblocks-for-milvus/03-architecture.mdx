@@ -1,0 +1,91 @@
+---
+title: Milvus Architecture in KubeBlocks
+description: Learn how KubeBlocks deploys and manages Milvus vector database clusters on Kubernetes, including the resource hierarchy, standalone vs distributed topologies, pod layout, and traffic routing.
+keywords: [Milvus, KubeBlocks, architecture, Kubernetes, vector database, distributed, high availability, etcd, MinIO]
+sidebar_position: 3.5
+sidebar_label: Architecture
+---
+
+# Milvus Architecture in KubeBlocks
+
+This page describes how KubeBlocks deploys a Milvus vector database on Kubernetes — covering the resource hierarchy, standalone and distributed topologies, pod internals, and traffic routing.
+
+## Resource Hierarchy
+
+KubeBlocks models a Milvus deployment as a hierarchy of Kubernetes custom resources:
+
+```
+Cluster  →  Component  →  InstanceSet  →  Pod × N
+```
+
+| Resource | Role |
+|----------|------|
+| **Cluster** | User-facing declaration — specifies topology (standalone or distributed), component replica counts, storage, and resources |
+| **Component** | Generated automatically; one Component per role (proxy, queryNode, dataNode, indexNode, etcd, minio); references a `ComponentDefinition` |
+| **InstanceSet** | KubeBlocks custom workload (replaces `StatefulSet`); manages pods with stable identities |
+| **Pod** | Actual running Milvus process; each pod gets a unique ordinal and its own PVC where applicable |
+
+## Topologies
+
+KubeBlocks supports two Milvus deployment topologies:
+
+| Topology | Description | Use Case |
+|----------|-------------|----------|
+| **Standalone** | Single Milvus pod with embedded etcd and MinIO; all roles run in one process | Development, testing, small workloads |
+| **Distributed** | Separate components for each role plus dedicated etcd and MinIO clusters | Production workloads requiring horizontal scale and HA |
+
+## Containers Inside Each Pod
+
+### Milvus Role Pods (proxy, queryNode, dataNode, indexNode)
+
+| Container | Port | Purpose |
+|-----------|------|---------|
+| `milvus` | 19530 (gRPC), 9091 (HTTP metrics/health) | Milvus service for the assigned role (query, data, index, or proxy) |
+| `kbagent` | 5001 | Role probe endpoint — KubeBlocks queries `GET /v1.0/getrole` periodically |
+| `metrics-exporter` | 9187 | Prometheus metrics exporter |
+
+### Supporting Component Pods
+
+In distributed topology, Milvus relies on two additional KubeBlocks Components deployed within the same Cluster:
+
+| Component | Purpose |
+|-----------|---------|
+| **etcd** | Stores Milvus metadata (collection schemas, segment info, index descriptions); provides distributed coordination |
+| **MinIO** | Object storage backend for vector data, indexes, and write-ahead logs |
+
+## Distributed Component Roles
+
+| Component | Role | Scalability |
+|-----------|------|-------------|
+| **Proxy** | Stateless gateway; receives client requests, validates them, and routes to queryNode or dataNode | Horizontally scalable |
+| **QueryNode** | Loads segment data into memory; executes vector similarity searches and scalar filtering | Horizontally scalable |
+| **DataNode** | Receives insert/delete operations; flushes sealed segments to object storage (MinIO) | Horizontally scalable |
+| **IndexNode** | Builds vector indexes (HNSW, IVF, etc.) for sealed segments stored in MinIO | Horizontally scalable |
+| **RootCoord** | (Embedded in standalone or as a coordinator process) Manages DDL operations and timestamp allocation | — |
+| **QueryCoord** | Manages query node cluster; assigns segments to query nodes; triggers load balancing | — |
+| **DataCoord** | Manages data nodes; tracks segment lifecycle (growing → sealed → flushed) | — |
+| **IndexCoord** | Schedules index build tasks on index nodes | — |
+
+In KubeBlocks' distributed topology, the coordinator roles (RootCoord, QueryCoord, DataCoord, IndexCoord) run as part of the primary Milvus component alongside the configurable worker components.
+
+## High Availability in Distributed Mode
+
+| HA Mechanism | Description |
+|--------------|-------------|
+| **Component-level replication** | Each worker component (queryNode, dataNode, indexNode) can be scaled to multiple replicas; KubeBlocks manages their lifecycle independently |
+| **etcd HA** | The embedded etcd cluster uses Raft consensus; metadata is safe as long as a quorum of etcd pods is available |
+| **MinIO durability** | MinIO's erasure coding ensures object data survives drive or node failures |
+| **Segment redundancy** | Sealed segments are persisted in MinIO; a restarted queryNode reloads them from object storage |
+| **Coordinator recovery** | Coordinators are stateless against etcd; they reload all state from etcd on restart |
+
+## Traffic Routing
+
+KubeBlocks creates services for each Milvus component:
+
+| Service | Type | Ports | Selector |
+|---------|------|-------|----------|
+| `{cluster}-milvus-proxy` | ClusterIP | 19530 (gRPC), 9091 (HTTP) | proxy pods |
+| `{cluster}-milvus-proxy-headless` | Headless | 19530, 9091 | proxy pods |
+| `{cluster}-milvus-{role}-headless` | Headless | varies | pods per role |
+
+Client applications (using the Milvus SDK) connect to the proxy component on port 19530 (gRPC) or port 9091 (REST). The proxy is the single entry point; it handles authentication, routing, and result aggregation. Internal component communication uses the headless service addresses for direct pod-to-pod connectivity.

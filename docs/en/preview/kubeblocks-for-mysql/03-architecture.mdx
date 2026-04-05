@@ -1,0 +1,103 @@
+---
+title: MySQL High Availability Architecture in KubeBlocks
+description: Learn how KubeBlocks deploys and manages ApeCloud MySQL (wesql-server) clusters on Kubernetes, including the resource hierarchy, pod layout, Raft-based HA, traffic routing, and automatic failover.
+keywords: [MySQL, ApeCloud, wesql-server, KubeBlocks, high availability, Raft, architecture, Kubernetes, failover]
+sidebar_position: 3.5
+sidebar_label: Architecture
+---
+
+# MySQL High Availability Architecture in KubeBlocks
+
+This page describes how KubeBlocks deploys an ApeCloud MySQL (wesql-server) cluster on Kubernetes — covering the resource hierarchy, pod internals, built-in Raft-based HA, traffic routing, and automatic failover.
+
+## Resource Hierarchy
+
+KubeBlocks models a MySQL cluster as a hierarchy of Kubernetes custom resources:
+
+```
+Cluster  →  Component  →  InstanceSet  →  Pod × N
+```
+
+| Resource | Role |
+|----------|------|
+| **Cluster** | User-facing declaration — specifies topology, replica count, storage size, and resources |
+| **Component** | Generated automatically; references a `ComponentDefinition` that describes container specs, lifecycle actions, and services |
+| **InstanceSet** | KubeBlocks custom workload (replaces `StatefulSet`); manages pods with stable identities and role awareness |
+| **Pod** | Actual running MySQL instance; each pod gets a unique ordinal and its own PVC |
+
+## Topologies
+
+KubeBlocks supports three MySQL topologies:
+
+| Topology | Description | Use Case |
+|----------|-------------|----------|
+| **standalone** | Single MySQL pod; no replication or HA | Development, testing, non-critical workloads |
+| **replication** | Traditional async/semi-sync replication (primary + replicas); external coordinator manages failover | General HA workloads |
+| **raftGroup** | Raft consensus built into the wesql-server engine (primary + N followers); no external coordinator required | Production workloads requiring strong consistency |
+
+## Containers Inside Each Pod
+
+Every MySQL pod runs three containers:
+
+| Container | Port | Purpose |
+|-----------|------|---------|
+| `mysql` | 3306 (MySQL protocol) | wesql-server (ApeCloud MySQL) database engine with built-in Raft consensus |
+| `kbagent` | 5001 | Role probe endpoint — KubeBlocks queries `GET /v1.0/getrole` every second to determine primary vs. follower |
+| `metrics-exporter` | 9187 | Prometheus metrics exporter |
+
+Each pod mounts its own **PVC** for the MySQL data directory (`/data/mysql`), providing independent persistent storage per replica.
+
+## High Availability via Built-in Raft (raftGroup Topology)
+
+The wesql-server engine embeds a **Raft consensus module** directly into the MySQL storage layer. Unlike Patroni (PostgreSQL) or MySQL Group Replication with an external coordinator, wesql-server handles leader election and log replication natively:
+
+| Raft Concept | Description |
+|-------------|-------------|
+| **Primary (leader)** | Receives all write transactions; replicates log entries to followers before committing |
+| **Follower** | Replicates from the primary via Raft log; can serve read queries when `readPreference` allows |
+| **Write quorum** | A majority `(N/2 + 1)` of Raft members must acknowledge a transaction before it commits |
+| **Election timeout** | When the primary is unreachable, followers trigger a new election after a configurable timeout |
+| **No external coordinator** | All leader election and log replication is handled inside the wesql-server process; no ZooKeeper, etcd, or Patroni required |
+
+A raftGroup of 3 members (1 primary + 2 followers) tolerates **1 failure** while maintaining a voting majority and write quorum.
+
+## Traffic Routing
+
+KubeBlocks creates two services for each MySQL cluster:
+
+| Service | Type | Port | Selector |
+|---------|------|------|----------|
+| `{cluster}-mysql` | ClusterIP | 3306 | `kubeblocks.io/role=primary` |
+| `{cluster}-mysql-headless` | Headless | 3306 | all pods |
+
+The key mechanism is `roleSelector: primary` on the ClusterIP service. KubeBlocks probes each pod via `kbagent` every second and updates the pod label `kubeblocks.io/role`. The service Endpoints always point at the current primary — no VIP or external load balancer required.
+
+- **Write traffic**: connect to `{cluster}-mysql:3306`
+- **Direct replica access** (read replicas, replication monitoring): use the headless service DNS `{pod-name}.{cluster}-mysql-headless.{namespace}.svc.cluster.local:3306`
+
+## Automatic Failover
+
+When the primary pod fails in a raftGroup topology, the following sequence restores service automatically:
+
+1. **Primary becomes unreachable** — followers stop receiving Raft heartbeats
+2. **Election triggered** — after the election timeout, an eligible follower increments its term and requests votes
+3. **New primary elected** — the follower that collects a majority of votes wins, promoting itself to primary and resuming write operations
+4. **KubeBlocks detects role change** — `kbagent` returns `primary` for the new winner; pod labels are updated
+5. **Service Endpoints switch** — the ClusterIP service automatically routes traffic to the new primary
+
+Total failover time is typically within **5–15 seconds**, bounded by the Raft election timeout.
+
+For a **planned switchover** (e.g., maintenance), KubeBlocks invokes a graceful switchover operation that demotes the current primary and promotes a chosen follower with zero data loss.
+
+## System Accounts
+
+KubeBlocks automatically creates and manages the following MySQL system accounts. Passwords are auto-generated and stored in Secrets named `{cluster}-{component}-account-{name}`.
+
+| Account | Role | Purpose |
+|---------|------|---------|
+| `root` | Superuser | Default administrative account; full privileges on all databases |
+| `kbadmin` | Superuser | KubeBlocks internal management operations |
+| `kbdataprotection` | Admin | Backup and restore operations (xtrabackup, mysqldump) |
+| `kbprobe` | Monitor (read-only) | Health check queries; used by `kbagent` for role detection |
+| `kbmonitoring` | Monitor | Prometheus metrics collection via `mysqld_exporter` |
+| `kbreplicator` | Replication | Binary log replication between primary and followers |

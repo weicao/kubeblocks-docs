@@ -1,0 +1,99 @@
+---
+title: ZooKeeper Architecture in KubeBlocks
+description: Learn how KubeBlocks deploys and manages Apache ZooKeeper ensembles on Kubernetes, including the resource hierarchy, pod layout, ZAB protocol, and automatic leader election.
+keywords: [ZooKeeper, KubeBlocks, architecture, Kubernetes, ZAB, high availability, leader election, consensus]
+sidebar_position: 3
+sidebar_label: Architecture
+---
+
+# ZooKeeper Architecture in KubeBlocks
+
+This page describes how KubeBlocks deploys an Apache ZooKeeper ensemble on Kubernetes — covering the resource hierarchy, pod internals, the ZAB consensus protocol, and traffic routing.
+
+## Resource Hierarchy
+
+KubeBlocks models a ZooKeeper ensemble as a hierarchy of Kubernetes custom resources:
+
+```
+Cluster  →  Component  →  InstanceSet  →  Pod × N
+```
+
+| Resource | Role |
+|----------|------|
+| **Cluster** | User-facing declaration — specifies the number of ensemble members, storage size, and resources |
+| **Component** | Generated automatically; references a `ComponentDefinition` that describes container specs, lifecycle actions, and services |
+| **InstanceSet** | KubeBlocks custom workload (replaces `StatefulSet`); manages pods with stable identities and role awareness |
+| **Pod** | Actual running ZooKeeper server; each pod gets a unique ordinal (`myid`), a stable DNS name, and its own PVC |
+
+ZooKeeper requires an **odd number of members** (3, 5, or 7) to maintain a voting quorum. KubeBlocks assigns a unique `myid` to each pod, derived from its ordinal, which persists across restarts.
+
+## Containers Inside Each Pod
+
+Every ZooKeeper pod runs three containers:
+
+| Container | Port | Purpose |
+|-----------|------|---------|
+| `zookeeper` | 2181 (client), 2888 (quorum/follower), 3888 (leader election) | ZooKeeper server participating in the ZAB consensus protocol and serving client requests |
+| `kbagent` | 5001 | Role probe endpoint — KubeBlocks queries `GET /v1.0/getrole` periodically to identify leader vs. follower vs. observer |
+| `metrics-exporter` | 9187 | Prometheus metrics exporter |
+
+Each pod mounts its own **PVC** for the ZooKeeper data directory (`/data`), preserving the transaction log and snapshot files across pod restarts.
+
+## Node Roles
+
+| Role | Description |
+|------|-------------|
+| **Leader** | Coordinates all write transactions; broadcasts proposals to followers and observers; elected via the ZAB leader election protocol |
+| **Follower** | Participates in voting for write quorum; serves client read requests locally; forwards writes to the leader |
+| **Observer** | Non-voting member that replicates state from the leader; serves read requests; used to scale read throughput without affecting write quorum |
+
+## High Availability via ZAB Protocol
+
+ZooKeeper provides HA through the **ZooKeeper Atomic Broadcast (ZAB) protocol**, which guarantees total order of updates and crash-recovery:
+
+| ZAB Phase | Description |
+|-----------|-------------|
+| **Leader election** | On startup or after leader failure, servers exchange votes using a FastLeaderElection algorithm; the server with the most up-to-date transaction log and highest ID wins |
+| **Synchronization** | The new leader synchronizes followers to bring them up to date before resuming normal operation |
+| **Broadcast** | All write requests go through the leader; the leader sends a proposal to all followers; a write is committed when a quorum acknowledges it |
+| **Quorum** | `(N/2) + 1` servers must be available for writes to succeed; reads can be served by any server |
+
+A 3-member ensemble tolerates **1 failure**; a 5-member ensemble tolerates **2 failures**.
+
+### Leader Election Process
+
+When the leader becomes unavailable:
+
+1. All remaining servers detect the missing heartbeat and enter leader election mode
+2. Each server votes for the candidate with the highest `zxid` (transaction ID) and `myid`
+3. The server that collects a quorum of votes becomes the new leader
+4. The new leader synchronizes followers before resuming write operations
+5. Leader election typically completes in **200 ms to 2 seconds** under normal network conditions
+
+## Traffic Routing
+
+KubeBlocks creates two services for each ZooKeeper ensemble:
+
+| Service | Type | Port | Selector |
+|---------|------|------|----------|
+| `{cluster}-zookeeper` | ClusterIP | 2181 (client) | all pods |
+| `{cluster}-zookeeper-headless` | Headless | 2181, 2888, 3888 | all pods |
+
+Client applications (e.g., Kafka, ClickHouse, or application code) connect to port 2181 on the ClusterIP service. Any ZooKeeper server (leader or follower) can serve client read requests; write requests are automatically forwarded to the leader.
+
+Quorum and leader election traffic (ports 2888 and 3888) uses the headless service, where each ensemble member is individually addressable by its stable pod DNS name:
+
+```
+{pod-name}.{cluster}-zookeeper-headless.{namespace}.svc.cluster.local
+```
+
+The `zoo.cfg` configuration file references all peer addresses using these stable DNS names, ensuring correct cluster membership after pod restarts or rolling updates.
+
+## Automatic Failover
+
+When a ZooKeeper ensemble member fails:
+
+1. **Member goes offline** — peers detect the missing heartbeat within the session timeout (default 2× tick time)
+2. **Leader election** (if the lost member was the leader) — surviving members elect a new leader in milliseconds to seconds
+3. **Write continuity** — as long as a quorum remains available, all write and read operations continue normally
+4. **Pod recovery** — when the failed pod restarts, it reads its `myid` from the PVC, contacts the leader, and syncs any missed transactions before rejoining the ensemble

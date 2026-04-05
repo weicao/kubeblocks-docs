@@ -1,0 +1,105 @@
+---
+title: RocketMQ Architecture in KubeBlocks
+description: Learn how KubeBlocks deploys and manages Apache RocketMQ clusters on Kubernetes, including the resource hierarchy, NameServer and Broker components, DLedger Raft HA, and traffic routing.
+keywords: [RocketMQ, KubeBlocks, architecture, Kubernetes, DLedger, Raft, high availability, NameServer, Broker]
+sidebar_position: 3
+sidebar_label: Architecture
+---
+
+# RocketMQ Architecture in KubeBlocks
+
+This page describes how KubeBlocks deploys an Apache RocketMQ cluster on Kubernetes — covering the resource hierarchy, NameServer and Broker component roles, DLedger-based HA, and traffic routing.
+
+## Resource Hierarchy
+
+KubeBlocks models a RocketMQ cluster as a hierarchy of Kubernetes custom resources:
+
+```
+Cluster  →  Component  →  InstanceSet  →  Pod × N
+```
+
+| Resource | Role |
+|----------|------|
+| **Cluster** | User-facing declaration — specifies the topology, replica counts for each component, storage, and resources |
+| **Component** | Generated automatically; one Component per role (NameServer, Broker); references a `ComponentDefinition` |
+| **InstanceSet** | KubeBlocks custom workload (replaces `StatefulSet`); manages pods with stable identities and role awareness |
+| **Pod** | Actual running RocketMQ process; each pod gets a unique ordinal and its own PVC |
+
+A RocketMQ cluster consists of two distinct component types: **NameServer** (service discovery and routing registry) and **Broker** (message storage and delivery). These map to separate KubeBlocks Components within the same Cluster.
+
+## Containers Inside Each Pod
+
+### NameServer Pods
+
+| Container | Port | Purpose |
+|-----------|------|---------|
+| `namesrv` | 9876 (TCP) | RocketMQ NameServer — maintains topic routing information; acts as a service registry for brokers and clients |
+| `kbagent` | 5001 | Role probe endpoint |
+| `metrics-exporter` | 9187 | Prometheus metrics exporter |
+
+### Broker Pods
+
+| Container | Port | Purpose |
+|-----------|------|---------|
+| `broker` | 10911 (remoting), 10912 (HA replication) | RocketMQ Broker — stores message queues, handles producer/consumer requests, and replicates data within a broker group |
+| `kbagent` | 5001 | Role probe endpoint — identifies broker role (master/slave) |
+| `metrics-exporter` | 9187 | Prometheus metrics exporter |
+
+Each Broker pod mounts its own **PVC** for the message store directory (`/home/rocketmq/store`), providing persistent storage for commit logs and consume queues.
+
+## Component Roles
+
+### NameServer
+
+NameServer is a lightweight, stateless routing registry. Each NameServer instance is independent — there is no leader election or data replication between NameServer nodes. Producers and consumers connect to all known NameServer instances and use any available one for routing lookups:
+
+| NameServer Responsibility | Description |
+|--------------------------|-------------|
+| **Broker registration** | Brokers register their topic routing information with all NameServer instances at startup and periodically |
+| **Topic routing queries** | Producers and consumers query NameServer to discover which brokers host the topics they need |
+| **Stale broker detection** | NameServer removes brokers that have not sent a heartbeat within 120 seconds |
+
+### Broker
+
+Brokers are organized into **broker groups** (a master plus N slaves). Each group handles a distinct set of topic partitions:
+
+| Broker Role | Description |
+|-------------|-------------|
+| **Master broker** | Accepts producer writes; optionally serves consumer reads depending on read preference |
+| **Slave broker** | Replicates from the master via the HA replication port (10912); serves consumer reads when configured |
+| **DLedger master** | In DLedger mode, the elected Raft leader; handles all writes and replicates to DLedger followers |
+
+## High Availability via DLedger (Raft)
+
+KubeBlocks deploys RocketMQ brokers with **DLedger** mode enabled, which replaces the traditional master/slave replication with a Raft-based commit log:
+
+| DLedger Concept | Description |
+|-----------------|-------------|
+| **DLedger leader** | The Raft leader in a broker group; all message writes go through the leader |
+| **DLedger follower** | Replicates log entries from the leader; participates in voting |
+| **Write quorum** | A majority of broker replicas must acknowledge a log entry before it is committed |
+| **Leader election** | When the leader broker fails, surviving followers elect a new leader via Raft |
+| **Minimum replicas** | 3 replicas per broker group are required for DLedger to function (tolerates 1 failure) |
+
+## Traffic Routing
+
+KubeBlocks creates services for both NameServer and Broker components:
+
+| Service | Type | Port | Selector |
+|---------|------|------|----------|
+| `{cluster}-namesrv` | ClusterIP | 9876 | all NameServer pods |
+| `{cluster}-namesrv-headless` | Headless | 9876 | all NameServer pods |
+| `{cluster}-broker` | ClusterIP | 10911 | `kubeblocks.io/role=master` broker pods |
+| `{cluster}-broker-headless` | Headless | 10911, 10912 | all Broker pods |
+
+Producers and consumers connect to NameServer (port 9876) at startup to fetch topic routing information, then connect directly to the appropriate broker master using addresses obtained from NameServer. HA replication traffic between broker replicas flows over port 10912 via the headless service.
+
+## Automatic Failover
+
+When a RocketMQ component fails:
+
+1. **NameServer failure** — producers/consumers switch to another available NameServer instance; NameServer instances are independent so no election is required
+2. **Broker master failure** — DLedger detects the leader's absence; the remaining follower replicas elect a new Raft leader within seconds
+3. **New master registers** — the newly elected DLedger leader re-registers with all NameServer instances
+4. **Producer/consumer reconnect** — clients refresh routing from NameServer and resume sending to the new master
+5. **KubeBlocks pod label update** — the `kbagent` probe detects the new master; the `kubeblocks.io/role=master` label is applied to the new leader pod, and the Broker ClusterIP service Endpoints are updated accordingly

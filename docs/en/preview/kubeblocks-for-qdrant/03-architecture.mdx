@@ -1,0 +1,91 @@
+---
+title: Qdrant Architecture in KubeBlocks
+description: Learn how KubeBlocks deploys and manages Qdrant vector database clusters on Kubernetes, including the resource hierarchy, pod layout, Raft-based sharding, and traffic routing.
+keywords: [Qdrant, KubeBlocks, architecture, Kubernetes, Raft, vector database, sharding, high availability]
+sidebar_position: 3
+sidebar_label: Architecture
+---
+
+# Qdrant Architecture in KubeBlocks
+
+This page describes how KubeBlocks deploys a Qdrant vector database cluster on Kubernetes — covering the resource hierarchy, pod internals, Raft-based distributed sharding, and traffic routing.
+
+## Resource Hierarchy
+
+KubeBlocks models a Qdrant cluster as a hierarchy of Kubernetes custom resources:
+
+```
+Cluster  →  Component  →  InstanceSet  →  Pod × N
+```
+
+| Resource | Role |
+|----------|------|
+| **Cluster** | User-facing declaration — specifies the number of nodes, shard counts, replication factor, storage, and resources |
+| **Component** | Generated automatically; references a `ComponentDefinition` that describes container specs, lifecycle actions, and services |
+| **InstanceSet** | KubeBlocks custom workload (replaces `StatefulSet`); manages pods with stable identities |
+| **Pod** | Actual running Qdrant node; each pod gets a unique ordinal and its own PVC |
+
+## Containers Inside Each Pod
+
+Every Qdrant pod runs three containers:
+
+| Container | Port | Purpose |
+|-----------|------|---------|
+| `qdrant` | 6333 (REST API), 6334 (gRPC API), 6335 (internal P2P) | Qdrant vector search engine handling collection management and query processing |
+| `kbagent` | 5001 | Role probe endpoint — KubeBlocks queries `GET /v1.0/getrole` periodically |
+| `metrics-exporter` | 9187 | Prometheus metrics exporter |
+
+Each pod mounts its own **PVC** for the Qdrant storage directory (`/qdrant/storage`), providing independent persistent storage for vector data and payload indexes.
+
+## Distributed Architecture: Sharding and Replication
+
+Qdrant distributes data across nodes using a combination of **sharding** (horizontal partitioning) and **replication** (redundancy):
+
+| Concept | Description |
+|---------|-------------|
+| **Collection** | The top-level data structure; holds vectors and payloads |
+| **Shard** | A partition of a collection; each shard holds a subset of vectors |
+| **Shard replica** | A copy of a shard stored on a different node for fault tolerance |
+| **Shard leader** | The authoritative copy of a shard; handles writes and coordinates reads |
+| **Replication factor** | Number of copies of each shard across the cluster (default: 1, recommended: ≥ 2 for HA) |
+
+With a replication factor of 2 and 3 nodes, each shard has one leader and one follower replica. If one node fails, the remaining nodes hold at least one copy of every shard.
+
+## High Availability via Raft Consensus
+
+Qdrant uses the **Raft consensus protocol** for shard leader election and cluster membership management:
+
+| Raft Role | Description |
+|-----------|-------------|
+| **Consensus leader** | Manages cluster topology changes: node joins/leaves, shard allocation, collection creation/deletion |
+| **Shard leader** | Handles write operations for a specific shard; elected per shard among its replicas |
+| **Follower node** | Replicates shard data from the shard leader; can serve read requests |
+
+When a node fails, Raft detects the absence of the node's heartbeat. For each shard where the failed node held the leader role, a new leader is elected from the available replicas. This process completes in seconds and requires no manual intervention.
+
+## Traffic Routing
+
+KubeBlocks creates two services for each Qdrant cluster:
+
+| Service | Type | Ports | Selector |
+|---------|------|-------|----------|
+| `{cluster}-qdrant` | ClusterIP | 6333 (REST), 6334 (gRPC) | all pods |
+| `{cluster}-qdrant-headless` | Headless | 6333, 6334, 6335 | all pods |
+
+Client applications connect to the ClusterIP service on port 6333 (REST) or 6334 (gRPC). Any Qdrant node can handle incoming API requests; the receiving node acts as a coordinator, forwarding the request to the appropriate shard leader and aggregating results.
+
+Internal P2P communication (Raft messages, shard data replication, query forwarding) uses port 6335 over the headless service, where each pod is individually addressable:
+
+```
+{pod-name}.{cluster}-qdrant-headless.{namespace}.svc.cluster.local:6335
+```
+
+## Automatic Failover
+
+When a Qdrant node becomes unavailable:
+
+1. **Node failure detected** — peers detect the missing heartbeat within seconds
+2. **Shard leader re-election** — for each shard whose leader was on the failed node, Raft elects a new leader from the available replicas
+3. **Write continuity** — new writes are routed to the elected shard leaders on healthy nodes
+4. **Read continuity** — reads continue to be served from remaining replicas; any coordinator node can route requests appropriately
+5. **Node recovery** — when the failed pod restarts, it rejoins the cluster and syncs missing updates from the current shard leaders before resuming traffic
