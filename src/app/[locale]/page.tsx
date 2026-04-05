@@ -2,12 +2,13 @@ import Footer from '@/components/Footer';
 import { getStaticParams } from '@/locales/server';
 import { getBlogs } from '@/utils/markdown';
 import { toAbsoluteUrl } from '@/utils/site';
-import { Box, Divider } from '@mui/material';
+import { Box } from '@mui/material';
 import type { Metadata } from 'next';
 import Banner from './banner';
 import BlogsPreview from './blogs-preview';
 import DatabasesShowcase from './databases-showcase';
 import GithubStats from './github-stats';
+import OperatorSprawl from './operator-sprawl';
 import QuickStart from './quick-start';
 import Contact from './contact';
 import Customers from './customers';
@@ -125,10 +126,10 @@ export default async function HomePage({
       <Box style={{ minHeight: 'var(--container-min-height)' }}>
         <Banner />
         <GithubStats />
+        <OperatorSprawl />
         <DatabasesShowcase />
         <Customers />
         <Evaluate />
-        <Divider />
         <WhyNeedKubeBlocks />
         <Features />
         <QuickStart />
