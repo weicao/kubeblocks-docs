@@ -132,6 +132,7 @@ const ENGINES: Engine[] = [
     name: 'etcd',
     category: 'Cache / KV',
     description: 'Run etcd clusters as a reliable distributed key-value store for Kubernetes and cloud-native applications.',
+    docsHref: '/docs/preview/kubeblocks-for-etcd',
     addonsHref: 'https://github.com/apecloud/kubeblocks-addons/tree/main/addons/etcd',
   },
   // Message Queue / Streaming
@@ -146,6 +147,7 @@ const ENGINES: Engine[] = [
     name: 'Pulsar',
     category: 'Message Queue',
     description: 'Manage Apache Pulsar clusters with BookKeeper and ZooKeeper components, enabling multi-tenant messaging on Kubernetes.',
+    docsHref: '/docs/release-0_9/kubeblocks-for-pulsar',
     addonsHref: 'https://github.com/apecloud/kubeblocks-addons/tree/main/addons/pulsar',
   },
   {
@@ -159,6 +161,7 @@ const ENGINES: Engine[] = [
     name: 'RocketMQ',
     category: 'Message Queue',
     description: 'Deploy Apache RocketMQ clusters with broker and nameserver topology for high-throughput messaging on Kubernetes.',
+    docsHref: '/docs/preview/kubeblocks-for-rocketmq',
     addonsHref: 'https://github.com/apecloud/kubeblocks-addons/tree/main/addons/rocketmq',
   },
   // Search
@@ -180,6 +183,7 @@ const ENGINES: Engine[] = [
     name: 'ClickHouse',
     category: 'OLAP',
     description: 'Run ClickHouse clusters for real-time analytical queries with sharding, replication, and ZooKeeper coordination.',
+    docsHref: '/docs/preview/kubeblocks-for-clickhouse',
     addonsHref: 'https://github.com/apecloud/kubeblocks-addons/tree/main/addons/clickhouse',
   },
   {
@@ -269,12 +273,14 @@ const ENGINES: Engine[] = [
     name: 'ZooKeeper',
     category: 'Coordination',
     description: 'Operate ZooKeeper ensembles for distributed coordination, often used alongside Kafka and ClickHouse.',
+    docsHref: '/docs/preview/kubeblocks-for-zookeeper',
     addonsHref: 'https://github.com/apecloud/kubeblocks-addons/tree/main/addons/zookeeper',
   },
   {
     name: 'MinIO',
     category: 'Object Storage',
     description: 'Deploy MinIO distributed object storage clusters for S3-compatible storage on Kubernetes.',
+    docsHref: '/docs/preview/kubeblocks-for-minio',
     addonsHref: 'https://github.com/apecloud/kubeblocks-addons/tree/main/addons/minio',
   },
 ];
