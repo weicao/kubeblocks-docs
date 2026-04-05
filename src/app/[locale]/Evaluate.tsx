@@ -49,6 +49,9 @@ export const Evaluate = () => {
           <Grid size={{ md: 6, sm: 12, xs: 12 }}>
             <iframe
               src={playerUrl}
+              title="KubeBlocks introduction video"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+              allowFullScreen
               style={{
                 width: '100%',
                 height: '320px',

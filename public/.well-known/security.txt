@@ -1,0 +1,6 @@
+Contact: mailto:compliance@apecloud.com
+Contact: https://github.com/apecloud/kubeblocks/security/advisories/new
+Expires: 2027-01-01T00:00:00.000Z
+Preferred-Languages: en, zh
+Canonical: https://kubeblocks.io/.well-known/security.txt
+Policy: https://github.com/apecloud/kubeblocks/blob/main/SECURITY.md

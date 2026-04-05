@@ -8,12 +8,40 @@ import {
   getMarkDownSideBar,
   MarkdownPageParams,
 } from '@/utils/markdown';
+import { toAbsoluteUrl } from '@/utils/site';
 import fs from 'fs';
 import _ from 'lodash';
 import matter from 'gray-matter';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import path from 'path';
+
+const ENGINE_NAME_MAP: Record<string, string> = {
+  'kubeblocks-for-mysql': 'MySQL',
+  'kubeblocks-for-postgresql': 'PostgreSQL',
+  'kubeblocks-for-mongodb': 'MongoDB',
+  'kubeblocks-for-redis': 'Redis',
+  'kubeblocks-for-valkey': 'Valkey',
+  'kubeblocks-for-kafka': 'Kafka',
+  'kubeblocks-for-elasticsearch': 'Elasticsearch',
+  'kubeblocks-for-opensearch': 'OpenSearch',
+  'kubeblocks-for-milvus': 'Milvus',
+  'kubeblocks-for-pulsar': 'Pulsar',
+  'kubeblocks-for-rabbitmq': 'RabbitMQ',
+  'kubeblocks-for-rocketmq': 'RocketMQ',
+  'kubeblocks-for-qdrant': 'Qdrant',
+  'kubeblocks-for-weaviate': 'Weaviate',
+  'kubeblocks-for-mariadb': 'MariaDB',
+  'kubeblocks-for-tidb': 'TiDB',
+  'kubeblocks-for-starrocks': 'StarRocks',
+  'kubeblocks-for-clickhouse': 'ClickHouse',
+  'kubeblocks-for-influxdb': 'InfluxDB',
+  'kubeblocks-for-neo4j': 'Neo4j',
+  'kubeblocks-for-nebula': 'Nebula Graph',
+  'kubeblocks-for-greptimedb': 'GreptimeDB',
+  'kubeblocks-for-victoria-metrics': 'VictoriaMetrics',
+  'kubeblocks-for-apecloud-mysql': 'ApeCloud MySQL',
+};
 
 export async function generateStaticParams() {
   const data: MarkdownPageParams[] = [];
@@ -34,14 +62,11 @@ export async function generateStaticParams() {
   };
 
   getStaticParams().forEach((item) => {
-    // locals
     const localeDir = path.join(docsDir, item.locale);
 
     fs.readdirSync(localeDir).forEach((version) => {
-      // versions
       const versionDir = path.join(localeDir, version);
       fs.readdirSync(versionDir).forEach((category) => {
-        // categories
         const cateDir = path.join(versionDir, category);
         const paths: string[] = getPaths(cateDir).map((item) =>
           item.replace(cateDir + '/', '').replace('.mdx', ''),
@@ -99,31 +124,131 @@ export default async function MarkdownPage({
   const isApiReference = paths.some(p => p.includes('api-reference')) ||
                          relativePath.includes('api-reference');
 
+  // Build JSON-LD metadata
+  const activeMdxPath = fs.existsSync(mdxPath)
+    ? mdxPath
+    : fs.existsSync(defaultMdxEnPath)
+      ? defaultMdxEnPath
+      : null;
+
+  const inLanguage = locale === 'zh' ? 'zh-CN' : 'en';
+  const canonicalUrl = toAbsoluteUrl(`/docs/${version}/${category}/${paths.join('/')}`);
+  const engineName = ENGINE_NAME_MAP[category];
+
+  const docMeta = activeMdxPath
+    ? await getMarkDownMetaData(activeMdxPath).catch(() => ({} as Record<string, unknown>))
+    : {} as Record<string, unknown>;
+
+  const dateModified = activeMdxPath
+    ? fs.statSync(activeMdxPath).mtime.toISOString()
+    : undefined;
+
+  // Check if this is a FAQ page (by filename)
+  const lastSegment = paths[paths.length - 1] ?? '';
+  const isFaqPage = /faq/i.test(lastSegment);
+
+  // Extract FAQ Q&A pairs for FAQPage JSON-LD (Google Rich Results)
+  let faqJsonLd: object | null = null;
+  if (isFaqPage && activeMdxPath) {
+    const rawContent = fs.readFileSync(activeMdxPath, 'utf-8');
+    const { content: faqContent } = matter(rawContent);
+    const faqMatches = [...(faqContent + '\n##').matchAll(/^##\s+(.+)\n+([\s\S]*?)(?=^##)/gm)];
+    const faqItems = faqMatches
+      .map(m => ({
+        '@type': 'Question',
+        name: m[1].trim(),
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: m[2].replace(/```[\s\S]*?```/g, '').replace(/[`*_#]/g, '').trim().slice(0, 500),
+        },
+      }))
+      .filter(item => item.name && item.acceptedAnswer.text);
+    if (faqItems.length > 0) {
+      faqJsonLd = { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faqItems };
+    }
+  }
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'TechArticle',
+    headline: docMeta.title,
+    description: docMeta.description,
+    inLanguage,
+    url: canonicalUrl,
+    ...(dateModified ? { dateModified } : {}),
+    ...(engineName
+      ? { about: { '@type': 'SoftwareApplication', name: engineName, applicationCategory: 'DatabaseApplication', operatingSystem: 'Kubernetes' } }
+      : {}),
+    publisher: {
+      '@type': 'Organization',
+      name: 'KubeBlocks',
+      url: 'https://kubeblocks.io',
+    },
+    breadcrumb: {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Docs', item: toAbsoluteUrl('/docs') },
+        { '@type': 'ListItem', position: 2, name: version, item: toAbsoluteUrl(`/docs/${version}`) },
+        { '@type': 'ListItem', position: 3, name: category, item: toAbsoluteUrl(`/docs/${version}/${category}`) },
+        ...paths.map((p, i) => ({ '@type': 'ListItem', position: 4 + i, name: p })),
+      ],
+    },
+  };
+
+  const jsonLdScript = (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
+      />
+      {faqJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd).replace(/</g, '\\u003c') }}
+        />
+      )}
+    </>
+  );
+
   if (fs.existsSync(mdxPath)) {
     if (isApiReference) {
-      // For api-reference files, read as raw HTML
       const fileContent = fs.readFileSync(mdxPath, 'utf-8');
       const { content } = matter(fileContent);
       return (
+        <>
+          {jsonLdScript}
           <HtmlRenderer content={content} />
+        </>
       );
     } else {
       const { default: MDXContent } = await import(`@docs/${relativePath}.mdx`);
-      return <MDXContent />;
+      return (
+        <>
+          {jsonLdScript}
+          <MDXContent />
+        </>
+      );
     }
   } else if (fs.existsSync(defaultMdxEnPath)) {
     if (isApiReference) {
-      // For api-reference files, read as raw HTML
       const fileContent = fs.readFileSync(defaultMdxEnPath, 'utf-8');
       const { content } = matter(fileContent);
       return (
+        <>
+          {jsonLdScript}
           <HtmlRenderer content={content} />
+        </>
       );
     } else {
       const { default: MDXContent } = await import(
         `@docs/${defaultRelativeEnPath}.mdx`
       );
-      return <MDXContent />;
+      return (
+        <>
+          {jsonLdScript}
+          <MDXContent />
+        </>
+      );
     }
   } else if (first?.href) {
     redirect(first.href);
@@ -144,33 +269,32 @@ export async function generateMetadata({
 
   const canonicalPath = `/docs/${version}/${category}/${paths.join('/')}`;
 
-  if (fs.existsSync(mdxPath)) {
-    const metadata = (await getMarkDownMetaData(mdxPath)) as Metadata;
-    return {
-      ...metadata,
-      alternates: {
-        ...metadata.alternates,
-        canonical: canonicalPath,
-      },
-      openGraph: {
-        ...metadata.openGraph,
-        url: canonicalPath,
-        type: 'article',
-      },
-    };
-  } else {
-    const metadata = (await getMarkDownMetaData(defaultDdxEnPath)) as Metadata;
-    return {
-      ...metadata,
-      alternates: {
-        ...metadata.alternates,
-        canonical: canonicalPath,
-      },
-      openGraph: {
-        ...metadata.openGraph,
-        url: canonicalPath,
-        type: 'article',
-      },
-    };
-  }
+  const activePath = fs.existsSync(mdxPath) ? mdxPath : defaultDdxEnPath;
+  const metadata = (await getMarkDownMetaData(activePath)) as Metadata & { title?: string; description?: string };
+
+  const ogImageUrl = toAbsoluteUrl(
+    `/api/og?type=docs&title=${encodeURIComponent((metadata.title ?? '').slice(0, 80))}`,
+  );
+
+  return {
+    ...metadata,
+    alternates: {
+      ...metadata.alternates,
+      canonical: canonicalPath,
+    },
+    openGraph: {
+      ...metadata.openGraph,
+      url: canonicalPath,
+      type: 'article',
+      title: metadata.title,
+      description: metadata.description,
+      images: [{ url: ogImageUrl, width: 1200, height: 630, alt: metadata.title }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: metadata.title,
+      description: metadata.description,
+      images: [ogImageUrl],
+    },
+  };
 }

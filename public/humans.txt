@@ -1,0 +1,13 @@
+/* TEAM */
+Project: KubeBlocks
+Organization: ApeCloud
+GitHub: https://github.com/apecloud
+Twitter: @KubeBlocks
+
+/* THANKS */
+Contributors: https://github.com/apecloud/kubeblocks/graphs/contributors
+
+/* SITE */
+Last update: 2025
+Language: English
+Technology: Next.js, React, MUI, TypeScript

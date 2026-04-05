@@ -19,17 +19,25 @@ export default function Banner() {
 
   const bgDark = {
     backgroundImage: `url("/site/home-rectangles.svg")`,
+    backgroundColor: '#070707',
     backgroundPosition: 'center center',
     backgroundRepeat: 'no-repeat',
     paddingBlock: 14,
   };
   const bgLight = {
-    ...bgDark,
-    backgroundImage: `url("/site/home-rectangles.svg"), linear-gradient(135deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.9) 100%)`,
+    backgroundImage: [
+      'linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px)',
+      'linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px)',
+      'radial-gradient(ellipse 50% 90% at 18% 50%, rgba(99,131,255,0.18) 0%, transparent 70%)',
+      'radial-gradient(ellipse 50% 90% at 82% 50%, rgba(160,99,255,0.18) 0%, transparent 70%)',
+      'linear-gradient(135deg, #eef4ff 0%, #f5f0ff 100%)',
+    ].join(', '),
+    backgroundSize: '91px 91px, 91px 91px, auto, auto, auto',
+    paddingBlock: 14,
   };
 
-  const textColor = '#FFF';
-  const textSecondaryColor = alpha(textColor, 0.8);
+  const textColor = isDark ? '#FFF' : theme.palette.text.primary;
+  const textSecondaryColor = isDark ? alpha('#FFF', 0.8) : theme.palette.text.secondary;
 
   return (
     <Box sx={isDark ? bgDark : bgLight}>
@@ -67,7 +75,7 @@ export default function Banner() {
                 sx={{ scale: 0.6, color: textColor }}
               />
             }
-            sx={{ color: textColor, background: 'rgba(255, 255, 255, 0.1)' }}
+            sx={{ color: textColor, background: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)' }}
             label={
               <Box>
                 For technical questions, contact us by &nbsp;

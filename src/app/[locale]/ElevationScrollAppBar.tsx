@@ -140,7 +140,7 @@ export const ElevationScrollAppBar = (props: AppBarProps) => {
           <Stack direction="row" spacing={1}>
             <Link href="/" style={{ display: 'block' }} color="textPrimary">
               <Image
-                src="/logo.png"
+                src={theme.palette.mode === 'dark' ? '/logo-dark.png' : '/logo.png'}
                 alt="KubeBlocks"
                 width={165}
                 height={36}
@@ -223,12 +223,13 @@ export const ElevationScrollAppBar = (props: AppBarProps) => {
               justifyContent: 'center',
             }}
           >
-            <IconButton href="https://kubeblocks.slack.com" target="_blank">
+            <IconButton href="https://kubeblocks.slack.com" target="_blank" aria-label="Join KubeBlocks on Slack">
               <SlackIconNoColor />
             </IconButton>
             <IconButton
               href="https://github.com/apecloud/kubeblocks"
               target="_blank"
+              aria-label="KubeBlocks on GitHub"
             >
               <GitHub />
             </IconButton>
