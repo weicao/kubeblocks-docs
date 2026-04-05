@@ -1,0 +1,449 @@
+---
+title: etcd Quickstart
+description: Comprehensive guide to deploying and managing etcd clusters with KubeBlocks, including installation, configuration, and operational best practices.
+keywords: [Kubernetes Operator, etcd, KubeBlocks, Helm, Cluster Management, Quick Start]
+sidebar_position: 2
+sidebar_label: Quickstart
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# etcd Quickstart
+
+This guide provides a comprehensive walkthrough for deploying and managing etcd clusters using the **KubeBlocks etcd Add-on**, covering:
+- System prerequisites and add-on installation
+- Cluster creation and configuration
+- Connection methods and cluster monitoring
+
+## Prerequisites
+
+### System Requirements
+
+Before proceeding, verify your environment meets these requirements:
+
+- A functional Kubernetes cluster (v1.21+ recommended)
+- `kubectl` v1.21+ installed and configured with cluster access
+- Helm installed ([installation guide](https://helm.sh/docs/intro/install/))
+- KubeBlocks installed ([installation guide](../user_docs/overview/install-kubeblocks))
+
+### Verify etcd Add-on
+
+Check if the etcd Add-on is installed:
+
+```bash
+helm list -n kb-system | grep etcd
+```
+
+<details open>
+<summary>Example Output</summary>
+
+```text
+NAME              NAMESPACE   REVISION    UPDATED         STATUS      CHART
+kb-addon-etcd     kb-system   1           2026-04-03      deployed    etcd-1.0.2
+```
+</details>
+
+If the add-on isn't installed, choose an installation method:
+
+<Tabs>
+
+  <TabItem value="helm" label="helm" default>
+  ```bash
+  # Add Helm repo
+  helm repo add kubeblocks https://apecloud.github.io/helm-charts
+  # For users in Mainland China, if GitHub is inaccessible or slow, use this alternative repo:
+  #helm repo add kubeblocks https://jihulab.com/api/v4/projects/150246/packages/helm/stable
+
+  # Update helm repo
+  helm repo update
+  # Search available Add-on versions
+  helm search repo kubeblocks/etcd --versions
+  # Install your desired version (replace <VERSION> with your chosen version)
+  helm upgrade -i kb-addon-etcd kubeblocks/etcd --version <VERSION> -n kb-system
+  ```
+  </TabItem>
+
+  <TabItem value="kbcli" label="kbcli">
+
+  ```bash
+  # Add an index (kubeblocks is added by default)
+  kbcli addon index add kubeblocks https://github.com/apecloud/block-index.git
+  # Update the index
+  kbcli addon index update kubeblocks
+  ```
+
+  To search and install an addon:
+
+  ```bash
+  # Search Add-on
+  kbcli addon search etcd
+  # Install Add-on with your desired version (replace <VERSION> with your chosen version)
+  kbcli addon install etcd --version <VERSION>
+  ```
+
+  To enable or disable an addon:
+
+  ```bash
+  # Enable Add-on
+  kbcli addon enable etcd
+  # Disable Add-on
+  kbcli addon disable etcd
+  ```
+
+  </TabItem>
+</Tabs>
+
+:::note
+**Version Compatibility**
+
+Always verify that the etcd Add-on version matches your KubeBlocks major version to avoid compatibility issues.
+
+:::
+
+### Verify Supported etcd Versions
+
+**List available etcd versions:**
+
+```bash
+kubectl get componentversion etcd
+```
+<details open>
+<summary>Example Output</summary>
+```text
+NAME   VERSIONS             STATUS      AGE
+etcd   3.6.1,3.5.15,3.5.6   Available   5m
+```
+</details>
+
+### Storage Configuration
+
+etcd requires persistent storage. Verify available options:
+
+```bash
+kubectl get storageclass
+```
+
+Recommended storage characteristics:
+- Minimum 20Gi capacity per volume
+- ReadWriteOnce access mode
+- Low-latency SSD-backed storage for optimal etcd performance
+- Supports volume expansion
+
+## Deploy an etcd Cluster
+
+Deploy a basic etcd cluster with 3 nodes:
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/apecloud/kubeblocks-addons/refs/heads/main/examples/etcd/cluster.yaml
+```
+
+This creates:
+- A 3-node etcd cluster (the recommended minimum for quorum)
+- Default resource allocations (0.5 CPU, 0.5Gi memory)
+- 20Gi persistent storage per node
+
+```yaml
+apiVersion: apps.kubeblocks.io/v1
+kind: Cluster
+metadata:
+  name: etcd-cluster
+  namespace: demo
+spec:
+  # Specifies the behavior when a Cluster is deleted.
+  # Valid options are: [DoNotTerminate, Delete, WipeOut]
+  # - `DoNotTerminate`: Prevents deletion of the Cluster. This policy ensures that all resources remain intact.
+  # - `Delete`: Extends the `Halt` policy by also removing PVCs, leading to a thorough cleanup while removing all persistent data.
+  # - `WipeOut`: An aggressive policy that deletes all Cluster resources, including volume snapshots and backups in external storage.
+  terminationPolicy: Delete
+  componentSpecs:
+    - name: etcd
+      componentDef: etcd
+      # ServiceVersion specifies the version of the Service expected to be
+      # provisioned by this Component.
+      # Valid options are: [3.6.1,3.5.15,3.5.6]
+      serviceVersion: 3.6.1
+      disableExporter: false
+      replicas: 3
+      resources:
+        limits:
+          cpu: "0.5"
+          memory: "0.5Gi"
+        requests:
+          cpu: "0.5"
+          memory: "0.5Gi"
+      volumeClaimTemplates:
+        - name: data
+          spec:
+            storageClassName: ""
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 20Gi
+```
+
+For more API fields and descriptions, refer to the [API Reference](../user_docs/references/api-reference/cluster).
+
+### Deploy a TLS-Enabled Cluster
+
+To enable mutual TLS for all client and peer communication, set `tls: true`. KubeBlocks automatically provisions certificates using cert-manager:
+
+```yaml
+apiVersion: apps.kubeblocks.io/v1
+kind: Cluster
+metadata:
+  name: etcd-cluster-tls
+  namespace: demo
+spec:
+  terminationPolicy: Delete
+  componentSpecs:
+    - name: etcd
+      componentDef: etcd
+      tls: true
+      issuer:
+        name: KubeBlocks   # KubeBlocks manages certificate issuance
+      serviceVersion: 3.6.1
+      replicas: 3
+      resources:
+        limits:
+          cpu: "0.5"
+          memory: "0.5Gi"
+        requests:
+          cpu: "0.5"
+          memory: "0.5Gi"
+      volumeClaimTemplates:
+        - name: data
+          spec:
+            storageClassName: ""
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 20Gi
+```
+
+Apply it:
+```bash
+kubectl apply -f https://raw.githubusercontent.com/apecloud/kubeblocks-addons/refs/heads/main/examples/etcd/cluster-with-tls.yaml
+```
+
+## Verify Cluster Status
+
+When deploying an etcd cluster, KubeBlocks automatically configures:
+- One **leader** (handles all write operations)
+- Multiple **followers** (serve read operations, participate in Raft consensus)
+
+Confirm successful deployment:
+
+```bash
+kubectl get cluster etcd-cluster -n demo
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME           CLUSTER-DEFINITION   TERMINATION-POLICY   STATUS    AGE
+etcd-cluster                        Delete               Running   2m
+```
+</details>
+
+```bash
+kubectl get pods -n demo -l app.kubernetes.io/instance=etcd-cluster -L kubeblocks.io/role
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                  READY   STATUS    RESTARTS   AGE    ROLE
+etcd-cluster-etcd-0   2/2     Running   0          2m     follower
+etcd-cluster-etcd-1   2/2     Running   0          2m     follower
+etcd-cluster-etcd-2   2/2     Running   0          2m     leader
+```
+</details>
+
+## Access the etcd Cluster
+
+KubeBlocks creates a headless service for etcd. Each member is accessible via its pod DNS name.
+
+### Service Information
+
+```bash
+kubectl get svc -n demo | grep etcd-cluster
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                          TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)                                     AGE
+etcd-cluster-etcd-headless    ClusterIP   None         <none>        2379/TCP,2380/TCP                           3m
+```
+</details>
+
+| Port | Name   | Description              |
+|------|--------|--------------------------|
+| 2379 | client | Client connections       |
+| 2380 | peer   | Raft peer communication  |
+
+### Connect and Verify
+
+Connect to an etcd pod and verify the cluster health:
+
+```bash
+kubectl exec -n demo etcd-cluster-etcd-0 -c etcd -- \
+  etcdctl endpoint health \
+  --endpoints=http://localhost:2379
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+http://localhost:2379 is healthy: successfully committed proposal: took = 2.345ms
+```
+</details>
+
+List all cluster members:
+
+```bash
+kubectl exec -n demo etcd-cluster-etcd-0 -c etcd -- \
+  etcdctl member list \
+  --endpoints=http://localhost:2379
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+2e7e91b4d4b2a6c1, started, etcd-cluster-etcd-0, http://etcd-cluster-etcd-0.etcd-cluster-etcd-headless.demo.svc.cluster.local:2380, http://etcd-cluster-etcd-0.etcd-cluster-etcd-headless.demo.svc.cluster.local:2379, false
+3a5f8d12c9e14b07, started, etcd-cluster-etcd-1, http://etcd-cluster-etcd-1.etcd-cluster-etcd-headless.demo.svc.cluster.local:2380, http://etcd-cluster-etcd-1.etcd-cluster-etcd-headless.demo.svc.cluster.local:2379, false
+8c1d4e7f2a9b3055, started, etcd-cluster-etcd-2, http://etcd-cluster-etcd-2.etcd-cluster-etcd-headless.demo.svc.cluster.local:2380, http://etcd-cluster-etcd-2.etcd-cluster-etcd-headless.demo.svc.cluster.local:2379, false
+```
+</details>
+
+Write and read a key to verify basic functionality:
+
+```bash
+# Write
+kubectl exec -n demo etcd-cluster-etcd-0 -c etcd -- \
+  etcdctl put test-key hello-kubeblocks \
+  --endpoints=http://localhost:2379
+
+# Read
+kubectl exec -n demo etcd-cluster-etcd-0 -c etcd -- \
+  etcdctl get test-key \
+  --endpoints=http://localhost:2379
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+OK
+test-key
+hello-kubeblocks
+```
+</details>
+
+### Connect from a TLS Cluster
+
+For TLS-enabled clusters, certificates are stored at `/etc/pki/tls/`:
+
+```bash
+kubectl exec -n demo etcd-cluster-tls-etcd-0 -c etcd -- \
+  etcdctl endpoint health \
+  --endpoints=https://localhost:2379 \
+  --cert=/etc/pki/tls/cert.pem \
+  --key=/etc/pki/tls/key.pem \
+  --cacert=/etc/pki/tls/ca.pem
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+https://localhost:2379 is healthy: successfully committed proposal: took = 2.123ms
+```
+</details>
+
+## Stop the etcd Cluster
+
+Stopping a cluster temporarily suspends operations while preserving all data and configuration:
+
+<Tabs>
+<TabItem value="OpsRequest" label="OpsRequest API" default>
+```bash
+kubectl apply -f https://raw.githubusercontent.com/apecloud/kubeblocks-addons/refs/heads/main/examples/etcd/stop.yaml
+```
+
+```yaml
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: etcd-stop
+  namespace: demo
+spec:
+  clusterName: etcd-cluster
+  type: Stop
+```
+</TabItem>
+
+<TabItem value="ClusterAPI" label="Cluster API">
+```bash
+kubectl patch cluster etcd-cluster -n demo --type='json' -p='[
+{
+  "op": "add",
+  "path": "/spec/componentSpecs/0/stop",
+  "value": true
+}
+]'
+```
+</TabItem>
+</Tabs>
+
+## Start the etcd Cluster
+
+<Tabs>
+<TabItem value="OpsRequest" label="OpsRequest API" default>
+```bash
+kubectl apply -f https://raw.githubusercontent.com/apecloud/kubeblocks-addons/refs/heads/main/examples/etcd/start.yaml
+```
+
+```yaml
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: etcd-start
+  namespace: demo
+spec:
+  clusterName: etcd-cluster
+  type: Start
+```
+</TabItem>
+
+<TabItem value="ClusterAPI" label="Cluster API">
+```bash
+kubectl patch cluster etcd-cluster -n demo --type='json' -p='[
+{
+  "op": "remove",
+  "path": "/spec/componentSpecs/0/stop"
+}
+]'
+```
+</TabItem>
+</Tabs>
+
+## Delete etcd Cluster
+
+Choose carefully based on your data retention needs:
+
+| Policy          | Resources Removed | Data Removed | Recommended For |
+|-----------------|-------------------|--------------|-----------------|
+| DoNotTerminate  | None              | None         | Critical production clusters |
+| Delete          | All resources     | PVCs deleted | Non-critical environments |
+| WipeOut         | All resources     | Everything*  | Test environments only |
+
+*Includes snapshots and backups in external storage
+
+For test environments, use this complete cleanup:
+
+```bash
+kubectl patch cluster etcd-cluster -p '{"spec":{"terminationPolicy":"WipeOut"}}' --type="merge" -n demo
+kubectl delete cluster etcd-cluster -n demo
+```

@@ -1,0 +1,125 @@
+---
+title: Switchover for etcd Clusters with KubeBlocks
+description: Learn how to perform a manual leader switchover for an etcd cluster managed by KubeBlocks.
+keywords: [KubeBlocks, etcd, Switchover, Leader Election, Failover, Kubernetes]
+sidebar_position: 5
+sidebar_label: Switchover
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Switchover for etcd Clusters with KubeBlocks
+
+This guide explains how to perform a manual leader switchover for an etcd cluster managed by KubeBlocks.
+
+A switchover transfers the Raft leader role from the current leader to another member, useful for:
+- Planned maintenance of the leader node
+- Load balancing across cluster members
+- Testing failover behavior
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+## Check the Current Leader
+
+```bash
+kubectl get pods -n demo -l app.kubernetes.io/instance=etcd-cluster -L kubeblocks.io/role
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                  READY   STATUS    RESTARTS   AGE   ROLE
+etcd-cluster-etcd-0   2/2     Running   0          5m    follower
+etcd-cluster-etcd-1   2/2     Running   0          5m    follower
+etcd-cluster-etcd-2   2/2     Running   0          5m    leader
+```
+</details>
+
+## Perform Switchover
+
+Transfer the leader role away from `etcd-cluster-etcd-2`:
+
+```yaml
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: etcd-switchover
+  namespace: demo
+spec:
+  clusterName: etcd-cluster
+  type: Switchover
+  switchover:
+  - componentName: etcd
+    # The instance that will give up the leader role
+    instanceName: etcd-cluster-etcd-2
+    # Omit candidateName to let KubeBlocks choose the new leader automatically
+    # candidateName: etcd-cluster-etcd-0
+```
+
+Apply it:
+```bash
+kubectl apply -f https://raw.githubusercontent.com/apecloud/kubeblocks-addons/refs/heads/main/examples/etcd/switchover.yaml
+```
+
+Monitor the progress:
+```bash
+kubectl get ops etcd-switchover -n demo -w
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME              TYPE         CLUSTER        STATUS    PROGRESS   AGE
+etcd-switchover   Switchover   etcd-cluster   Running   0/1        5s
+etcd-switchover   Switchover   etcd-cluster   Succeed   1/1        5s
+```
+</details>
+
+## Verify Switchover
+
+```bash
+kubectl get pods -n demo -l app.kubernetes.io/instance=etcd-cluster -L kubeblocks.io/role
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                  READY   STATUS    RESTARTS   AGE   ROLE
+etcd-cluster-etcd-0   2/2     Running   0          6m    follower
+etcd-cluster-etcd-1   2/2     Running   0          6m    follower
+etcd-cluster-etcd-2   2/2     Running   0          6m    follower
+etcd-cluster-etcd-0   2/2     Running   0          7m    leader
+```
+</details>
+
+The leader role has been transferred. Confirm via etcdctl:
+
+```bash
+kubectl exec -n demo etcd-cluster-etcd-0 -c etcd -- \
+  etcdctl endpoint status \
+  --endpoints=http://localhost:2379 \
+  -w table
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
++------------------------+------------------+--------+---------+-----------+------------+
+|        ENDPOINT        |        ID        | VERSION | DB SIZE | IS LEADER | RAFT TERM |
++------------------------+------------------+--------+---------+-----------+------------+
+| http://localhost:2379  | 2e7e91b4d4b2a6c1 |  3.6.1 |   20 kB |      true |         5 |
++------------------------+------------------+--------+---------+-----------+------------+
+```
+</details>
+
+## Cleanup
+
+```bash
+kubectl delete cluster etcd-cluster -n demo
+kubectl delete ns demo
+```

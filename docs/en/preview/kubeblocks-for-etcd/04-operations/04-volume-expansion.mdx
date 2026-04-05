@@ -1,0 +1,129 @@
+---
+title: Volume Expansion for etcd Clusters with KubeBlocks
+description: Learn how to expand the storage volume of an etcd cluster managed by KubeBlocks without downtime.
+keywords: [KubeBlocks, etcd, Volume Expansion, Storage, PVC, Kubernetes]
+sidebar_position: 4
+sidebar_label: Volume Expansion
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Volume Expansion for etcd Clusters with KubeBlocks
+
+This guide explains how to expand the storage volume of an etcd cluster managed by KubeBlocks.
+
+:::note
+Volume expansion requires that the underlying `StorageClass` supports volume expansion (`allowVolumeExpansion: true`). You can only increase volume size, not decrease it.
+:::
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+## Check Current Storage
+
+```bash
+kubectl get pvc -n demo -l app.kubernetes.io/instance=etcd-cluster
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                       STATUS   VOLUME       CAPACITY   ACCESS MODES   STORAGECLASS    AGE
+data-etcd-cluster-etcd-0   Bound    pvc-xxx      20Gi       RWO            kb-default-sc   10m
+data-etcd-cluster-etcd-1   Bound    pvc-xxx      20Gi       RWO            kb-default-sc   10m
+data-etcd-cluster-etcd-2   Bound    pvc-xxx      20Gi       RWO            kb-default-sc   10m
+```
+</details>
+
+## Apply Volume Expansion
+
+<Tabs>
+
+  <TabItem value="opsRequest" label="OpsRequest API" default>
+
+  Expand the `data` volume from 20Gi to 30Gi:
+
+  ```yaml
+  apiVersion: operations.kubeblocks.io/v1alpha1
+  kind: OpsRequest
+  metadata:
+    name: etcd-volumeexpansion
+    namespace: demo
+  spec:
+    clusterName: etcd-cluster
+    type: VolumeExpansion
+    volumeExpansion:
+    - componentName: etcd
+      volumeClaimTemplates:
+      - name: data
+        storage: 30Gi
+  ```
+
+  Apply it:
+  ```bash
+  kubectl apply -f https://raw.githubusercontent.com/apecloud/kubeblocks-addons/refs/heads/main/examples/etcd/volumeexpand.yaml
+  ```
+
+  Monitor the progress:
+  ```bash
+  kubectl get ops etcd-volumeexpansion -n demo -w
+  ```
+
+  <details open>
+  <summary>Example Output</summary>
+  ```text
+  NAME                   TYPE              CLUSTER        STATUS    PROGRESS   AGE
+  etcd-volumeexpansion   VolumeExpansion   etcd-cluster   Running   0/3        10s
+  etcd-volumeexpansion   VolumeExpansion   etcd-cluster   Running   1/3        20s
+  etcd-volumeexpansion   VolumeExpansion   etcd-cluster   Running   2/3        33s
+  etcd-volumeexpansion   VolumeExpansion   etcd-cluster   Running   3/3        45s
+  etcd-volumeexpansion   VolumeExpansion   etcd-cluster   Succeed   3/3        47s
+  ```
+  </details>
+
+  </TabItem>
+
+  <TabItem value="ClusterAPI" label="Cluster API">
+
+  Update the storage request in the Cluster spec:
+
+  ```bash
+  kubectl patch cluster etcd-cluster -n demo --type=json \
+    -p='[{"op": "replace", "path": "/spec/componentSpecs/0/volumeClaimTemplates/0/spec/resources/requests/storage", "value": "30Gi"}]'
+  ```
+
+  Monitor the cluster status:
+  ```bash
+  kubectl get cluster etcd-cluster -n demo -w
+  ```
+
+  </TabItem>
+
+</Tabs>
+
+## Verify Expansion
+
+```bash
+kubectl get pvc -n demo -l app.kubernetes.io/instance=etcd-cluster
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                       STATUS   VOLUME       CAPACITY   ACCESS MODES   STORAGECLASS    AGE
+data-etcd-cluster-etcd-0   Bound    pvc-xxx      30Gi       RWO            kb-default-sc   12m
+data-etcd-cluster-etcd-1   Bound    pvc-xxx      30Gi       RWO            kb-default-sc   12m
+data-etcd-cluster-etcd-2   Bound    pvc-xxx      30Gi       RWO            kb-default-sc   12m
+```
+</details>
+
+## Cleanup
+
+```bash
+kubectl delete cluster etcd-cluster -n demo
+kubectl delete ns demo
+```

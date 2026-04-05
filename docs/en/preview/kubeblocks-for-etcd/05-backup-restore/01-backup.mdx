@@ -1,0 +1,159 @@
+---
+title: Backup an etcd Cluster
+description: Learn how to create on-demand and scheduled backups for etcd clusters managed by KubeBlocks using the datafile backup method.
+keywords: [etcd, Backup, KubeBlocks, etcdctl, datafile, Kubernetes]
+sidebar_position: 1
+sidebar_label: Backup
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Backup an etcd Cluster
+
+This guide demonstrates how to create backups for etcd clusters managed by KubeBlocks using the **datafile** backup method.
+
+## Backup Method
+
+KubeBlocks etcd uses **datafile** for full backups:
+
+| Method      | Description                                                                      |
+|-------------|----------------------------------------------------------------------------------|
+| `datafile`  | Saves an etcd snapshot using `etcdctl snapshot save` to a backup repository. Runs on the leader node. |
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+- A **BackupRepo** configured and in `Ready` state. See [Create a BackupRepo](../../kubeblocks-for-postgresql/05-backup-restore/01-create-backuprepo) for setup instructions.
+
+## Verify Backup Configuration
+
+### Check BackupRepo
+
+```bash
+kubectl get backuprepo
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME         STATUS   STORAGEPROVIDER   ACCESSMETHOD   DEFAULT   AGE
+minio-repo   Ready    minio             Tool           true      6h
+```
+</details>
+
+### Check BackupPolicy
+
+KubeBlocks automatically generates a `BackupPolicy` for each etcd cluster:
+
+```bash
+kubectl get backuppolicy -n demo -l app.kubernetes.io/instance=etcd-cluster
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                              BACKUP-REPO   STATUS      AGE
+etcd-cluster-etcd-backup-policy                Available   10m
+```
+</details>
+
+etcd supports one backup method: `datafile`.
+
+## Create an On-Demand Backup
+
+```yaml
+apiVersion: dataprotection.kubeblocks.io/v1alpha1
+kind: Backup
+metadata:
+  name: etcd-cluster-backup
+  namespace: demo
+spec:
+  # Backup method: datafile
+  backupMethod: datafile
+  backupPolicyName: etcd-cluster-etcd-backup-policy
+  # `Retain`: backup data is kept when the Backup CR is deleted
+  # `Delete`: backup data is removed when the Backup CR is deleted
+  deletionPolicy: Delete
+```
+
+Apply it:
+```bash
+kubectl apply -f https://raw.githubusercontent.com/apecloud/kubeblocks-addons/refs/heads/main/examples/etcd/backup.yaml
+```
+
+## Monitor Backup Progress
+
+```bash
+kubectl get backup etcd-cluster-backup -n demo -w
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                   POLICY                             METHOD     REPO         STATUS      TOTAL-SIZE   DURATION   DELETION-POLICY   CREATION-TIME
+etcd-cluster-backup    etcd-cluster-etcd-backup-policy    datafile   minio-repo   Running     0            0s         Delete            2026-04-03T17:20:00Z
+etcd-cluster-backup    etcd-cluster-etcd-backup-policy    datafile   minio-repo   Completed   853          10s        Delete            2026-04-03T17:20:00Z
+```
+</details>
+
+A `Completed` status means the backup succeeded.
+
+## Configure Scheduled Backups
+
+Enable automatic scheduled backups by updating the `BackupSchedule`:
+
+```bash
+kubectl patch backupschedule etcd-cluster-etcd-backup-schedule -n demo \
+  --type merge \
+  -p '{"spec":{"schedules":[{"backupMethod":"datafile","cronExpression":"0 2 * * *","enabled":true,"retentionPeriod":"7d"}]}}'
+```
+
+This schedules a daily backup at 2:00 AM with a 7-day retention period.
+
+Verify:
+```bash
+kubectl get backupschedule etcd-cluster-etcd-backup-schedule -n demo -oyaml \
+  | grep -A5 "schedules:"
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+  schedules:
+  - backupMethod: datafile
+    cronExpression: 0 2 * * *
+    enabled: true
+    retentionPeriod: 7d
+```
+</details>
+
+## Troubleshooting
+
+If a backup fails or stays in `Running` state:
+
+1. Check the Backup resource for errors:
+   ```bash
+   kubectl describe backup etcd-cluster-backup -n demo
+   ```
+
+2. Check the backup job:
+   ```bash
+   kubectl get job -n demo -l app.kubernetes.io/instance=etcd-cluster,app.kubernetes.io/managed-by=kubeblocks-dataprotection
+   ```
+
+3. Check job pod logs:
+   ```bash
+   kubectl logs -n demo -l app.kubernetes.io/instance=etcd-cluster,app.kubernetes.io/managed-by=kubeblocks-dataprotection
+   ```
+
+## Cleanup
+
+```bash
+kubectl delete backup etcd-cluster-backup -n demo
+kubectl delete cluster etcd-cluster -n demo
+kubectl delete ns demo
+```

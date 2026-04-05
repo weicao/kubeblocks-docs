@@ -1,0 +1,179 @@
+---
+title: Manage etcd Services in KubeBlocks
+description: Learn how to expose etcd services externally using LoadBalancer and how to disable external access when no longer needed.
+keywords: [KubeBlocks, etcd, LoadBalancer, Expose, External Service, Kubernetes]
+sidebar_position: 7
+sidebar_label: Manage Services
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Manage etcd Services in KubeBlocks
+
+This guide explains how to expose an etcd cluster's client endpoint externally using a cloud provider LoadBalancer, and how to disable it when no longer needed.
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+## Default Services
+
+KubeBlocks creates a single headless service for each etcd cluster:
+
+```bash
+kubectl get service -n demo | grep etcd-cluster
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                          TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)                     AGE
+etcd-cluster-etcd-headless    ClusterIP   None         <none>        2379/TCP,2380/TCP            5m
+```
+</details>
+
+| Port | Name   | Description              |
+|------|--------|--------------------------|
+| 2379 | client | Client connections       |
+| 2380 | peer   | Raft peer communication  |
+
+The headless service provides DNS-based discovery: each member is reachable at `<pod-name>.etcd-cluster-etcd-headless.<namespace>.svc.cluster.local:2379`.
+
+For in-cluster access, this headless service is sufficient. External exposure is only needed when clients outside the Kubernetes cluster need to connect.
+
+## Expose the etcd Service Externally
+
+### Option 1: Cluster-level LoadBalancer (Client Port Only)
+
+This creates a single LoadBalancer that routes to all etcd members for client connections:
+
+```yaml
+apiVersion: apps.kubeblocks.io/v1
+kind: Cluster
+metadata:
+  name: etcd-cluster-lb
+  namespace: demo
+spec:
+  terminationPolicy: Delete
+  # Cluster-level service for client access
+  services:
+    - name: client
+      serviceName: client
+      spec:
+        type: LoadBalancer
+        ports:
+          - port: 2379
+            targetPort: 2379
+      componentSelector: etcd
+  componentSpecs:
+    - name: etcd
+      componentDef: etcd
+      serviceVersion: 3.6.1
+      replicas: 3
+      resources:
+        limits:
+          cpu: "0.5"
+          memory: "0.5Gi"
+        requests:
+          cpu: "0.5"
+          memory: "0.5Gi"
+      volumeClaimTemplates:
+        - name: data
+          spec:
+            storageClassName: ""
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 20Gi
+```
+
+Apply it:
+```bash
+kubectl apply -f https://raw.githubusercontent.com/apecloud/kubeblocks-addons/refs/heads/main/examples/etcd/cluster-with-lb.yaml
+```
+
+### Option 2: Per-Pod LoadBalancer (Peer Communication)
+
+For cross-region or multi-cluster deployments where etcd peers need external connectivity, use per-pod LoadBalancer services:
+
+```yaml
+componentSpecs:
+  - name: etcd
+    services:
+      - name: peer
+        serviceType: LoadBalancer
+        podService: true   # creates one LoadBalancer per pod
+```
+
+This is included in `cluster-with-lb.yaml`. Each pod gets its own external IP for peer communication.
+
+:::note
+**Cloud Provider Annotations**
+
+Add cloud-specific annotations to the `services` entry:
+
+- **AWS**
+  ```yaml
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: nlb
+    service.beta.kubernetes.io/aws-load-balancer-internal: "false"
+  ```
+- **Azure**
+  ```yaml
+  annotations:
+    service.beta.kubernetes.io/azure-load-balancer-internal: "false"
+  ```
+- **GCP**
+  ```yaml
+  annotations:
+    cloud.google.com/l4-rbs: "enabled"
+  ```
+- **Alibaba Cloud**
+  ```yaml
+  annotations:
+    service.beta.kubernetes.io/alibaba-cloud-loadbalancer-address-type: "internet"
+  ```
+:::
+
+## Verify the External Service
+
+```bash
+kubectl get service -n demo -l app.kubernetes.io/instance=etcd-cluster-lb
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                          TYPE           CLUSTER-IP      EXTERNAL-IP                                                 PORT(S)          AGE
+etcd-cluster-lb-etcd-client   LoadBalancer   172.20.95.145   a3f9688f...elb.ap-southeast-1.amazonaws.com                2379:30411/TCP   68s
+etcd-cluster-lb-etcd-headless ClusterIP      None            <none>                                                      2379/TCP,2380/TCP 68s
+```
+</details>
+
+The LoadBalancer DNS name may take 2–5 minutes to become resolvable after provisioning.
+
+## Connect via the External Endpoint
+
+Once the DNS resolves, connect using `etcdctl`:
+
+```bash
+etcdctl endpoint health --endpoints=<EXTERNAL-IP>:2379
+```
+
+Expected response: `<EXTERNAL-IP>:2379 is healthy`
+
+Or test with netcat:
+```bash
+echo "" | nc <EXTERNAL-IP> 2379
+```
+
+## Cleanup
+
+```bash
+kubectl delete cluster etcd-cluster-lb -n demo
+kubectl delete ns demo
+```
