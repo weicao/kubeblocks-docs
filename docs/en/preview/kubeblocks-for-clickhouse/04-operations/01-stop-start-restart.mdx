@@ -1,0 +1,126 @@
+---
+title: Stop, Start, and Restart a ClickHouse Cluster
+description: Learn how to stop, start, and restart ClickHouse clusters managed by KubeBlocks.
+keywords: [KubeBlocks, ClickHouse, stop, start, restart]
+sidebar_position: 1
+sidebar_label: Stop / Start / Restart
+---
+
+# Stop, Start, and Restart a ClickHouse Cluster
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+## Stop the Cluster
+
+Stopping a cluster suspends all pods while retaining PVCs and data. Useful for saving compute costs during idle periods.
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: clickhouse-stop
+  namespace: demo
+spec:
+  clusterName: clickhouse-cluster
+  type: Stop
+EOF
+```
+
+Monitor progress:
+
+```bash
+kubectl get cluster clickhouse-cluster -n demo -w
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                  CLUSTER-DEFINITION   TERMINATION-POLICY   STATUS     AGE
+clickhouse-cluster    clickhouse           Delete               Stopping   10s
+clickhouse-cluster    clickhouse           Delete               Stopped    45s
+```
+</details>
+
+## Start the Cluster
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: clickhouse-start
+  namespace: demo
+spec:
+  clusterName: clickhouse-cluster
+  type: Start
+EOF
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                  CLUSTER-DEFINITION   TERMINATION-POLICY   STATUS    AGE
+clickhouse-cluster    clickhouse           Delete               Running   2m
+```
+</details>
+
+## Restart a Component
+
+Restart the ClickHouse shard component:
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: clickhouse-restart
+  namespace: demo
+spec:
+  clusterName: clickhouse-cluster
+  type: Restart
+  restart:
+    - componentName: clickhouse
+EOF
+```
+
+For clusters with Keeper, restart the Keeper component:
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: clickhouse-restart-keeper
+  namespace: demo
+spec:
+  clusterName: clickhouse-cluster
+  type: Restart
+  restart:
+    - componentName: ch-keeper
+EOF
+```
+
+Monitor the OpsRequest:
+
+```bash
+kubectl get opsrequest -n demo -w
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                  TYPE      CLUSTER              STATUS    PROGRESS   AGE
+clickhouse-restart    Restart   clickhouse-cluster   Succeed   1/1        30s
+```
+</details>
+
+## Cleanup
+
+```bash
+kubectl delete opsrequest clickhouse-stop clickhouse-start clickhouse-restart clickhouse-restart-keeper -n demo --ignore-not-found
+```

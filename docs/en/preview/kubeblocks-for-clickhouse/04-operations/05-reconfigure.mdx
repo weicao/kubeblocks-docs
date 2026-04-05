@@ -1,0 +1,89 @@
+---
+title: Reconfigure ClickHouse Parameters
+description: Learn how to dynamically update ClickHouse configuration parameters in KubeBlocks.
+keywords: [KubeBlocks, ClickHouse, reconfigure, parameters, dynamic]
+sidebar_position: 5
+sidebar_label: Reconfigure
+---
+
+# Reconfigure ClickHouse Parameters
+
+KubeBlocks supports dynamic reconfiguration of ClickHouse server parameters. Changes are applied without restarting pods for parameters that support live reload.
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+## Update a ClickHouse Parameter
+
+The following example updates `clickhouse.profiles.web.max_bytes_to_read`, which limits the maximum bytes read per query for the `web` profile:
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: ch-reconfiguring
+  namespace: demo
+spec:
+  clusterName: clickhouse-cluster
+  type: Reconfiguring
+  reconfigures:
+    - componentName: clickhouse
+      parameters:
+        - key: clickhouse.profiles.web.max_bytes_to_read
+          value: "200000000000"
+EOF
+```
+
+Monitor progress:
+
+```bash
+kubectl get opsrequest ch-reconfiguring -n demo -w
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME               TYPE            CLUSTER              STATUS    PROGRESS   AGE
+ch-reconfiguring   Reconfiguring   clickhouse-cluster   Succeed   -/-        10s
+```
+</details>
+
+Verify the parameter was applied:
+
+```bash
+CH_POD=$(kubectl get pods -n demo -l app.kubernetes.io/instance=clickhouse-cluster \
+  -o jsonpath='{.items[0].metadata.name}')
+
+kubectl exec -n demo $CH_POD -c clickhouse -- \
+  clickhouse-client --user admin --password password123 \
+  --query "SELECT name, value FROM system.settings WHERE name = 'max_bytes_to_read'"
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+max_bytes_to_read	200000000000
+```
+</details>
+
+## Immutable Parameters
+
+The following parameters cannot be changed via OpsRequest (they require a cluster rebuild):
+
+- `clickhouse.http_port`
+- `clickhouse.https_port`
+- `clickhouse.tcp_port`
+- `clickhouse.interserver_http_port`
+- `clickhouse.listen_host`
+- `clickhouse.macros`
+- `clickhouse.logger`
+
+## Cleanup
+
+```bash
+kubectl delete opsrequest ch-reconfiguring -n demo --ignore-not-found
+```

@@ -1,0 +1,95 @@
+---
+title: Vertical Scaling for ClickHouse
+description: Learn how to adjust CPU and memory resources for ClickHouse components in KubeBlocks.
+keywords: [KubeBlocks, ClickHouse, vertical scaling, CPU, memory]
+sidebar_position: 2
+sidebar_label: Vertical Scaling
+---
+
+# Vertical Scaling for ClickHouse
+
+Vertical scaling adjusts the CPU and memory allocated to a component's pods. KubeBlocks performs a rolling restart to apply the new resource limits.
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+## Scale the ClickHouse Component
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: clickhouse-verticalscaling
+  namespace: demo
+spec:
+  clusterName: clickhouse-cluster
+  type: VerticalScaling
+  verticalScaling:
+    - componentName: clickhouse
+      requests:
+        cpu: "1"
+        memory: "2Gi"
+      limits:
+        cpu: "1"
+        memory: "2Gi"
+EOF
+```
+
+Monitor progress:
+
+```bash
+kubectl get opsrequest clickhouse-verticalscaling -n demo -w
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                        TYPE              CLUSTER              STATUS    PROGRESS   AGE
+clickhouse-verticalscaling  VerticalScaling   clickhouse-cluster   Succeed   1/1        60s
+```
+</details>
+
+## Scale the ClickHouse Keeper Component
+
+For clusters using the `cluster` topology, scale the Keeper separately:
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: clickhouse-verticalscaling-keeper
+  namespace: demo
+spec:
+  clusterName: clickhouse-cluster
+  type: VerticalScaling
+  verticalScaling:
+    - componentName: ch-keeper
+      requests:
+        cpu: "0.5"
+        memory: "1Gi"
+      limits:
+        cpu: "0.5"
+        memory: "1Gi"
+EOF
+```
+
+Verify the new resource allocation:
+
+```bash
+CH_POD=$(kubectl get pods -n demo -l app.kubernetes.io/instance=clickhouse-cluster \
+  -l apps.kubeblocks.io/component-name!=ch-keeper \
+  -o jsonpath='{.items[0].metadata.name}')
+kubectl get pod $CH_POD -n demo \
+  -o jsonpath='{.spec.containers[0].resources}' | python3 -m json.tool
+```
+
+## Cleanup
+
+```bash
+kubectl delete opsrequest clickhouse-verticalscaling clickhouse-verticalscaling-keeper -n demo --ignore-not-found
+```

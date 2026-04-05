@@ -1,0 +1,260 @@
+---
+title: ClickHouse Quickstart
+description: Deploy and connect to a ClickHouse cluster managed by KubeBlocks.
+keywords: [KubeBlocks, ClickHouse, quickstart, deploy, connect, OLAP]
+sidebar_position: 2
+sidebar_label: Quickstart
+---
+
+# ClickHouse Quickstart
+
+This guide walks you through deploying a ClickHouse cluster with KubeBlocks, connecting to it, and running a test query.
+
+## Prerequisites
+
+- A functional Kubernetes cluster (v1.21+ recommended)
+- `kubectl` v1.21+ installed and configured with cluster access
+- KubeBlocks installed ([installation guide](../user_docs/overview/install-kubeblocks))
+- ClickHouse Add-on enabled
+
+## Create the Admin Secret
+
+KubeBlocks does not auto-generate the ClickHouse admin password. Create a Secret with the desired password **before** deploying the cluster:
+
+```bash
+kubectl create ns demo
+
+kubectl apply -f - <<EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: udf-account-info
+  namespace: demo
+type: Opaque
+data:
+  password: cGFzc3dvcmQxMjM=   # 'password123' in base64
+EOF
+```
+
+To use a different password:
+```bash
+echo -n 'your-password' | base64
+```
+
+## Deploy a Standalone Cluster
+
+The `standalone` topology deploys a single ClickHouse shard without a coordinator. Suitable for development and simple analytics:
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: apps.kubeblocks.io/v1
+kind: Cluster
+metadata:
+  name: clickhouse-cluster
+  namespace: demo
+spec:
+  clusterDef: clickhouse
+  topology: standalone
+  terminationPolicy: Delete
+  shardings:
+    - name: clickhouse
+      shards: 1
+      template:
+        name: clickhouse
+        replicas: 1
+        systemAccounts:
+          - name: admin
+            secretRef:
+              name: udf-account-info
+              namespace: demo
+        resources:
+          limits:
+            cpu: "1"
+            memory: "2Gi"
+          requests:
+            cpu: "0.5"
+            memory: "1Gi"
+        volumeClaimTemplates:
+          - name: data
+            spec:
+              accessModes:
+                - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 10Gi
+EOF
+```
+
+## Deploy a Cluster with ClickHouse Keeper
+
+The `cluster` topology adds ClickHouse Keeper for replication coordination. Required for `ReplicatedMergeTree` tables:
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: apps.kubeblocks.io/v1
+kind: Cluster
+metadata:
+  name: clickhouse-cluster
+  namespace: demo
+spec:
+  clusterDef: clickhouse
+  topology: cluster
+  terminationPolicy: Delete
+  componentSpecs:
+    - name: ch-keeper
+      componentDef: clickhouse-keeper-1
+      replicas: 1
+      resources:
+        limits:
+          cpu: "0.5"
+          memory: "1Gi"
+        requests:
+          cpu: "0.5"
+          memory: "1Gi"
+      systemAccounts:
+        - name: admin
+          secretRef:
+            name: udf-account-info
+            namespace: demo
+      volumeClaimTemplates:
+        - name: data
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 10Gi
+  shardings:
+    - name: clickhouse
+      shards: 1
+      template:
+        name: clickhouse
+        componentDef: clickhouse-1
+        replicas: 1
+        systemAccounts:
+          - name: admin
+            secretRef:
+              name: udf-account-info
+              namespace: demo
+        resources:
+          limits:
+            cpu: "1"
+            memory: "2Gi"
+          requests:
+            cpu: "0.5"
+            memory: "1Gi"
+        volumeClaimTemplates:
+          - name: data
+            spec:
+              accessModes:
+                - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 10Gi
+EOF
+```
+
+:::note
+For production, use at least 3 Keeper replicas (quorum requires `(N/2)+1` nodes) and 2+ ClickHouse shards.
+:::
+
+## Verify Cluster Status
+
+```bash
+kubectl get cluster clickhouse-cluster -n demo
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                  CLUSTER-DEFINITION   TERMINATION-POLICY   STATUS    AGE
+clickhouse-cluster    clickhouse           Delete               Running   5m
+```
+</details>
+
+Wait until `STATUS` is `Running`. Check the pods:
+
+```bash
+kubectl get pods -n demo -l app.kubernetes.io/instance=clickhouse-cluster
+```
+
+<details open>
+<summary>Example Output (standalone)</summary>
+```text
+NAME                               READY   STATUS    RESTARTS   AGE
+clickhouse-cluster-clickhouse-0-0  2/2     Running   0          5m
+```
+</details>
+
+:::note
+ClickHouse shard pod names follow the pattern `{cluster}-clickhouse-{shard-hash}-{pod-index}`. To discover shard component names:
+```bash
+kubectl get component -n demo -l app.kubernetes.io/instance=clickhouse-cluster
+```
+:::
+
+## Get Connection Info
+
+```bash
+kubectl get service -n demo -l app.kubernetes.io/instance=clickhouse-cluster
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                                       TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+clickhouse-cluster-clickhouse-0-headless   ClusterIP   None            <none>        ...        5m
+clickhouse-cluster-clickhouse-0            ClusterIP   10.100.xx.xx    <none>        ...        5m
+```
+</details>
+
+## Get Credentials
+
+Retrieve the admin password from the secret you created:
+
+```bash
+kubectl get secret -n demo udf-account-info \
+  -o jsonpath='{.data.password}' | base64 -d && echo
+```
+
+## Connect to ClickHouse
+
+Port-forward the HTTP interface:
+
+```bash
+kubectl port-forward -n demo svc/clickhouse-cluster-clickhouse-0 8123:8123
+```
+
+Run a test query using `curl`:
+
+```bash
+curl 'http://localhost:8123/' \
+  --user 'admin:password123' \
+  --data 'SELECT version()'
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+25.4.4.33
+```
+</details>
+
+Or connect via the native client inside the pod:
+
+```bash
+CH_POD=$(kubectl get pods -n demo -l app.kubernetes.io/instance=clickhouse-cluster \
+  -o jsonpath='{.items[0].metadata.name}')
+
+kubectl exec -n demo $CH_POD -c clickhouse -- \
+  clickhouse-client --user admin --password password123 \
+  --query 'SELECT version()'
+```
+
+## Delete the Cluster
+
+```bash
+kubectl delete cluster clickhouse-cluster -n demo
+kubectl delete secret udf-account-info -n demo
+kubectl delete ns demo
+```
