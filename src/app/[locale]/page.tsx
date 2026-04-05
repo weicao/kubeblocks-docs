@@ -6,6 +6,9 @@ import { Box, Divider } from '@mui/material';
 import type { Metadata } from 'next';
 import Banner from './banner';
 import BlogsPreview from './blogs-preview';
+import DatabasesShowcase from './databases-showcase';
+import GithubStats from './github-stats';
+import QuickStart from './quick-start';
 import Contact from './contact';
 import Customers from './customers';
 import { Evaluate } from './Evaluate';
@@ -121,12 +124,14 @@ export default async function HomePage({
       />
       <Box style={{ minHeight: 'var(--container-min-height)' }}>
         <Banner />
-        <Divider />
+        <GithubStats />
+        <DatabasesShowcase />
         <Customers />
         <Evaluate />
         <Divider />
         <WhyNeedKubeBlocks />
         <Features />
+        <QuickStart />
         <Contact />
         <BlogsPreview blogs={blogs} />
       </Box>
