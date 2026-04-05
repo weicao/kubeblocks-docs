@@ -14,7 +14,7 @@ import {
 } from '@/components/icons';
 import { Link } from '@/components/Link';
 import { useI18n } from '@/locales/client';
-import { ExpandMore, GitHub } from '@mui/icons-material';
+import { AccountTree, ExpandMore, GitHub, Inventory2, Rocket, Storage, ViewInAr } from '@mui/icons-material';
 import {
   Box,
   Button,
@@ -78,6 +78,31 @@ export default function DatabasesNav() {
       title: 'ElasticSearch',
       icon: <ElasticSearchIcon {...iconProps} />,
       href: '/docs/preview/kubeblocks-for-elasticsearch',
+    },
+    {
+      title: 'ClickHouse',
+      icon: <Storage {...iconProps} />,
+      href: '/docs/preview/kubeblocks-for-clickhouse',
+    },
+    {
+      title: 'RocketMQ',
+      icon: <Rocket {...iconProps} />,
+      href: '/docs/preview/kubeblocks-for-rocketmq',
+    },
+    {
+      title: 'etcd',
+      icon: <AccountTree {...iconProps} />,
+      href: '/docs/preview/kubeblocks-for-etcd',
+    },
+    {
+      title: 'ZooKeeper',
+      icon: <ViewInAr {...iconProps} />,
+      href: '/docs/preview/kubeblocks-for-zookeeper',
+    },
+    {
+      title: 'MinIO',
+      icon: <Inventory2 {...iconProps} />,
+      href: '/docs/preview/kubeblocks-for-minio',
     },
     {
       title: 'More Add-ons',
