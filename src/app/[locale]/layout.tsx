@@ -6,6 +6,7 @@ import ScrollTop from '@/components/ScrollTop';
 import { Box, CssBaseline, Toolbar } from '@mui/material';
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
 import { GoogleAnalytics } from '@next/third-parties/google';
+import { BOTTOM_NAV_HEIGHT } from './ElevationScrollAppBar';
 import type { Metadata } from 'next';
 import { setStaticParamsLocale } from 'next-international/server';
 import { Geist } from 'next/font/google';
@@ -85,7 +86,7 @@ export default async function RootLayout({
                 <MessageBox />
                 <ElevationScrollAppBar />
                 <Toolbar />
-                <Box component="main">{children}</Box>
+                <Box component="main" sx={{ pb: { xs: `${BOTTOM_NAV_HEIGHT}px`, md: 0 } }}>{children}</Box>
                 <ScrollTop />
               </MuiThemeProvider>
             </NextThemeProvider>

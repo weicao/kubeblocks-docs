@@ -7,12 +7,15 @@ import { useI18n } from '@/locales/client';
 import { useGlobalStore } from '@/store/global';
 import {
   AccountTree,
-  ExpandLess,
-  ExpandMore,
+  Article as ArticleIcon,
+  Extension as ExtensionIcon,
+  Feed as FeedIcon,
   GitHub,
   Inventory2,
   LaunchOutlined,
-  Menu as MenuIcon,
+  List as ListIcon,
+  MenuOpen as MenuOpenIcon,
+  MoreHoriz as MoreHorizIcon,
   Rocket,
   Search as SearchIcon,
   Storage,
@@ -21,6 +24,8 @@ import {
 import {
   AppBar,
   AppBarProps,
+  BottomNavigation,
+  BottomNavigationAction,
   Box,
   Button,
   Collapse,
@@ -32,13 +37,16 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  Paper,
   Stack,
   TextField,
   Toolbar,
+  Typography,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
 import useScrollTrigger from '@mui/material/useScrollTrigger';
+import Slide from '@mui/material/Slide';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -112,28 +120,46 @@ const searchBarStyles = {
   },
 };
 
-// Mobile drawer width
-const DRAWER_WIDTH = 280;
+// Height of bottom nav bar
+export const BOTTOM_NAV_HEIGHT = 56;
 
-function MobileDrawer({
-  open,
-  onClose,
-  onOpenSearch,
-}: {
-  open: boolean;
-  onClose: () => void;
-  onOpenSearch: () => void;
-}) {
+// ── Bottom sheet: Documentation ──────────────────────────────────────────────
+function DocsSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const t = useI18n();
-  const [docsOpen, setDocsOpen] = useState(false);
-  const [dbOpen, setDbOpen] = useState(false);
+  const items = [
+    { title: t('navigation.user'), icon: <PermIdentityOutlined />, href: '/docs/preview/user_docs' },
+    { title: 'KubeBlocks CLI', icon: <DataObjectOutlined />, href: '/docs/preview/cli' },
+    { title: 'API Reference', icon: <DataArray />, href: '/docs/preview/user_docs/references/api-reference/cluster' },
+    { title: t('navigation.reports'), icon: <PestControlOutlined />, href: '/reports' },
+  ];
+  return (
+    <Drawer anchor="bottom" open={open} onClose={onClose} sx={{ display: { xs: 'block', md: 'none' } }}>
+      <Box sx={{ pb: `${BOTTOM_NAV_HEIGHT}px` }}>
+        <Typography variant="overline" sx={{ px: 2, pt: 2, pb: 1, display: 'block', color: 'text.secondary' }}>
+          {t('navigation.documentation')}
+        </Typography>
+        <Divider />
+        <List dense>
+          {items.map((item) => (
+            <ListItemButton key={item.href} component={Link} href={item.href} onClick={onClose} sx={{ py: 1.5 }}>
+              <ListItemIcon>{item.icon}</ListItemIcon>
+              <ListItemText primary={item.title} />
+            </ListItemButton>
+          ))}
+        </List>
+      </Box>
+    </Drawer>
+  );
+}
+
+// ── Bottom sheet: Add-ons ─────────────────────────────────────────────────────
+function AddonsSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useI18n();
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({});
+  const toggle = (name: string) => setOpenCategories((p) => ({ ...p, [name]: !p[name] }));
+
   const iconProps = { sx: { fontSize: 22 } };
-
-  const toggleCategory = (name: string) =>
-    setOpenCategories((prev) => ({ ...prev, [name]: !prev[name] }));
-
-  const dbCategories = [
+  const categories = [
     {
       name: 'Relational',
       items: [
@@ -180,132 +206,133 @@ function MobileDrawer({
     },
   ];
 
-  const documentations = [
-    { title: t('navigation.user'), icon: <PermIdentityOutlined />, href: '/docs/preview/user_docs' },
-    { title: 'KubeBlocks CLI', icon: <DataObjectOutlined />, href: '/docs/preview/cli' },
-    { title: 'API Reference', icon: <DataArray />, href: '/docs/preview/user_docs/references/api-reference/cluster' },
-    { title: t('navigation.reports'), icon: <PestControlOutlined />, href: '/reports' },
-  ];
-
   return (
-    <Drawer
-      anchor="left"
-      open={open}
-      onClose={onClose}
-      sx={{ display: { xs: 'block', md: 'none' }, '& .MuiDrawer-paper': { width: DRAWER_WIDTH } }}
-    >
-      <Box sx={{ pt: 1 }}>
-        {/* Search */}
-        <ListItemButton onClick={() => { onClose(); onOpenSearch(); }}>
-          <ListItemIcon><SearchIcon /></ListItemIcon>
-          <ListItemText primary="Search docs..." />
-        </ListItemButton>
-
+    <Drawer anchor="bottom" open={open} onClose={onClose} sx={{ display: { xs: 'block', md: 'none' } }}>
+      <Box sx={{ pb: `${BOTTOM_NAV_HEIGHT}px`, maxHeight: '70vh', overflow: 'auto' }}>
+        <Typography variant="overline" sx={{ px: 2, pt: 2, pb: 1, display: 'block', color: 'text.secondary' }}>
+          {t('navigation.databases')}
+        </Typography>
         <Divider />
-
-        {/* Documentation */}
-        <ListItemButton onClick={() => setDocsOpen(!docsOpen)}>
-          <ListItemText primary={t('navigation.documentation')} slotProps={{ primary: { fontWeight: 600 } }} />
-          {docsOpen ? <ExpandLess /> : <ExpandMore />}
-        </ListItemButton>
-        <Collapse in={docsOpen} timeout="auto" unmountOnExit>
-          <List dense disablePadding>
-            {documentations.map((item) => (
-              <ListItemButton
-                key={item.href}
-                component={Link}
-                href={item.href}
-                onClick={onClose}
-                sx={{ pl: 4 }}
-              >
-                <ListItemIcon sx={{ minWidth: 36 }}>{item.icon}</ListItemIcon>
-                <ListItemText primary={item.title} />
+        <List dense disablePadding>
+          {categories.map((cat) => (
+            <Box key={cat.name}>
+              <ListItemButton onClick={() => toggle(cat.name)} sx={{ pl: 2 }}>
+                <ListItemText
+                  primary={cat.name}
+                  slotProps={{ primary: { fontSize: '0.8rem', fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.05em' } }}
+                />
+                {openCategories[cat.name]
+                  ? <ListIcon fontSize="small" sx={{ opacity: 0.5 }} />
+                  : <ExtensionIcon fontSize="small" sx={{ opacity: 0.3 }} />}
               </ListItemButton>
-            ))}
-          </List>
-        </Collapse>
-
-        <Divider />
-
-        {/* Databases / Add-ons */}
-        <ListItemButton onClick={() => setDbOpen(!dbOpen)}>
-          <ListItemText primary={t('navigation.databases')} slotProps={{ primary: { fontWeight: 600 } }} />
-          {dbOpen ? <ExpandLess /> : <ExpandMore />}
-        </ListItemButton>
-        <Collapse in={dbOpen} timeout="auto" unmountOnExit>
-          <List dense disablePadding>
-            {dbCategories.map((category) => (
-              <Box key={category.name}>
-                {/* Category header */}
-                <ListItemButton onClick={() => toggleCategory(category.name)} sx={{ pl: 3 }}>
-                  <ListItemText
-                    primary={category.name}
-                    slotProps={{ primary: { fontSize: '0.8rem', color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' } }}
-                  />
-                  {openCategories[category.name] ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
-                </ListItemButton>
-                <Collapse in={!!openCategories[category.name]} timeout="auto" unmountOnExit>
-                  <List dense disablePadding>
-                    {category.items.map((item) => (
-                      <ListItemButton
-                        key={item.href}
-                        component={Link}
-                        href={item.href}
-                        onClick={onClose}
-                        sx={{ pl: 5 }}
-                      >
-                        <ListItemIcon sx={{ minWidth: 32 }}>{item.icon}</ListItemIcon>
-                        <ListItemText primary={item.title} />
-                      </ListItemButton>
-                    ))}
-                  </List>
-                </Collapse>
-              </Box>
-            ))}
-            {/* More Add-ons */}
-            <ListItemButton
-              component={Link}
-              href="https://github.com/apecloud/kubeblocks-addons/"
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={onClose}
-              sx={{ pl: 3 }}
-            >
-              <ListItemIcon sx={{ minWidth: 36 }}><GitHub sx={{ fontSize: 22 }} /></ListItemIcon>
-              <ListItemText primary="More Add-ons" slotProps={{ primary: { fontSize: '0.875rem' } }} />
-              <LaunchOutlined fontSize="small" sx={{ opacity: 0.5 }} />
-            </ListItemButton>
-          </List>
-        </Collapse>
-
-        <Divider />
-
-        {/* Blog */}
-        <ListItemButton component={Link} href="/blog" onClick={onClose}>
-          <ListItemText primary={t('navigation.blogs')} slotProps={{ primary: { fontWeight: 600 } }} />
-        </ListItemButton>
-
-        <Divider />
-
-        {/* Enterprise */}
-        <ListItemButton component="a" href="https://kubeblocks.io/contact" target="_blank" rel="noopener noreferrer" onClick={onClose}>
-          <ListItemText primary="Enterprise" slotProps={{ primary: { fontWeight: 600 } }} />
-          <LaunchOutlined fontSize="small" sx={{ opacity: 0.6 }} />
-        </ListItemButton>
-
-        <Divider />
-
-        {/* Social */}
-        <Stack direction="row" spacing={1} sx={{ px: 2, py: 1.5 }}>
-          <IconButton href="https://kubeblocks.slack.com" target="_blank" aria-label="Join KubeBlocks on Slack">
-            <SlackIconNoColor />
-          </IconButton>
-          <IconButton href="https://github.com/apecloud/kubeblocks" target="_blank" aria-label="KubeBlocks on GitHub">
-            <GitHub />
-          </IconButton>
-        </Stack>
+              <Collapse in={!!openCategories[cat.name]} timeout="auto" unmountOnExit>
+                <List dense disablePadding>
+                  {cat.items.map((item) => (
+                    <ListItemButton key={item.href} component={Link} href={item.href} onClick={onClose} sx={{ pl: 4 }}>
+                      <ListItemIcon sx={{ minWidth: 32 }}>{item.icon}</ListItemIcon>
+                      <ListItemText primary={item.title} />
+                    </ListItemButton>
+                  ))}
+                </List>
+              </Collapse>
+            </Box>
+          ))}
+          {/* More Add-ons */}
+          <ListItemButton
+            component={Link}
+            href="https://github.com/apecloud/kubeblocks-addons/"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={onClose}
+            sx={{ pl: 2 }}
+          >
+            <ListItemIcon sx={{ minWidth: 36 }}><GitHub sx={{ fontSize: 22 }} /></ListItemIcon>
+            <ListItemText primary="More Add-ons" />
+            <LaunchOutlined fontSize="small" sx={{ opacity: 0.5 }} />
+          </ListItemButton>
+        </List>
       </Box>
     </Drawer>
+  );
+}
+
+// ── Bottom sheet: More ────────────────────────────────────────────────────────
+function MoreSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  return (
+    <Drawer anchor="bottom" open={open} onClose={onClose} sx={{ display: { xs: 'block', md: 'none' } }}>
+      <Box sx={{ pb: `${BOTTOM_NAV_HEIGHT}px` }}>
+        <Typography variant="overline" sx={{ px: 2, pt: 2, pb: 1, display: 'block', color: 'text.secondary' }}>
+          More
+        </Typography>
+        <Divider />
+        <List dense>
+          <ListItemButton component="a" href="https://kubeblocks.io/contact" target="_blank" rel="noopener noreferrer" onClick={onClose} sx={{ py: 1.5 }}>
+            <ListItemText primary="Enterprise" />
+            <LaunchOutlined fontSize="small" sx={{ opacity: 0.6 }} />
+          </ListItemButton>
+          <ListItemButton component="a" href="https://github.com/apecloud/kubeblocks" target="_blank" rel="noopener noreferrer" onClick={onClose} sx={{ py: 1.5 }}>
+            <ListItemIcon><GitHub /></ListItemIcon>
+            <ListItemText primary="GitHub" />
+          </ListItemButton>
+          <ListItemButton component="a" href="https://kubeblocks.slack.com" target="_blank" rel="noopener noreferrer" onClick={onClose} sx={{ py: 1.5 }}>
+            <ListItemIcon><SlackIconNoColor /></ListItemIcon>
+            <ListItemText primary="Slack" />
+          </ListItemButton>
+        </List>
+      </Box>
+    </Drawer>
+  );
+}
+
+// ── Mobile bottom navigation bar ──────────────────────────────────────────────
+function MobileBottomNav({ onOpenSearch }: { onOpenSearch: () => void }) {
+  const t = useI18n();
+  const pathname = usePathname();
+  const [active, setActive] = useState<string | null>(null);
+  const scrollingDown = useScrollTrigger({ disableHysteresis: false, threshold: 10 });
+
+  // Close sheets on navigation
+  useEffect(() => { setActive(null); }, [pathname]);
+
+  const handleChange = (_: React.SyntheticEvent, value: string) => {
+    if (value === 'search') { onOpenSearch(); return; }
+    if (value === 'blog') { return; } // handled by href
+    setActive((prev) => (prev === value ? null : value));
+  };
+
+  return (
+    <>
+      <Slide appear={false} direction="up" in={!scrollingDown}>
+      <Paper
+        elevation={3}
+        sx={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: (theme) => theme.zIndex.appBar,
+          display: { xs: 'block', md: 'none' },
+        }}
+      >
+        <BottomNavigation value={active} onChange={handleChange} showLabels sx={{ height: BOTTOM_NAV_HEIGHT }}>
+          <BottomNavigationAction label={t('navigation.documentation')} value="docs" icon={<ArticleIcon />} />
+          <BottomNavigationAction label="Add-ons" value="addons" icon={<ExtensionIcon />} />
+          <BottomNavigationAction
+            label={t('navigation.blogs')}
+            value="blog"
+            icon={<FeedIcon />}
+            component={Link}
+            href="/blog"
+          />
+          <BottomNavigationAction label="More" value="more" icon={<MoreHorizIcon />} />
+        </BottomNavigation>
+      </Paper>
+      </Slide>
+
+      <DocsSheet open={active === 'docs'} onClose={() => setActive(null)} />
+      <AddonsSheet open={active === 'addons'} onClose={() => setActive(null)} />
+      <MoreSheet open={active === 'more'} onClose={() => setActive(null)} />
+    </>
   );
 }
 
@@ -320,12 +347,12 @@ export const ElevationScrollAppBar = (props: AppBarProps) => {
   const t = useI18n();
   const theme = useTheme();
 
-  const { isMobile, setIsMobile, toggleSidebarCollapsed } = useGlobalStore();
+  const { isMobile, setIsMobile, sidebarCollapsed, toggleSidebarCollapsed } = useGlobalStore();
+  const isDocsPage = pathname.includes('/docs/');
 
   const mobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const [showSearch, setShowSearch] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     setIsMobile(mobile);
@@ -333,10 +360,7 @@ export const ElevationScrollAppBar = (props: AppBarProps) => {
   }, [mobile, setIsMobile, toggleSidebarCollapsed]);
 
   useEffect(() => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth',
-    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [pathname]);
 
   // 监听快捷键
@@ -363,15 +387,17 @@ export const ElevationScrollAppBar = (props: AppBarProps) => {
         position="fixed"
       >
         <Toolbar>
-          {/* Hamburger — mobile only */}
-          <IconButton
-            color="inherit"
-            aria-label="open navigation menu"
-            onClick={() => setMobileMenuOpen(true)}
-            sx={{ display: { xs: 'flex', md: 'none' }, mr: 1 }}
-          >
-            <MenuIcon />
-          </IconButton>
+          {/* Docs sidebar toggle — mobile + docs page only */}
+          {isDocsPage && (
+            <IconButton
+              color="inherit"
+              aria-label="toggle docs sidebar"
+              onClick={() => toggleSidebarCollapsed(!sidebarCollapsed)}
+              sx={{ display: { xs: 'flex', md: 'none' }, mr: 0.5 }}
+            >
+              {!sidebarCollapsed ? <MenuOpenIcon /> : <ListIcon />}
+            </IconButton>
+          )}
 
           <Stack direction="row" spacing={1}>
             <Link href="/" style={{ display: 'block' }} color="textPrimary">
@@ -404,12 +430,7 @@ export const ElevationScrollAppBar = (props: AppBarProps) => {
               color="inherit"
               size="large"
               href="/blog"
-              sx={{
-                paddingInline: 2,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
+              sx={{ paddingInline: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
             >
               {t('navigation.blogs')}
             </Button>
@@ -417,12 +438,7 @@ export const ElevationScrollAppBar = (props: AppBarProps) => {
               size="large"
               color="inherit"
               title="Trial Account Request"
-              sx={{
-                paddingInline: 2,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
+              sx={{ paddingInline: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
               endIcon={<LaunchOutlined />}
             >
               Enterprise
@@ -431,19 +447,15 @@ export const ElevationScrollAppBar = (props: AppBarProps) => {
             <Box sx={searchBarStyles.container}>
               <TextField
                 size="small"
-                placeholder={mobile ? 'Search...' : 'Search docs...'}
+                placeholder="Search docs..."
                 variant="outlined"
                 onClick={() => setShowSearch(true)}
                 slotProps={{
                   input: {
-                    startAdornment: (
-                      <SearchIcon sx={searchBarStyles.searchIcon} />
-                    ),
-                    endAdornment: !mobile && (
+                    startAdornment: <SearchIcon sx={searchBarStyles.searchIcon} />,
+                    endAdornment: (
                       <Box sx={searchBarStyles.shortcutContainer}>
-                        <Box component="kbd" sx={searchBarStyles.shortcutKey}>
-                          ⌘K
-                        </Box>
+                        <Box component="kbd" sx={searchBarStyles.shortcutKey}>⌘K</Box>
                       </Box>
                     ),
                     readOnly: true,
@@ -455,17 +467,10 @@ export const ElevationScrollAppBar = (props: AppBarProps) => {
             </Box>
           </Stack>
 
-          {/* Spacer on mobile to push icons right */}
+          {/* Spacer on mobile */}
           <Box sx={{ flex: 1, display: { xs: 'block', md: 'none' } }} />
 
-          <Box
-            sx={{
-              gap: { xs: 0.5, md: 2 },
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
+          <Box sx={{ gap: { xs: 0.5, md: 2 }, display: 'flex', alignItems: 'center' }}>
             {/* Search icon — mobile only */}
             <IconButton
               color="inherit"
@@ -494,17 +499,12 @@ export const ElevationScrollAppBar = (props: AppBarProps) => {
               <GitHub />
             </IconButton>
             <ThemeSwitcher />
-            {/* <LocaleSwitcher /> */}
           </Box>
         </Toolbar>
       </AppBar>
 
-      {/* Mobile drawer */}
-      <MobileDrawer
-        open={mobileMenuOpen}
-        onClose={() => setMobileMenuOpen(false)}
-        onOpenSearch={() => setShowSearch(true)}
-      />
+      {/* Mobile bottom navigation */}
+      <MobileBottomNav onOpenSearch={() => setShowSearch(true)} />
 
       <SearchModal open={showSearch} onClose={() => setShowSearch(false)} />
     </>
