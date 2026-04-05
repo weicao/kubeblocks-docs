@@ -1,0 +1,249 @@
+---
+title: ZooKeeper Cluster Lifecycle Management (Stop, Start, Restart)
+description: Learn how to manage ZooKeeper cluster states in KubeBlocks including stopping, starting, and restarting operations to optimize resources.
+keywords: [KubeBlocks, ZooKeeper, Cluster Management, Stop, Start, Restart]
+sidebar_position: 1
+sidebar_label: Lifecycle Management
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# ZooKeeper Cluster Lifecycle Management
+
+This guide demonstrates how to manage a ZooKeeper cluster's operational state in **KubeBlocks**, including:
+
+- Stopping the cluster to conserve resources
+- Starting a stopped cluster
+- Restarting cluster components
+
+| Operation | Effect | Use Case |
+|-----------|--------|----------|
+| Stop | Suspends cluster, retains storage | Cost savings, maintenance |
+| Start | Resumes cluster operation | Restore service after pause |
+| Restart | Recreates pods for component | Configuration changes, troubleshooting |
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+## Stopping the Cluster
+
+Stopping a ZooKeeper cluster in KubeBlocks will:
+
+1. Terminate all running pods
+2. Retain persistent storage (PVCs)
+3. Maintain cluster configuration
+
+<Tabs>
+
+<TabItem value="opsRequest" label="OpsRequest API" default>
+
+```yaml
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: zookeeper-stop
+  namespace: demo
+spec:
+  clusterName: zookeeper-cluster
+  type: Stop
+```
+
+Apply it:
+```bash
+kubectl apply -f https://raw.githubusercontent.com/apecloud/kubeblocks-addons/refs/heads/main/examples/zookeeper/stop.yaml
+```
+</TabItem>
+
+<TabItem value="ClusterAPI" label="Cluster API">
+
+```bash
+kubectl patch cluster zookeeper-cluster -n demo --type='json' -p='[
+  {
+    "op": "add",
+    "path": "/spec/componentSpecs/0/stop",
+    "value": true
+  }
+]'
+```
+</TabItem>
+
+</Tabs>
+
+### Verify Cluster Stop
+
+```bash
+kubectl get cluster zookeeper-cluster -n demo -w
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                CLUSTER-DEFINITION   TERMINATION-POLICY   STATUS     AGE
+zookeeper-cluster                        Delete               Stopping   6m
+zookeeper-cluster                        Delete               Stopped    6m55s
+```
+</details>
+
+Verify no running pods:
+```bash
+kubectl get pods -n demo -l app.kubernetes.io/instance=zookeeper-cluster
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+No resources found in demo namespace.
+```
+</details>
+
+Confirm persistent volumes remain:
+```bash
+kubectl get pvc -n demo -l app.kubernetes.io/instance=zookeeper-cluster
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                                         STATUS   VOLUME       CAPACITY   ACCESS MODES   STORAGECLASS    AGE
+data-zookeeper-cluster-zookeeper-0           Bound    pvc-xxx      20Gi       RWO            kb-default-sc   8m
+data-zookeeper-cluster-zookeeper-1           Bound    pvc-xxx      20Gi       RWO            kb-default-sc   8m
+data-zookeeper-cluster-zookeeper-2           Bound    pvc-xxx      20Gi       RWO            kb-default-sc   8m
+snapshot-log-zookeeper-cluster-zookeeper-0   Bound    pvc-xxx      20Gi       RWO            kb-default-sc   8m
+snapshot-log-zookeeper-cluster-zookeeper-1   Bound    pvc-xxx      20Gi       RWO            kb-default-sc   8m
+snapshot-log-zookeeper-cluster-zookeeper-2   Bound    pvc-xxx      20Gi       RWO            kb-default-sc   8m
+```
+</details>
+
+## Starting the Cluster
+
+<Tabs>
+
+<TabItem value="opsRequest" label="OpsRequest API" default>
+
+```yaml
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: zookeeper-start
+  namespace: demo
+spec:
+  clusterName: zookeeper-cluster
+  type: Start
+```
+
+Apply it:
+```bash
+kubectl apply -f https://raw.githubusercontent.com/apecloud/kubeblocks-addons/refs/heads/main/examples/zookeeper/start.yaml
+```
+</TabItem>
+
+<TabItem value="ClusterAPI" label="Cluster API">
+
+```bash
+kubectl patch cluster zookeeper-cluster -n demo --type='json' -p='[
+  {
+    "op": "remove",
+    "path": "/spec/componentSpecs/0/stop"
+  }
+]'
+```
+</TabItem>
+
+</Tabs>
+
+### Verify Cluster Start
+
+```bash
+kubectl get cluster zookeeper-cluster -n demo -w
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                CLUSTER-DEFINITION   TERMINATION-POLICY   STATUS     AGE
+zookeeper-cluster                        Delete               Updating   9m
+zookeeper-cluster                        Delete               Running    9m48s
+```
+</details>
+
+```bash
+kubectl get pods -n demo -l app.kubernetes.io/instance=zookeeper-cluster -L kubeblocks.io/role
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                            READY   STATUS    RESTARTS   AGE     ROLE
+zookeeper-cluster-zookeeper-0   2/2     Running   0          107s    follower
+zookeeper-cluster-zookeeper-1   2/2     Running   0          94s     leader
+zookeeper-cluster-zookeeper-2   2/2     Running   0          80s     follower
+```
+</details>
+
+## Restarting the Cluster
+
+Restart recreates pods without full cluster stop, useful for:
+- Configuration changes requiring pod restart
+- Resource refresh
+- Troubleshooting
+
+```yaml
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: zookeeper-restart
+  namespace: demo
+spec:
+  clusterName: zookeeper-cluster
+  type: Restart
+  restart:
+  - componentName: zookeeper
+```
+
+Apply it:
+```bash
+kubectl apply -f https://raw.githubusercontent.com/apecloud/kubeblocks-addons/refs/heads/main/examples/zookeeper/restart.yaml
+```
+
+### Verify Restart Completion
+
+```bash
+kubectl get ops zookeeper-restart -n demo -w
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                TYPE      CLUSTER             STATUS    PROGRESS   AGE
+zookeeper-restart   Restart   zookeeper-cluster   Running   0/3        10s
+zookeeper-restart   Restart   zookeeper-cluster   Running   1/3        94s
+zookeeper-restart   Restart   zookeeper-cluster   Running   2/3        2m40s
+zookeeper-restart   Restart   zookeeper-cluster   Running   3/3        3m45s
+zookeeper-restart   Restart   zookeeper-cluster   Succeed   3/3        4m51s
+```
+</details>
+
+```bash
+kubectl get pods -n demo -l app.kubernetes.io/instance=zookeeper-cluster -L kubeblocks.io/role
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                            READY   STATUS    RESTARTS   AGE     ROLE
+zookeeper-cluster-zookeeper-0   2/2     Running   0          3m43s   follower
+zookeeper-cluster-zookeeper-1   2/2     Running   0          2m1s    follower
+zookeeper-cluster-zookeeper-2   2/2     Running   0          4m51s   leader
+```
+</details>
+
+## Cleanup
+
+```bash
+kubectl delete cluster zookeeper-cluster -n demo
+kubectl delete ns demo
+```

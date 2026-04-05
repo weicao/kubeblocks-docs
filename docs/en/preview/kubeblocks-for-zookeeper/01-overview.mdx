@@ -1,0 +1,60 @@
+---
+title: Overview of KubeBlocks ZooKeeper Addon
+description: Learn about the features and capabilities of the KubeBlocks ZooKeeper addon, including lifecycle management, backup and restore, and supported versions.
+keywords: [ZooKeeper, KubeBlocks, operator, middleware, features, lifecycle management, distributed coordination]
+sidebar_position: 1
+sidebar_label: Overview
+---
+
+# Overview of KubeBlocks ZooKeeper Addon
+
+Apache ZooKeeper is a centralized service for:
+- Maintaining configuration information
+- Providing distributed naming and synchronization
+- Delivering group services for distributed applications
+
+ZooKeeper is widely used as a coordination backbone for systems like Apache Kafka, Apache HBase, and other distributed frameworks.
+
+The **KubeBlocks ZooKeeper Addon** provides a complete solution for deploying and managing ZooKeeper clusters in Kubernetes environments. Key features include:
+
+- Ensemble-based deployment with leader/follower topology
+- Comprehensive lifecycle management
+- Reliable backup and restore operations
+- Support for multiple ZooKeeper versions
+
+## Key Features
+
+### Lifecycle Management
+
+KubeBlocks simplifies ZooKeeper operations with comprehensive lifecycle management:
+
+| Feature                      | Description                                                                 |
+|------------------------------|-----------------------------------------------------------------------------|
+| **Horizontal Scaling**       | Scale ensemble members in/out to adjust capacity                           |
+| **Vertical Scaling**         | Adjust CPU/memory resources for ZooKeeper instances                        |
+| **Volume Expansion**         | Dynamically increase storage capacity without downtime                     |
+| **Restart Operations**       | Controlled cluster restarts with minimal disruption                        |
+| **Start/Stop**               | Temporarily suspend/resume cluster operations                              |
+| **Dynamic Configuration**    | Modify ZooKeeper parameters without full restart                           |
+| **Monitoring**               | Integrated Prometheus metrics collection via built-in exporter             |
+
+### Backup and Restore
+
+KubeBlocks supports backup and restore for ZooKeeper using the **ZooCreeper** tool:
+
+| Backup Type    | Method      | Description                                                  |
+|----------------|-------------|--------------------------------------------------------------|
+| **Full Backup**| zoocreeper  | Copies ZooKeeper data tree snapshots to a backup repository  |
+
+### Supported Versions
+
+KubeBlocks ZooKeeper Addon supports these versions:
+
+| Major Version | Supported Minor Versions            |
+|---------------|-------------------------------------|
+| ZooKeeper 3   | 3.4.14, 3.6.4, 3.7.2, 3.8.4, 3.9.2, 3.9.4 |
+
+The list of supported versions can be found by running:
+```bash
+kubectl get cmpv zookeeper
+```

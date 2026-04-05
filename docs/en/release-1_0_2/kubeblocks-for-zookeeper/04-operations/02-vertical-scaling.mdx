@@ -1,0 +1,157 @@
+---
+title: Vertical Scaling in a ZooKeeper Cluster
+description: Learn how to perform vertical scaling in a ZooKeeper cluster managed by KubeBlocks to optimize resource utilization and improve performance.
+keywords: [KubeBlocks, ZooKeeper, Vertical Scaling, Kubernetes, Resources]
+sidebar_position: 2
+sidebar_label: Vertical Scaling
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Vertical Scaling for ZooKeeper Clusters with KubeBlocks
+
+This guide demonstrates how to vertically scale a ZooKeeper cluster managed by KubeBlocks by adjusting compute resources (CPU and memory).
+
+Vertical scaling modifies compute resources (CPU and memory) for ZooKeeper instances while maintaining replica count. Key characteristics:
+
+- **Non-disruptive**: Maintains ensemble availability during scaling
+- **Granular**: Adjust CPU, memory, or both independently
+- **Reversible**: Scale up or down as needed
+
+KubeBlocks orchestrates scaling with minimal impact — followers are updated first, then the leader.
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+## Vertical Scale
+
+<Tabs>
+  <TabItem value="opsRequest" label="OpsRequest API" default>
+
+  Apply the following YAML to scale up the resources for the zookeeper component:
+
+  ```yaml
+  apiVersion: operations.kubeblocks.io/v1alpha1
+  kind: OpsRequest
+  metadata:
+    name: zookeeper-verticalscaling
+    namespace: demo
+  spec:
+    clusterName: zookeeper-cluster
+    type: VerticalScaling
+    verticalScaling:
+    - componentName: zookeeper
+      requests:
+        cpu: '1'
+        memory: 1Gi
+      limits:
+        cpu: '1'
+        memory: 1Gi
+  ```
+
+  Apply it:
+  ```bash
+  kubectl apply -f https://raw.githubusercontent.com/apecloud/kubeblocks-addons/refs/heads/main/examples/zookeeper/verticalscale.yaml
+  ```
+
+  Monitor the progress:
+
+  ```bash
+  kubectl get ops zookeeper-verticalscaling -n demo -w
+  ```
+
+  <details open>
+  <summary>Example Output</summary>
+  ```text
+  NAME                        TYPE              CLUSTER             STATUS    PROGRESS   AGE
+  zookeeper-verticalscaling   VerticalScaling   zookeeper-cluster   Running   0/3        14s
+  zookeeper-verticalscaling   VerticalScaling   zookeeper-cluster   Running   1/3        69s
+  zookeeper-verticalscaling   VerticalScaling   zookeeper-cluster   Running   2/3        2m49s
+  zookeeper-verticalscaling   VerticalScaling   zookeeper-cluster   Succeed   3/3        3m55s
+  ```
+  </details>
+
+  </TabItem>
+
+  <TabItem value="ClusterAPI" label="Cluster API">
+
+  Update `spec.componentSpecs.resources` to the desired resources:
+
+  ```yaml
+  apiVersion: apps.kubeblocks.io/v1
+  kind: Cluster
+  metadata:
+    name: zookeeper-cluster
+    namespace: demo
+  spec:
+    terminationPolicy: Delete
+    componentSpecs:
+      - name: zookeeper
+        componentDef: zookeeper
+        serviceVersion: 3.9.2
+        replicas: 3
+        resources:
+          requests:
+            cpu: "1"       # Update as needed
+            memory: "1Gi"  # Update as needed
+          limits:
+            cpu: "1"       # Update as needed
+            memory: "1Gi"  # Update as needed
+        volumeClaimTemplates:
+          - name: data
+            spec:
+              storageClassName: ""
+              accessModes:
+                - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 20Gi
+          - name: snapshot-log
+            spec:
+              storageClassName: ""
+              accessModes:
+                - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 20Gi
+  ```
+  </TabItem>
+</Tabs>
+
+## Verify
+
+After scaling, confirm the updated resources:
+
+```bash
+kubectl get cluster zookeeper-cluster -n demo
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                CLUSTER-DEFINITION   TERMINATION-POLICY   STATUS    AGE
+zookeeper-cluster                        Delete               Running   7m
+```
+</details>
+
+```bash
+kubectl get pods -n demo -l app.kubernetes.io/instance=zookeeper-cluster -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.containers[0].resources.limits}{"\n"}{end}'
+```
+
+## Best Practices
+
+- Scale during maintenance windows or low-traffic periods
+- Verify Kubernetes cluster has sufficient resources before scaling
+- Set identical requests/limits for guaranteed QoS
+- Monitor ZooKeeper performance metrics after scaling
+
+## Cleanup
+
+```bash
+kubectl delete cluster zookeeper-cluster -n demo
+kubectl delete ns demo
+```

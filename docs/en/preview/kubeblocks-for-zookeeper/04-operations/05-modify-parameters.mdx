@@ -1,0 +1,115 @@
+---
+title: ZooKeeper Configuration
+description: Understand how ZooKeeper configuration is managed in KubeBlocks, including static parameters and dynamic ensemble membership.
+keywords: [KubeBlocks, ZooKeeper, Configuration, Parameters]
+sidebar_position: 5
+sidebar_label: Configuration
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# ZooKeeper Configuration in KubeBlocks
+
+This guide describes the two ZooKeeper configuration files managed by KubeBlocks and explains how each is handled.
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+## Configuration Files
+
+KubeBlocks manages two ZooKeeper configuration files:
+
+| File              | Type    | How It Is Updated                                 | Reload Behavior |
+|-------------------|---------|---------------------------------------------------|-----------------|
+| `zoo.cfg`         | Static  | Rendered from addon template (read-only at runtime) | Requires pod restart |
+| `zoo.cfg.dynamic` | Dynamic | Automatically updated by KubeBlocks during horizontal scaling | Hot reload |
+
+## Dynamic Configuration (zoo.cfg.dynamic)
+
+The `zoo.cfg.dynamic` file manages **ZooKeeper ensemble membership** — specifically the `server.N` entries that define which servers are in the ensemble.
+
+**KubeBlocks automatically maintains this file** during horizontal scaling:
+- When you scale out, a new `server.N` entry is added
+- When you scale in, the leaving member's entry is removed
+
+You do not need to modify `zoo.cfg.dynamic` manually.
+
+:::warning
+**Only `server.N` entries are valid in `zoo.cfg.dynamic`.**
+
+Placing other parameters (e.g., `syncLimit`, `tickTime`) in this file will cause ZooKeeper to fail on startup with an `Unrecognised parameter` error.
+:::
+
+Example of a valid `zoo.cfg.dynamic` for a 3-node ensemble:
+```properties
+server.0 = zookeeper-cluster-zookeeper-0.zookeeper-cluster-zookeeper-headless.demo.svc.cluster.local:2888:3888:participant
+server.1 = zookeeper-cluster-zookeeper-1.zookeeper-cluster-zookeeper-headless.demo.svc.cluster.local:2888:3888:participant
+server.2 = zookeeper-cluster-zookeeper-2.zookeeper-cluster-zookeeper-headless.demo.svc.cluster.local:2888:3888:participant
+```
+
+View the current dynamic configuration:
+```bash
+kubectl exec -n demo zookeeper-cluster-zookeeper-0 -- \
+  cat /opt/bitnami/zookeeper/dynamic/zoo.cfg.dynamic
+```
+
+## Static Configuration (zoo.cfg)
+
+The `zoo.cfg` is rendered from the addon's ConfigMap template and contains the fixed cluster parameters:
+
+| Parameter                    | Value   | Description                                          |
+|------------------------------|---------|------------------------------------------------------|
+| `tickTime`                   | 2000    | Basic time unit in milliseconds                      |
+| `initLimit`                  | 10      | Ticks allowed for initial follower sync              |
+| `syncLimit`                  | 30      | Ticks allowed for follower-leader sync               |
+| `clientPort`                 | 2181    | Client connection port                               |
+| `maxClientCnxns`             | 500     | Max concurrent client connections per IP             |
+| `autopurge.snapRetainCount`  | 5       | Number of snapshots to retain                        |
+| `autopurge.purgeInterval`    | 12      | Autopurge interval in hours                          |
+| `metricsProvider.httpPort`   | 7000    | Prometheus metrics port                              |
+| `reconfigEnabled`            | true    | Enables ZooKeeper dynamic reconfiguration            |
+| `standaloneEnabled`          | false   | Required for ensemble mode                           |
+
+View the current static configuration:
+```bash
+kubectl exec -n demo zookeeper-cluster-zookeeper-0 -- \
+  cat /opt/bitnami/zookeeper/conf/zoo.cfg
+```
+
+<details open>
+<summary>Example Output</summary>
+```properties
+tickTime=2000
+initLimit=10
+syncLimit=30
+dataDir=/bitnami/zookeeper/data
+dataLogDir=/bitnami/zookeeper/log
+clientPort=2181
+maxClientCnxns=500
+autopurge.snapRetainCount=5
+autopurge.purgeInterval=12
+metricsProvider.className=org.apache.zookeeper.metrics.prometheus.PrometheusMetricsProvider
+metricsProvider.httpPort=7000
+metricsProvider.exportJvmInfo=true
+4lw.commands.whitelist=srvr, mntr, ruok, conf, stat, sync
+standaloneEnabled=false
+reconfigEnabled=true
+dynamicConfigFile=/opt/bitnami/zookeeper/dynamic/zoo.cfg.dynamic
+audit.enable=true
+```
+</details>
+
+:::note
+Static parameters in `zoo.cfg` are rendered from the addon template at cluster creation time. The current version of the ZooKeeper addon does not expose these as user-configurable parameters through the KubeBlocks API. If you need to customize static parameters, consider opening an issue or contributing to the [kubeblocks-addons](https://github.com/apecloud/kubeblocks-addons) repository.
+:::
+
+## Cleanup
+
+```bash
+kubectl delete cluster zookeeper-cluster -n demo
+kubectl delete ns demo
+```

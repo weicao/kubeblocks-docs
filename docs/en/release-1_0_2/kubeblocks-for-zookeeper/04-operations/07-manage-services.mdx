@@ -1,0 +1,296 @@
+---
+title: Manage ZooKeeper Services in KubeBlocks
+description: Learn how to expose ZooKeeper services externally using LoadBalancer or NodePort, and how to disable external access when no longer needed.
+keywords: [KubeBlocks, ZooKeeper, LoadBalancer, Expose, External Service, Kubernetes]
+sidebar_position: 7
+sidebar_label: Manage Services
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Manage ZooKeeper Services in KubeBlocks
+
+This guide explains how to expose a ZooKeeper cluster's client port externally using a cloud provider LoadBalancer, and how to disable it when no longer needed.
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+## Default Services
+
+KubeBlocks creates two ClusterIP services for each ZooKeeper cluster:
+
+```bash
+kubectl get service -n demo -l app.kubernetes.io/instance=zookeeper-cluster
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                                   TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)                      AGE
+zookeeper-cluster-zookeeper            ClusterIP   172.20.214.61    <none>        2181/TCP,2888/TCP,8080/TCP   8h
+zookeeper-cluster-zookeeper-readable   ClusterIP   172.20.212.120   <none>        2181/TCP,2888/TCP,8080/TCP   8h
+```
+</details>
+
+| Service | Routes to | Use case |
+|---------|-----------|----------|
+| `zookeeper-cluster-zookeeper` | Leader only | Write operations, coordination |
+| `zookeeper-cluster-zookeeper-readable` | All nodes | Read-heavy workloads |
+
+Both services expose the following ports:
+
+| Port | Name   | Description              |
+|------|--------|--------------------------|
+| 2181 | client | Client connections       |
+| 2888 | quorum | Follower-to-leader sync  |
+| 8080 | admin  | Admin server (HTTP)      |
+
+For in-cluster access (e.g., from Kafka pods), these ClusterIP services are sufficient. External exposure is only needed when clients outside the Kubernetes cluster need to connect.
+
+## Expose the ZooKeeper Service Externally
+
+### Service Types
+
+| Type | Use Case | Cost |
+|------|----------|------|
+| ClusterIP | In-cluster access only | Free |
+| NodePort | Development / testing | Low |
+| LoadBalancer | Production external access | Cloud LB cost |
+
+<Tabs>
+
+  <TabItem value="opsRequest" label="OpsRequest API" default>
+
+  Create an Expose OpsRequest to add a LoadBalancer service that routes to the leader:
+
+  ```yaml
+  apiVersion: operations.kubeblocks.io/v1alpha1
+  kind: OpsRequest
+  metadata:
+    name: zk-expose-enable
+    namespace: demo
+  spec:
+    type: Expose
+    clusterName: zookeeper-cluster
+    expose:
+    - componentName: zookeeper
+      services:
+      - name: internet
+        serviceType: LoadBalancer
+        # Cloud provider annotations — adjust for your environment
+        annotations:
+          service.beta.kubernetes.io/aws-load-balancer-type: nlb
+          service.beta.kubernetes.io/aws-load-balancer-internal: "false"
+        roleSelector: leader
+      switch: Enable
+  ```
+
+  Apply it:
+  ```bash
+  kubectl apply -f zk-expose-enable.yaml
+  ```
+
+  Monitor the progress:
+  ```bash
+  kubectl get ops zk-expose-enable -n demo -w
+  ```
+
+  <details open>
+  <summary>Example Output</summary>
+  ```text
+  NAME               TYPE     CLUSTER             STATUS    PROGRESS   AGE
+  zk-expose-enable   Expose   zookeeper-cluster   Succeed   1/1        5s
+  ```
+  </details>
+
+  </TabItem>
+
+  <TabItem value="ClusterAPI" label="Cluster API">
+
+  Add a `services` section to the Cluster resource:
+
+  ```yaml
+  apiVersion: apps.kubeblocks.io/v1
+  kind: Cluster
+  metadata:
+    name: zookeeper-cluster
+    namespace: demo
+  spec:
+    terminationPolicy: Delete
+    services:
+      - name: zookeeper-internet
+        serviceName: internet
+        componentSelector: zookeeper
+        roleSelector: leader
+        annotations:
+          service.beta.kubernetes.io/aws-load-balancer-type: nlb
+          service.beta.kubernetes.io/aws-load-balancer-internal: "false"
+        spec:
+          type: LoadBalancer
+          ports:
+            - name: client
+              port: 2181
+              protocol: TCP
+              targetPort: 2181
+    componentSpecs:
+      - name: zookeeper
+        componentDef: zookeeper
+        serviceVersion: "3.9.4"
+        replicas: 3
+        resources:
+          limits:
+            cpu: '0.5'
+            memory: 0.5Gi
+          requests:
+            cpu: '0.5'
+            memory: 0.5Gi
+        volumeClaimTemplates:
+          - name: data
+            spec:
+              accessModes:
+                - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 20Gi
+          - name: snapshot-log
+            spec:
+              accessModes:
+                - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 20Gi
+  ```
+
+  </TabItem>
+
+</Tabs>
+
+:::note
+**Cloud Provider Annotations**
+
+Adjust the `annotations` for your cloud provider:
+
+- **AWS**
+  ```yaml
+  service.beta.kubernetes.io/aws-load-balancer-type: nlb
+  service.beta.kubernetes.io/aws-load-balancer-internal: "false"  # "true" for VPC-internal
+  ```
+- **Azure**
+  ```yaml
+  service.beta.kubernetes.io/azure-load-balancer-internal: "false"
+  ```
+- **GCP**
+  ```yaml
+  cloud.google.com/l4-rbs: "enabled"
+  ```
+- **Alibaba Cloud**
+  ```yaml
+  service.beta.kubernetes.io/alibaba-cloud-loadbalancer-address-type: "internet"
+  ```
+:::
+
+## Verify the External Service
+
+```bash
+kubectl get service -n demo -l app.kubernetes.io/instance=zookeeper-cluster
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+NAME                                   TYPE           CLUSTER-IP       EXTERNAL-IP                                                                          PORT(S)                                        AGE
+zookeeper-cluster-zookeeper            ClusterIP      172.20.214.61    <none>                                                                               2181/TCP,2888/TCP,8080/TCP                     8h
+zookeeper-cluster-zookeeper-internet   LoadBalancer   172.20.95.145    a3f9688f32658409e90fbc71ecd128fd-ef3cc6918432f88f.elb.ap-southeast-1.amazonaws.com   2181:30411/TCP,2888:31938/TCP,8080:32272/TCP   68s
+zookeeper-cluster-zookeeper-readable   ClusterIP      172.20.212.120   <none>                                                                               2181/TCP,2888/TCP,8080/TCP                     8h
+```
+</details>
+
+The LoadBalancer DNS name may take 2–5 minutes to become resolvable after provisioning.
+
+## Connect via the External Endpoint
+
+Once the DNS resolves, connect using the ZooKeeper CLI or any ZooKeeper client:
+
+```bash
+zkCli.sh -server <EXTERNAL-IP>:2181
+```
+
+Or test with netcat:
+
+```bash
+echo "ruok" | nc <EXTERNAL-IP> 2181
+```
+
+Expected response: `imok`
+
+## Disable External Exposure
+
+<Tabs>
+
+  <TabItem value="opsRequest" label="OpsRequest API" default>
+
+  ```yaml
+  apiVersion: operations.kubeblocks.io/v1alpha1
+  kind: OpsRequest
+  metadata:
+    name: zk-expose-disable
+    namespace: demo
+  spec:
+    clusterName: zookeeper-cluster
+    type: Expose
+    expose:
+    - componentName: zookeeper
+      services:
+      - name: internet
+        serviceType: LoadBalancer
+        roleSelector: leader
+      switch: Disable
+    preConditionDeadlineSeconds: 0
+  ```
+
+  Apply it:
+  ```bash
+  kubectl apply -f zk-expose-disable.yaml
+  ```
+
+  <details open>
+  <summary>Example Output</summary>
+  ```text
+  NAME                TYPE     CLUSTER             STATUS    PROGRESS   AGE
+  zk-expose-disable   Expose   zookeeper-cluster   Succeed   1/1        5s
+  ```
+  </details>
+
+  </TabItem>
+
+  <TabItem value="ClusterAPI" label="Cluster API">
+
+  Remove the `spec.services` field:
+
+  ```bash
+  kubectl patch cluster zookeeper-cluster -n demo --type=json \
+    -p='[{"op": "remove", "path": "/spec/services"}]'
+  ```
+
+  </TabItem>
+
+</Tabs>
+
+Verify the LoadBalancer service is removed:
+
+```bash
+kubectl get service -n demo -l app.kubernetes.io/instance=zookeeper-cluster
+```
+
+The `zookeeper-cluster-zookeeper-internet` service should no longer appear.
+
+## Cleanup
+
+```bash
+kubectl delete cluster zookeeper-cluster -n demo
+kubectl delete ns demo
+```

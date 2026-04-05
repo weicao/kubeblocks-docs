@@ -1,0 +1,164 @@
+---
+title: ZooKeeper FAQs
+description: Frequently asked questions about managing ZooKeeper clusters with KubeBlocks.
+keywords: [KubeBlocks, ZooKeeper, FAQ, Troubleshooting]
+sidebar_position: 9
+sidebar_label: FAQs
+---
+
+# ZooKeeper FAQs
+
+## Why does a ZooKeeper cluster use two PVCs per pod?
+
+Each ZooKeeper pod mounts two separate persistent volumes:
+
+| PVC name prefix | Mount path | Contents |
+|-----------------|------------|----------|
+| `data` | `/bitnami/zookeeper/data` | Snapshot files (`snapshot.*`) |
+| `snapshot-log` | `/bitnami/zookeeper/log` | Transaction log files (`log.*`) |
+
+ZooKeeper periodically writes snapshots of the in-memory data tree to the `data` directory, and continuously appends write operations to transaction logs in the `log` directory. Separating them onto different volumes avoids I/O contention between sequential log writes and snapshot reads, which is important for maintaining low write latency under load.
+
+You can verify the actual contents at runtime:
+
+```bash
+# Snapshot files
+kubectl exec -n demo zookeeper-cluster-zookeeper-0 -c zookeeper -- \
+  ls /bitnami/zookeeper/data/version-2/
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+acceptedEpoch
+currentEpoch
+snapshot.200000000
+snapshot.700000000
+snapshot.800000000
+```
+</details>
+
+```bash
+# Transaction log files
+kubectl exec -n demo zookeeper-cluster-zookeeper-0 -c zookeeper -- \
+  ls /bitnami/zookeeper/log/version-2/
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+log.400000001
+log.800000001
+log.900000001
+log.e00000001
+```
+</details>
+
+The `zoocreeper` backup method copies both directories to the backup repository.
+
+---
+
+## How do I check the health and status of ZooKeeper nodes?
+
+ZooKeeper supports a set of four-letter commands (4lw) sent over TCP to port 2181. The KubeBlocks ZooKeeper addon whitelists these commands by default in `zoo.cfg`:
+
+```
+4lw.commands.whitelist=srvr, mntr, ruok, conf, stat, sync
+```
+
+### `ruok` — Is the server running?
+
+```bash
+kubectl exec -n demo zookeeper-cluster-zookeeper-0 -c zookeeper -- \
+  bash -c "echo ruok | nc localhost 2181"
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+imok
+```
+</details>
+
+Returns `imok` if the server is accepting connections. No response means the server is not running.
+
+### `srvr` — Server summary
+
+```bash
+kubectl exec -n demo zookeeper-cluster-zookeeper-0 -c zookeeper -- \
+  bash -c "echo srvr | nc localhost 2181"
+```
+
+<details open>
+<summary>Example Output</summary>
+```text
+Zookeeper version: 3.9.4-7246445ec281f3dbf53dc54e970c914f39713903, built on 2025-08-19 19:53 UTC
+Latency min/avg/max: 0/0.0/0
+Received: 268
+Sent: 267
+Connections: 1
+Outstanding: 0
+Zxid: 0xe00000009
+Mode: follower
+Node count: 6
+```
+</details>
+
+Key fields: `Mode` (leader/follower/observer), `Node count` (total znodes), `Connections`.
+
+### `mntr` — Monitoring metrics
+
+```bash
+kubectl exec -n demo zookeeper-cluster-zookeeper-0 -c zookeeper -- \
+  bash -c "echo mntr | nc localhost 2181"
+```
+
+<details open>
+<summary>Example Output (follower)</summary>
+```text
+zk_version	3.9.4-...
+zk_server_state	follower
+zk_peer_state	following - broadcast
+zk_avg_latency	0.0
+zk_outstanding_requests	0.0
+zk_num_alive_connections	1.0
+zk_packets_received	274.0
+zk_packets_sent	275.0
+zk_znode_count	6.0
+zk_watch_count	0.0
+```
+</details>
+
+On the leader, `mntr` additionally reports ensemble health:
+
+<details open>
+<summary>Example Output (leader)</summary>
+```text
+zk_server_state	leader
+zk_peer_state	leading - broadcast
+zk_synced_followers	2.0
+zk_pending_syncs	0.0
+zk_znode_count	6.0
+```
+</details>
+
+`zk_synced_followers` shows how many followers are in sync with the leader. For a 3-node cluster this should be `2`.
+
+### `stat` — Status with client connections
+
+```bash
+kubectl exec -n demo zookeeper-cluster-zookeeper-0 -c zookeeper -- \
+  bash -c "echo stat | nc localhost 2181"
+```
+
+Returns the same summary as `srvr` plus a list of currently connected clients.
+
+### `conf` — Effective configuration
+
+```bash
+kubectl exec -n demo zookeeper-cluster-zookeeper-0 -c zookeeper -- \
+  bash -c "echo conf | nc localhost 2181"
+```
+
+Returns the active configuration values including `dataDir`, `dataLogDir`, and port assignments. Useful for confirming that configuration changes have taken effect.
+

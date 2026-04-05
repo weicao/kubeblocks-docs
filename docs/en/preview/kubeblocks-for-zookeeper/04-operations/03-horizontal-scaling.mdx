@@ -1,0 +1,204 @@
+---
+title: Horizontal Scaling of ZooKeeper Clusters with KubeBlocks
+description: Learn how to perform horizontal scaling (scale-out and scale-in) on a ZooKeeper cluster managed by KubeBlocks using OpsRequest and direct Cluster API updates.
+keywords: [KubeBlocks, ZooKeeper, Horizontal Scaling, Scale-Out, Scale-In, Kubernetes]
+sidebar_position: 3
+sidebar_label: Horizontal Scaling
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Horizontal Scaling for ZooKeeper Clusters with KubeBlocks
+
+This guide explains how to perform horizontal scaling (scale-out and scale-in) on a ZooKeeper cluster managed by KubeBlocks.
+
+:::note
+**ZooKeeper Quorum Requirements**
+
+ZooKeeper uses a quorum-based consensus algorithm. For correct operation:
+- Always maintain an **odd number** of nodes (3, 5, 7, etc.)
+- A cluster of N nodes tolerates at most ⌊N/2⌋ failures
+- Minimum recommended ensemble size is **3 nodes**
+:::
+
+## Prerequisites
+
+import Prerequisites from '../_tpl/_prerequisites.mdx'
+
+<Prerequisites />
+
+## Scale-out (Add Replicas)
+
+**Expected Workflow**:
+
+1. New pods are provisioned and join the ensemble
+2. Data is synchronized from existing members
+3. Cluster status changes from `Updating` to `Running`
+
+<Tabs>
+
+  <TabItem value="opsRequest" label="OpsRequest API" default>
+
+  Scale out the ZooKeeper cluster by adding 2 replicas (from 3 to 5):
+
+  ```yaml
+  apiVersion: operations.kubeblocks.io/v1alpha1
+  kind: OpsRequest
+  metadata:
+    name: zk-scale-out
+    namespace: demo
+  spec:
+    clusterName: zookeeper-cluster
+    type: HorizontalScaling
+    horizontalScaling:
+    - componentName: zookeeper
+      scaleOut:
+        replicaChanges: 2
+  ```
+
+  Apply it:
+  ```bash
+  kubectl apply -f https://raw.githubusercontent.com/apecloud/kubeblocks-addons/refs/heads/main/examples/zookeeper/scale-out.yaml
+  ```
+
+  Monitor the progress:
+
+  ```bash
+  kubectl get ops zk-scale-out -n demo -w
+  ```
+
+  <details open>
+  <summary>Example Output</summary>
+  ```text
+  NAME           TYPE                CLUSTER             STATUS    PROGRESS   AGE
+  zk-scale-out   HorizontalScaling   zookeeper-cluster   Running   0/2        8s
+  zk-scale-out   HorizontalScaling   zookeeper-cluster   Running   1/2        2m11s
+  zk-scale-out   HorizontalScaling   zookeeper-cluster   Running   2/2        4m9s
+  zk-scale-out   HorizontalScaling   zookeeper-cluster   Succeed   2/2        4m33s
+  ```
+  </details>
+
+  </TabItem>
+
+  <TabItem value="ClusterAPI" label="Cluster API">
+
+  Update the `replicas` field in the Cluster resource:
+
+  ```bash
+  kubectl patch cluster zookeeper-cluster -n demo --type=json \
+    -p='[{"op": "replace", "path": "/spec/componentSpecs/0/replicas", "value": 5}]'
+  ```
+  </TabItem>
+</Tabs>
+
+### Verify Scale-Out
+
+```bash
+kubectl get pods -n demo -l app.kubernetes.io/instance=zookeeper-cluster -L kubeblocks.io/role
+```
+
+<details open>
+<summary>Example Output (5 Pods)</summary>
+```text
+NAME                            READY   STATUS    RESTARTS   AGE     ROLE
+zookeeper-cluster-zookeeper-0   2/2     Running   0          6m12s   follower
+zookeeper-cluster-zookeeper-1   2/2     Running   0          6m58s   follower
+zookeeper-cluster-zookeeper-2   2/2     Running   0          7m41s   leader
+zookeeper-cluster-zookeeper-3   2/2     Running   0          4m9s    follower
+zookeeper-cluster-zookeeper-4   2/2     Running   0          4m33s   follower
+```
+</details>
+
+## Scale-in (Remove Replicas)
+
+**Expected Workflow**:
+
+1. Pods with the largest ordinals are selected for removal
+2. Each pod is removed from the ensemble via the member_leave script
+3. Pods are terminated gracefully
+4. Cluster status changes from `Updating` to `Running`
+
+<Tabs>
+
+  <TabItem value="opsRequest" label="OpsRequest API" default>
+
+  Scale in the ZooKeeper cluster by removing 2 replicas (from 5 to 3):
+
+  ```yaml
+  apiVersion: operations.kubeblocks.io/v1alpha1
+  kind: OpsRequest
+  metadata:
+    name: zk-scale-in
+    namespace: demo
+  spec:
+    clusterName: zookeeper-cluster
+    type: HorizontalScaling
+    horizontalScaling:
+    - componentName: zookeeper
+      scaleIn:
+        replicaChanges: 2
+  ```
+
+  Apply it:
+  ```bash
+  kubectl apply -f https://raw.githubusercontent.com/apecloud/kubeblocks-addons/refs/heads/main/examples/zookeeper/scale-in.yaml
+  ```
+
+  Monitor progress:
+  ```bash
+  kubectl get ops zk-scale-in -n demo -w
+  ```
+
+  <details open>
+  <summary>Example Output</summary>
+  ```text
+  NAME          TYPE                CLUSTER             STATUS    PROGRESS   AGE
+  zk-scale-in   HorizontalScaling   zookeeper-cluster   Running   0/2        8s
+  zk-scale-in   HorizontalScaling   zookeeper-cluster   Running   1/2        47s
+  zk-scale-in   HorizontalScaling   zookeeper-cluster   Running   2/2        88s
+  zk-scale-in   HorizontalScaling   zookeeper-cluster   Succeed   2/2        2m4s
+  ```
+  </details>
+
+  </TabItem>
+
+  <TabItem value="ClusterAPI" label="Cluster API">
+
+  ```bash
+  kubectl patch cluster zookeeper-cluster -n demo --type=json \
+    -p='[{"op": "replace", "path": "/spec/componentSpecs/0/replicas", "value": 3}]'
+  ```
+  </TabItem>
+
+</Tabs>
+
+### Verify Scale-In
+
+```bash
+kubectl get pods -n demo -l app.kubernetes.io/instance=zookeeper-cluster -L kubeblocks.io/role
+```
+
+<details open>
+<summary>Example Output (3 Pods)</summary>
+```text
+NAME                            READY   STATUS    RESTARTS   AGE     ROLE
+zookeeper-cluster-zookeeper-0   2/2     Running   0          8m21s   follower
+zookeeper-cluster-zookeeper-1   2/2     Running   0          9m7s    follower
+zookeeper-cluster-zookeeper-2   2/2     Running   0          9m50s   leader
+```
+</details>
+
+## Best Practices
+
+- Always scale to an odd number of nodes to maintain quorum
+- Scale during low-traffic periods when possible
+- Monitor cluster health during scaling operations
+- Verify sufficient resources exist before scaling out
+
+## Cleanup
+
+```bash
+kubectl delete cluster zookeeper-cluster -n demo
+kubectl delete ns demo
+```
