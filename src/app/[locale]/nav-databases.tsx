@@ -146,7 +146,7 @@ export default function DatabasesNav() {
       placement="bottom-start"
     >
       <Box p={1.5}>
-        <Grid container spacing={1}>
+        <Grid container spacing={1} rowSpacing={2}>
           {databases.map((item, index) => (
             <Grid size={{ lg: 4, md: 4, sm: 6, xs: 6 }} key={index}>
               <MenuItem
