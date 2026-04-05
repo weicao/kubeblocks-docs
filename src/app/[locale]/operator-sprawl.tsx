@@ -3,14 +3,14 @@
 import { useTheme } from '@mui/material/styles';
 import { Box, Container, Typography } from '@mui/material';
 
-type DbKey = 'mysql' | 'pg' | 'redis' | 'mongo' | 'mssql';
+type DbKey = 'mysql' | 'pg' | 'redis' | 'mongo' | 'kafka';
 
 const databases: { name: string; key: DbKey }[] = [
   { name: 'MySQL',      key: 'mysql' },
   { name: 'PostgreSQL', key: 'pg' },
   { name: 'Redis',      key: 'redis' },
   { name: 'MongoDB',    key: 'mongo' },
-  { name: 'SQL Server', key: 'mssql' },
+  { name: 'Kafka',      key: 'kafka' },
 ];
 
 const DB_DARK: Record<DbKey, { bg: string; border: string; color: string }> = {
@@ -18,7 +18,7 @@ const DB_DARK: Record<DbKey, { bg: string; border: string; color: string }> = {
   pg:    { bg: 'rgba(96,165,250,.12)',  border: 'rgba(96,165,250,.35)',  color: '#93C5FD' },
   redis: { bg: 'rgba(252,165,165,.12)', border: 'rgba(252,165,165,.35)', color: '#FCA5A5' },
   mongo: { bg: 'rgba(134,239,172,.1)',  border: 'rgba(134,239,172,.3)',  color: '#86EFAC' },
-  mssql: { bg: 'rgba(203,213,225,.08)', border: 'rgba(203,213,225,.25)', color: '#CBD5E1' },
+  kafka: { bg: 'rgba(203,213,225,.08)', border: 'rgba(203,213,225,.25)', color: '#CBD5E1' },
 };
 
 const DB_LIGHT: Record<DbKey, { bg: string; color: string }> = {
@@ -26,7 +26,7 @@ const DB_LIGHT: Record<DbKey, { bg: string; color: string }> = {
   pg:    { bg: '#2563EB', color: '#fff' },
   redis: { bg: '#DC2626', color: '#fff' },
   mongo: { bg: '#16A34A', color: '#fff' },
-  mssql: { bg: '#475569', color: '#fff' },
+  kafka: { bg: '#475569', color: '#fff' },
 };
 
 const capCards = [
@@ -50,7 +50,7 @@ const capCards = [
   },
   {
     title: 'Observability',
-    items: ['Metrics & Logs', 'Slow SQL Analysis', 'TLS Security'],
+    items: ['Metrics & Logs', 'Slow SQL Analysis', 'Alert Rules'],
     icon: (
       <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
         <path d="M2 10L5 6l2.5 2.5L9.5 5l1.5 2" stroke="#34D399" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/>
@@ -307,7 +307,7 @@ export default function OperatorSprawl() {
             </Box>
           </Box>
 
-          {/* ════ VS COLUMN ════ */}
+          {/* ════ VS COLUMN — desktop ════ */}
           <Box
             sx={{
               display: { xs: 'none', md: 'flex' },
@@ -330,6 +330,30 @@ export default function OperatorSprawl() {
               </Typography>
             </Box>
             <Box sx={{ flex: 1, width: '1px', minHeight: 48, background: `linear-gradient(to bottom, transparent, ${divider} 30%, ${divider} 70%, transparent)` }} />
+          </Box>
+
+          {/* ════ VS ROW — mobile ════ */}
+          <Box
+            sx={{
+              display: { xs: 'flex', md: 'none' },
+              alignItems: 'center', gap: 2, my: 2,
+            }}
+          >
+            <Box sx={{ flex: 1, height: '1px', background: `linear-gradient(to right, transparent, ${divider} 30%, ${divider} 70%, transparent)` }} />
+            <Box
+              sx={{
+                width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                border: `1px solid ${isDark ? 'rgba(255,255,255,.1)' : '#CBD5E1'}`,
+                bgcolor: isDark ? '#101C35' : 'background.paper',
+                boxShadow: isDark ? '0 2px 10px rgba(0,0,0,.25)' : '0 1px 4px rgba(0,0,0,.08)',
+              }}
+            >
+              <Typography sx={{ fontSize: '11px', fontWeight: 800, color: 'text.secondary', letterSpacing: '0.08em' }}>
+                VS
+              </Typography>
+            </Box>
+            <Box sx={{ flex: 1, height: '1px', background: `linear-gradient(to right, transparent, ${divider} 30%, ${divider} 70%, transparent)` }} />
           </Box>
 
           {/* ════ AFTER PANEL ════ */}
@@ -475,7 +499,7 @@ export default function OperatorSprawl() {
                     Unified API · Single Control Plane
                   </Typography>
                   <Box sx={{ display: 'flex', gap: 0.75, justifyContent: 'center', flexWrap: 'wrap', position: 'relative', zIndex: 1 }}>
-                    {['35+ Engines', 'One CLI', 'Kubernetes Native', 'Open Source'].map((pill) => (
+                    {['35+ Engines', 'Unified API', 'Kubernetes Native', 'Open Source'].map((pill) => (
                       <Box key={pill} component="span" sx={{ fontSize: '9.5px', fontWeight: 600, color: 'rgba(255,255,255,.7)', bgcolor: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.15)', px: 1.25, py: 0.375, borderRadius: '999px', letterSpacing: '0.05em' }}>
                         {pill}
                       </Box>
