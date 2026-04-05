@@ -31,7 +31,7 @@ export default function DatabasesNav() {
   const t = useI18n();
   const theme = useTheme();
 
-  const iconProps = { sx: { fontSize: 30 } };
+  const iconProps = { sx: { fontSize: 30, lineHeight: 1 } };
 
   const databases = [
     {
