@@ -163,7 +163,7 @@ const cases = [
     title: 'Automating Ultra-Large-Scale Redis Clusters Across Kubernetes',
     description:
       'Kuaishou used KubeBlocks to build a custom federated architecture that seamlessly deploys Redis across multiple K8s clusters while hiding complexity from end-users — ultimately doubling resource utilization at unprecedented scale.',
-    cta: null,
+    cta: { label: 'Read the story', href: 'https://kubeblocks.io/blog/run-redis-on-k8s-kuaishou-solution-with-kubeblocks' },
   },
 ];
 
@@ -218,23 +218,31 @@ function CaseCard({
         mixBlendMode: 'normal',
       }}
     >
-      {/* Logo */}
-      <Box sx={{ height: 28, display: 'flex', alignItems: 'center' }}>
-        <Box
-          sx={{
-            img: {
-              height: '22px !important',
-              width: 'auto !important',
-              maxWidth: '140px',
-              objectFit: 'contain',
-              opacity: c.logoFilter === 'screen' ? 0.85 : 0.7,
-              filter: logoFilter,
-              mixBlendMode: c.logoFilter === 'screen' ? 'screen' : undefined,
-            },
-          }}
-        >
-          <Image src={c.logo} alt={c.company} height={22} />
+      {/* Logo + Company name */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <Box sx={{ height: 28, display: 'flex', alignItems: 'center' }}>
+          <Box
+            sx={{
+              img: {
+                height: '22px !important',
+                width: 'auto !important',
+                maxWidth: '140px',
+                objectFit: 'contain',
+                opacity: c.logoFilter === 'screen' ? 0.85 : 0.7,
+                filter: logoFilter,
+                mixBlendMode: c.logoFilter === 'screen' ? 'screen' : undefined,
+              },
+            }}
+          >
+            <Image src={c.logo} alt={c.company} height={22} />
+          </Box>
         </Box>
+        <Typography
+          component="span"
+          sx={{ fontSize: '0.78rem', fontWeight: 500, color: t2 }}
+        >
+          {c.company}
+        </Typography>
       </Box>
 
       {/* Badge */}
