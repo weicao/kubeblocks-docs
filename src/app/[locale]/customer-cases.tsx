@@ -219,24 +219,23 @@ function CaseCard({
       }}
     >
       {/* Logo + Company name */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        <Box sx={{ height: 28, display: 'flex', alignItems: 'center' }}>
-          <Box
-            sx={{
-              img: {
-                height: '22px !important',
-                width: 'auto !important',
-                maxWidth: '140px',
-                objectFit: 'contain',
-                opacity: c.logoFilter === 'screen' ? 0.85 : 0.7,
-                filter: logoFilter,
-                mixBlendMode: c.logoFilter === 'screen' ? 'screen' : undefined,
-              },
-            }}
-          >
-            <Image src={c.logo} alt={c.company} height={22} />
-          </Box>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <Box
+          sx={{
+            img: {
+              height: '22px !important',
+              width: 'auto !important',
+              maxWidth: '120px',
+              objectFit: 'contain',
+              opacity: c.logoFilter === 'screen' ? 0.85 : 0.7,
+              filter: logoFilter,
+              mixBlendMode: c.logoFilter === 'screen' ? 'screen' : undefined,
+            },
+          }}
+        >
+          <Image src={c.logo} alt={c.company} height={22} />
         </Box>
+        <Box sx={{ width: '1px', height: '16px', bgcolor: dividerColor }} />
         <Typography
           component="span"
           sx={{ fontSize: '0.78rem', fontWeight: 500, color: t2 }}
