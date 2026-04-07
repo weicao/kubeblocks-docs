@@ -6,30 +6,30 @@ import Image from 'next/image';
 const modules = [
   {
     tag: 'CLI & GitOps',
-    title: 'Intuitive CLI & GitOps Ready',
+    title: 'From 1 Cluster to 10,000 — the Same Command Works',
     description:
-      'Manage thousands of clusters with a single command. Use kbcli for an intuitive developer experience, or integrate seamlessly with your GitOps pipelines using declarative YAMLs.',
+      'Use kbcli for an intuitive developer experience, or integrate seamlessly with your GitOps pipelines using declarative YAMLs. Your workflow scales with your infrastructure.',
     visual: 'terminal',
   },
   {
     tag: 'Backup',
-    title: 'Enterprise-Grade Backup & PITR',
+    title: 'Never Lose a Byte of Data',
     description:
-      'Never lose a byte of data. Execute instant backups, schedule automated policies, and perform precise Point-in-Time Recovery (PITR) to restore your database to any specific second.',
+      'Execute instant backups, schedule automated policies, and perform precise Point-in-Time Recovery (PITR) to restore your database to any specific second. Enterprise-grade data protection, out of the box.',
     visual: 'yaml',
   },
   {
     tag: 'Observability',
-    title: 'Comprehensive Observability',
+    title: "Know What's Happening Before Your Users Do",
     description:
-      'Gain deep visibility into your data infrastructure. KubeBlocks provides out-of-the-box integration with Prometheus and Grafana, offering detailed metrics, slow SQL analysis, and customizable alert rules.',
+      'KubeBlocks provides out-of-the-box integration with Prometheus and Grafana, offering detailed metrics, slow SQL analysis, and customizable alert rules—so you catch problems before they become incidents.',
     visual: 'grafana',
   },
   {
     tag: 'Lifecycle',
-    title: 'Automated Lifecycle Management',
+    title: 'Put Your Database Operations on Autopilot',
     description:
-      'Put your database operations on autopilot. From rolling upgrades and vertical scaling to automatic failure recovery and data-at-rest encryption, KubeBlocks handles the heavy lifting securely.',
+      'From rolling upgrades and vertical scaling to automatic failure recovery and data-at-rest encryption—KubeBlocks handles the heavy lifting so your team can focus on building, not babysitting.',
     visual: 'failover',
   },
 ];
@@ -390,10 +390,11 @@ export default function Features() {
             Day 2 Operations
           </Box>
           <Typography variant="h4" fontWeight={700} sx={{ letterSpacing: '-0.02em', mb: 1.5 }}>
-            Day 2 Operations Made Easy
+            Everything Your Team Needs{' '}
+            <Box component="span" color="primary.main">to Run Databases in Production</Box>
           </Typography>
           <Typography color="text.secondary" sx={{ maxWidth: 520, mx: 'auto' }}>
-            KubeBlocks empowers DevOps and DBAs with a unified, scalable, and secure database operations experience on Kubernetes.
+            From provisioning to failover, from backup to scaling—KubeBlocks handles the operational complexity so your team can focus on building.
           </Typography>
         </Box>
 

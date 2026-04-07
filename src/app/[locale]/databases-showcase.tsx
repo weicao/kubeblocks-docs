@@ -1,25 +1,6 @@
 'use client';
 
-import {
-  ElasticSearchIcon,
-  KafkaIcon,
-  MilvusIcon,
-  MongodbIcon,
-  MySQLIcon,
-  PostgreSQLIcon,
-  QdrantIcon,
-  RabbitMQIcon,
-  RedisIcon,
-  StarRocksIcon,
-} from '@/components/icons';
-import {
-  AccountTree,
-  Inventory2,
-  LockOutlined,
-  Rocket,
-  Storage,
-  ViewInAr,
-} from '@mui/icons-material';
+import { LockOutlined } from '@mui/icons-material';
 import {
   Box,
   Container,
@@ -27,17 +8,15 @@ import {
   Typography,
 } from '@mui/material';
 
-const iconSx = { sx: { fontSize: 20 } };
-
-type DbItem = { name: string; icon?: React.ReactNode; preview?: boolean; enterprise?: boolean };
+type DbItem = { name: string; preview?: boolean; enterprise?: boolean };
 type Category = { label: string; items: DbItem[] };
 
 const categories: Category[] = [
   {
     label: 'Relational',
     items: [
-      { name: 'MySQL', icon: <MySQLIcon {...iconSx} /> },
-      { name: 'PostgreSQL', icon: <PostgreSQLIcon {...iconSx} /> },
+      { name: 'MySQL' },
+      { name: 'PostgreSQL' },
       { name: 'MariaDB', preview: true },
       { name: 'TiDB', preview: true },
       { name: 'OceanBase', preview: true },
@@ -48,34 +27,34 @@ const categories: Category[] = [
   {
     label: 'NoSQL',
     items: [
-      { name: 'Redis', icon: <RedisIcon {...iconSx} /> },
-      { name: 'MongoDB', icon: <MongodbIcon {...iconSx} /> },
-      { name: 'etcd', icon: <AccountTree sx={{ fontSize: 20 }} /> },
-      { name: 'ZooKeeper', icon: <ViewInAr sx={{ fontSize: 20 }} /> },
+      { name: 'Redis' },
+      { name: 'MongoDB' },
+      { name: 'etcd' },
+      { name: 'ZooKeeper' },
     ],
   },
   {
     label: 'Analytics',
     items: [
-      { name: 'ClickHouse', icon: <Storage sx={{ fontSize: 20 }} /> },
-      { name: 'StarRocks', icon: <StarRocksIcon {...iconSx} /> },
+      { name: 'ClickHouse' },
+      { name: 'StarRocks' },
     ],
   },
   {
     label: 'Message Queue',
     items: [
-      { name: 'Kafka', icon: <KafkaIcon {...iconSx} /> },
-      { name: 'RabbitMQ', icon: <RabbitMQIcon {...iconSx} /> },
-      { name: 'RocketMQ', icon: <Rocket sx={{ fontSize: 20 }} /> },
+      { name: 'Kafka' },
+      { name: 'RabbitMQ' },
+      { name: 'RocketMQ' },
       { name: 'Pulsar', preview: true },
     ],
   },
   {
     label: 'AI / Vector / Graph',
     items: [
-      { name: 'Milvus', icon: <MilvusIcon {...iconSx} /> },
-      { name: 'Qdrant', icon: <QdrantIcon {...iconSx} /> },
-      { name: 'ElasticSearch', icon: <ElasticSearchIcon {...iconSx} /> },
+      { name: 'Milvus' },
+      { name: 'Qdrant' },
+      { name: 'ElasticSearch' },
       { name: 'OpenSearch', preview: true },
       { name: 'Neo4j', preview: true },
       { name: 'NebulaGraph', preview: true },
@@ -95,7 +74,7 @@ const categories: Category[] = [
   {
     label: 'Object Storage',
     items: [
-      { name: 'MinIO', icon: <Inventory2 sx={{ fontSize: 20 }} /> },
+      { name: 'MinIO' },
     ],
   },
 ];
@@ -127,40 +106,20 @@ function DbChip({ db }: { db: DbItem }) {
         },
       }}
     >
-      {db.enterprise ? (
-        <LockOutlined sx={{ fontSize: 16, color: 'text.disabled' }} />
-      ) : db.icon ? (
-        db.icon
-      ) : null}
+      {db.enterprise && <LockOutlined sx={{ fontSize: 16, color: 'text.disabled' }} />}
       <Typography sx={{ fontSize: '0.85rem', fontWeight: 500, color: 'text.secondary', whiteSpace: 'nowrap' }}>
         {db.name}
       </Typography>
-      {db.preview && (
-        <Box
-          component="span"
-          sx={{
-            fontSize: '0.6rem', fontWeight: 700, px: 0.75, py: 0.25,
-            borderRadius: 0.5, lineHeight: 1.4,
-            bgcolor: 'action.selected',
-            color: 'text.disabled',
-            letterSpacing: '0.04em',
-            textTransform: 'uppercase',
-          }}
-        >
-          Preview
-        </Box>
-      )}
       {db.enterprise && (
         <Box
           component="span"
           sx={{
             fontSize: '0.6rem', fontWeight: 700, px: 0.75, py: 0.25,
             borderRadius: 0.5, lineHeight: 1.4,
-            bgcolor: 'warning.main',
-            color: 'warning.contrastText',
+            bgcolor: 'action.selected',
+            color: 'text.secondary',
             letterSpacing: '0.04em',
             textTransform: 'uppercase',
-            opacity: 0.85,
           }}
         >
           Enterprise
@@ -178,7 +137,7 @@ function DbChip({ db }: { db: DbItem }) {
   }
   if (db.preview) {
     return (
-      <Tooltip title="Community add-on — limited features and documentation" placement="top">
+      <Tooltip title="Community add-on" placement="top">
         {chip}
       </Tooltip>
     );
@@ -196,7 +155,7 @@ export default function DatabasesShowcase() {
             35+ Database Engines, One Operator
           </Typography>
           <Typography color="text.secondary" sx={{ maxWidth: 560, mx: 'auto' }}>
-            A unified API for all your databases — from relational to AI-ready vector & graph, message queue to object storage.
+            From relational to NoSQL, from streaming to vector—KubeBlocks covers the modern data stack.
           </Typography>
         </Box>
 
@@ -237,17 +196,6 @@ export default function DatabasesShowcase() {
           ))}
         </Box>
 
-        <Box sx={{ mt: 2, display: 'flex', gap: 3, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <Typography variant="caption" color="text.disabled" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Box component="span" sx={{ fontSize: '0.6rem', fontWeight: 700, px: 0.75, py: 0.25, borderRadius: 0.5, bgcolor: 'action.selected', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Preview</Box>
-            Community add-on — limited features and documentation
-          </Typography>
-          <Typography variant="caption" color="text.disabled" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Box component="span" sx={{ fontSize: '0.6rem', fontWeight: 700, px: 0.75, py: 0.25, borderRadius: 0.5, bgcolor: 'warning.main', color: 'warning.contrastText', letterSpacing: '0.04em', textTransform: 'uppercase', opacity: 0.85 }}>Enterprise</Box>
-            Closed-source, available in KubeBlocks Enterprise
-          </Typography>
-        </Box>
-
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3, borderTop: 1, borderColor: 'divider', pt: 2 }}>
           <Box
             component="a"
@@ -257,8 +205,8 @@ export default function DatabasesShowcase() {
             sx={{
               display: 'inline-flex', alignItems: 'center', gap: 0.75,
               fontSize: '0.875rem', fontWeight: 600, color: 'primary.main',
-              textDecoration: 'none', transition: 'gap .15s, opacity .15s',
-              '&:hover': { gap: '10px', opacity: 0.8 },
+              textDecoration: 'none', transition: 'opacity .15s',
+              '&:hover': { opacity: 0.7 },
             }}
           >
             View all 35+ Add-ons on GitHub →

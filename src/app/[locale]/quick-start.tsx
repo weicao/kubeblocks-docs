@@ -156,6 +156,23 @@ export default function QuickStart() {
             </Link>
             .
           </Typography>
+          <Box
+            component={Link}
+            href="https://labs.iximiuz.com/skill-paths/kubeblocks-skill-path-1f1a0a29"
+            target="_blank"
+            sx={{
+              display: 'inline-flex', alignItems: 'center', gap: 1,
+              mt: 2, px: 2, py: 1, borderRadius: 1.5,
+              border: '1px solid', borderColor: 'primary.main',
+              bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(91,127,255,0.08)' : 'rgba(37,99,235,0.05)',
+              fontSize: '0.875rem', color: 'primary.main', fontWeight: 500,
+              textDecoration: 'none',
+              transition: 'background .15s',
+              '&:hover': { bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(91,127,255,0.14)' : 'rgba(37,99,235,0.1)' },
+            }}
+          >
+            ⚡ No Kubernetes cluster? Try the hosted playground — no installation required
+          </Box>
         </Box>
 
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 280px' }, gap: { xs: 4, md: 6 }, alignItems: 'start' }}>

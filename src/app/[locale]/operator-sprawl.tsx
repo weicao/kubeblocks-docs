@@ -106,9 +106,7 @@ export default function OperatorSprawl() {
           </Typography>
 
           <Typography sx={{ fontSize: '15px', color: t2, maxWidth: 500, mx: 'auto', lineHeight: 1.7 }}>
-            KubeBlocks is the only Kubernetes operator purpose-built to manage multiple database engines—
-            designed from the ground up to help teams build and run internal database platforms,
-            without multiplying your operational burden.
+            Every operator ships its own CRDs, its own backup logic, its own upgrade path. Whether you&apos;re using kubectl, Helm or ArgoCD—you&apos;re learning a new dialect for every engine you add.
           </Typography>
         </Box>
 
@@ -140,7 +138,7 @@ export default function OperatorSprawl() {
                 Operator Sprawl
               </Typography>
               <Typography sx={{ fontSize: '11.5px', color: t3, mt: 0.5 }}>
-                N databases = N operators = N independent concerns
+                N databases = N CRD schemas = N GitOps configs to maintain
               </Typography>
             </Box>
 
@@ -270,10 +268,10 @@ export default function OperatorSprawl() {
                 With KubeBlocks
               </Typography>
               <Typography sx={{ fontSize: '15px', fontWeight: 700, letterSpacing: '-0.02em', color: 'text.primary' }}>
-                One Control Plane
+                One Unified API
               </Typography>
               <Typography sx={{ fontSize: '11.5px', color: t3, mt: 0.5 }}>
-                Any database. One operator. Zero sprawl.
+                One CRD schema. One GitOps workflow. One team that owns everything.
               </Typography>
             </Box>
 

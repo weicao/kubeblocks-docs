@@ -7,14 +7,15 @@ import type { Metadata } from 'next';
 import Banner from './banner';
 import BlogsPreview from './blogs-preview';
 import DatabasesShowcase from './databases-showcase';
-import GithubStats from './github-stats';
 import OperatorSprawl from './operator-sprawl';
 import QuickStart from './quick-start';
 import Contact from './contact';
 import CustomerCases from './customer-cases';
+import TrustedBy from './trusted-by';
 import { Evaluate } from './Evaluate';
 import Features from './features';
 import WhyNeedKubeBlocks from './why-need-kubeblocks';
+import WhoUses from './who-uses';
 
 export async function generateStaticParams() {
   return getStaticParams();
@@ -121,6 +122,21 @@ async function getLatestVersion(): Promise<string> {
   }
 }
 
+async function getGithubStars(): Promise<string> {
+  try {
+    const res = await fetch('https://api.github.com/repos/apecloud/kubeblocks', {
+      next: { revalidate: 3600 },
+      headers: { Accept: 'application/vnd.github+json' },
+    });
+    const data = await res.json();
+    const n = data.stargazers_count as number;
+    if (!n) return '3k+';
+    return n >= 1000 ? `${(n / 1000).toFixed(1)}k+` : String(n);
+  } catch {
+    return '3k+';
+  }
+}
+
 export default async function HomePage({
   params,
 }: {
@@ -128,7 +144,7 @@ export default async function HomePage({
 }) {
   const { locale } = await params;
 
-  const [allBlogs, version] = await Promise.all([getBlogs(locale), getLatestVersion()]);
+  const [allBlogs, version, stars] = await Promise.all([getBlogs(locale), getLatestVersion(), getGithubStars()]);
 
   const blogs = allBlogs
     .filter(b => !b.name.startsWith('announcing-') && !b.name.startsWith('community-monthly-report-'));
@@ -140,11 +156,12 @@ export default async function HomePage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(homeJsonLd).replace(/</g, '\\u003c') }}
       />
       <Box style={{ minHeight: 'var(--container-min-height)' }}>
-        <Banner version={version} />
-        <GithubStats />
+        <Banner version={version} stars={stars} />
         <OperatorSprawl />
         <DatabasesShowcase />
+        <TrustedBy />
         <CustomerCases />
+        <WhoUses />
         <Evaluate />
         <WhyNeedKubeBlocks />
         <Features />
