@@ -37,8 +37,8 @@ Every PostgreSQL pod runs four containers:
 |-----------|------|---------|
 | `postgresql` (Patroni + Spilo) | 5432 (PG), 8008 (Patroni API) | Database engine with built-in HA via Patroni |
 | `pgbouncer` | 6432 | Per-pod connection pool (always enabled, no on/off switch) |
-| `dbctl` (kbagent) | 5001 | Role probe endpoint — KubeBlocks queries `GET /v1.0/getrole` every second |
-| `pg-exporter` | 9187 | Prometheus metrics exporter |
+| `dbctl` | 5001 | Role probe sidecar — KubeBlocks queries `GET /v1.0/getrole` every second to detect the current role |
+| `exporter` | 9187 | Prometheus metrics exporter |
 
 An init container (`pg-init-container`) runs `postgres-pre-setup.sh` before the main containers start to initialize the data directory and configuration files.
 
@@ -46,15 +46,15 @@ Each pod mounts its own **PVC** (`data-{ordinal}`, default 20 Gi) at `/home/post
 
 ## High Availability via Patroni
 
-KubeBlocks uses **Patroni** for PostgreSQL HA, with the **Kubernetes API as the DCS (Distributed Configuration Store)**:
+KubeBlocks uses **Patroni** for PostgreSQL HA. By default the **Kubernetes API is used as the DCS (Distributed Configuration Store)**; etcd can optionally be used instead by providing a `serviceRef` to an etcd cluster.
 
 | Kubernetes Object | Purpose |
 |-------------------|---------|
 | `ConfigMap` `{scope}-config` | Cluster-wide Patroni configuration; TTL 30 s, loop interval 10 s |
-| `Endpoints` `{scope}` | Leader lease — the node holding this lease is primary |
+| `ConfigMap` `{scope}` | Leader lease — the node holding this ConfigMap annotation is primary (`KUBERNETES_USE_CONFIGMAPS=true`) |
 | `Secret` `account-*` | Auto-generated passwords for system accounts |
 
-On startup, every pod joins the Patroni cluster under the same scope. Patroni holds a leader election by acquiring the `Endpoints` lease; the winner becomes primary and the others stream WAL as replicas.
+On startup, every pod joins the Patroni cluster under the same scope. Patroni holds a leader election by atomically acquiring the leader annotation on the `{scope}` ConfigMap; the winner becomes primary and the others stream WAL as replicas.
 
 ## Traffic Routing
 
@@ -62,12 +62,12 @@ KubeBlocks creates two services for each PostgreSQL cluster:
 
 | Service | Type | Ports | Selector |
 |---------|------|-------|----------|
-| `{cluster}-postgresql` | ClusterIP | 5432 (PG), 6432 (pgbouncer) | `kubeblocks.io/role=primary` |
+| `{cluster}-postgresql-postgresql` | ClusterIP | 5432 (PG), 6432 (pgbouncer) | `kubeblocks.io/role=primary` |
 | `{cluster}-postgresql-headless` | Headless | — | all pods |
 
 The key mechanism is `roleSelector: primary` on the ClusterIP service. KubeBlocks probes each pod's role via `dbctl` every second and updates the pod label `kubeblocks.io/role`. The service's `Endpoints` therefore always point at the current primary — no VIP or external load balancer required.
 
-- **Read/write traffic**: connect to `{cluster}-postgresql:5432` or `:6432` (pgbouncer)
+- **Read/write traffic**: connect to `{cluster}-postgresql-postgresql:5432` or `:6432` (pgbouncer)
 - **Direct pod access** (e.g., read replicas, Patroni heartbeats): use the headless service DNS `pod-N.{cluster}-postgresql-headless.{namespace}.svc.cluster.local`
 
 :::note
@@ -80,7 +80,7 @@ When the primary pod fails, the following sequence restores service automaticall
 
 1. **Primary pod crashes** (process death, node failure, network partition)
 2. **Patroni detects heartbeat timeout** — the leader lease expires (TTL ≈ 30 s)
-3. **Replica acquires the lease** — the first healthy replica to write the `Endpoints` object wins and promotes itself to primary
+3. **Replica acquires the lease** — the first healthy replica to atomically update the leader annotation on the `{scope}` ConfigMap wins and promotes itself to primary
 4. **KubeBlocks detects the role change** — the `dbctl` role probe returns `primary` for the new winner
 5. **Pod label updated** — `kubeblocks.io/role=primary` is applied to the new primary pod
 6. **Service Endpoints switch** — the ClusterIP service automatically routes traffic to the new primary
@@ -98,6 +98,6 @@ KubeBlocks automatically creates and manages the following PostgreSQL system acc
 | `postgres` | Superuser | Default admin account |
 | `kbadmin` | Superuser | KubeBlocks internal management |
 | `kbdataprotection` | Superuser | Backup and restore operations |
-| `kbprobe` | Monitor (read-only) | Health checks |
-| `kbmonitoring` | Monitor | Prometheus metrics collection |
-| `kbreplicator` | Replication | Streaming replication from replicas |
+| `kbprobe` | Monitor (`pg_monitor` role) | Health checks and liveness monitoring; role detection and `kubeblocks.io/role` label updates are driven by the `dbctl` sidecar probe, not this account |
+| `kbmonitoring` | Monitor (`pg_monitor` role) | Prometheus metrics collection |
+| `kbreplicator` | Replication | PostgreSQL streaming replication — standby connects to the primary using this account to pull WAL |

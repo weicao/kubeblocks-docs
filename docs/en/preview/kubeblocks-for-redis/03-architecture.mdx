@@ -1,104 +1,195 @@
 ---
-title: Redis High Availability Architecture in KubeBlocks
-description: Learn how KubeBlocks deploys and manages Redis Sentinel clusters on Kubernetes, including the resource hierarchy, pod layout, Sentinel-based HA, traffic routing, and automatic failover.
-keywords: [Redis, KubeBlocks, high availability, Sentinel, architecture, Kubernetes, failover]
-sidebar_position: 3.5
+title: Redis Architecture in KubeBlocks
+description: Learn how KubeBlocks deploys and manages Redis on Kubernetes. Covers both Sentinel (primary/replica with automatic failover) and Redis Cluster (hash-slot sharding) architectures, including pod layout, traffic routing, and failover behavior.
+keywords: [Redis, KubeBlocks, high availability, Sentinel, Redis Cluster, sharding, architecture, Kubernetes, failover]
+sidebar_position: 3
 sidebar_label: Architecture
 ---
 
-# Redis High Availability Architecture in KubeBlocks
+import RedisArchitectureDiagram from '@/components/RedisArchitectureDiagram';
+import RedisClusterArchitectureDiagram from '@/components/RedisClusterArchitectureDiagram';
 
-This page describes how KubeBlocks deploys a Redis Sentinel cluster on Kubernetes — covering the resource hierarchy, pod internals for both data and Sentinel pods, Sentinel-based HA, traffic routing, and automatic failover.
+# Redis Architecture in KubeBlocks
 
-## Resource Hierarchy
+KubeBlocks supports two distinct Redis architectures that serve different use cases:
 
-KubeBlocks models a Redis cluster as a hierarchy of Kubernetes custom resources:
+| Architecture | Topology name | Use Case |
+|---|---|---|
+| **Sentinel** | `replication` (also: `standalone`, `replication-twemproxy`) | Single-shard HA; simple client compatibility; datasets that fit on one node |
+| **Redis Cluster** | `cluster` | Horizontal write/read scaling; datasets too large for a single node; high-throughput workloads |
+
+---
+
+## Sentinel Architecture
+
+Redis Sentinel uses a dedicated set of Sentinel processes to monitor the Redis primary, detect failures, and coordinate automatic failover. All data lives on a single primary; replicas serve as hot standbys and optional read targets.
+
+<RedisArchitectureDiagram />
+
+### Resource Hierarchy
+
+KubeBlocks models a Redis Sentinel deployment as a hierarchy of Kubernetes custom resources:
 
 ```
-Cluster  →  Component  →  InstanceSet  →  Pod × N
+Cluster  →  Component (redis)          →  InstanceSet  →  Pod × N
+         →  Component (redis-sentinel)  →  InstanceSet  →  Pod × 3
 ```
 
 | Resource | Role |
 |----------|------|
 | **Cluster** | User-facing declaration — specifies topology, replica count, storage size, and resources |
-| **Component** | Generated automatically; one Component for Redis data pods and one for Sentinel pods; each references its own `ComponentDefinition` |
+| **Component** | Generated automatically; one Component for Redis data pods and one for Sentinel pods |
 | **InstanceSet** | KubeBlocks custom workload (replaces `StatefulSet`); manages pods with stable identities and role awareness |
-| **Pod** | Actual running Redis or Sentinel process; each pod gets a unique ordinal and (for data pods) its own PVC |
+| **Pod** | Actual running Redis or Sentinel process; data pods each get their own PVC |
 
-A Redis Sentinel deployment consists of two KubeBlocks Components within the same Cluster: the **Redis data component** (primary + replicas) and the **Redis Sentinel component** (monitoring processes). At least **3 Sentinel pods** are required to form a quorum.
+At least **3 Sentinel pods** are required to form a voting quorum. The ClusterDefinition provisions `redis-sentinel` before `redis` (sentinel must be ready before data pods register with it).
 
-## Containers Inside Each Pod
+### Containers Inside Each Pod
 
-### Redis Data Pods
+**Redis Data Pods**
 
-| Container | Port | Purpose |
-|-----------|------|---------|
-| `redis` | 6379 (Redis protocol) | Redis data server; the primary accepts writes and replicates to secondaries via async replication |
-| `kbagent` | 5001 | Role probe endpoint — KubeBlocks queries `GET /v1.0/getrole` every second to identify primary vs. replica |
-| `metrics-exporter` | 9187 | Prometheus metrics exporter |
-
-Each data pod mounts its own **PVC** for the Redis data directory (`/data`), preserving RDB snapshots and AOF logs across pod restarts.
-
-### Redis Sentinel Pods
+Each Redis data pod runs two main containers (plus an `init-dbctl` init container that copies `dbctl` into `/tools/` for use by the roleProbe):
 
 | Container | Port | Purpose |
 |-----------|------|---------|
-| `sentinel` | 26379 (Sentinel protocol) | Redis Sentinel process that monitors the Redis primary, detects failures, and coordinates failover |
-| `kbagent` | 5001 | Health probe endpoint |
+| `redis` | 6379 | Redis data server; primary accepts writes and replicates to replicas via async replication; roleProbe runs `/tools/dbctl redis getrole` inside this container |
+| `metrics` | 9121 | Prometheus metrics exporter (`redis_exporter`) |
 
-Sentinel pods use an `emptyDir` for their working directory — Sentinel configuration is rebuilt on restart from the current cluster state.
+Each data pod mounts its own **PVC** for the Redis data directory, preserving RDB/AOF files across restarts.
 
-## High Availability via Redis Sentinel
+**Redis Sentinel Pods**
 
-Redis Sentinel is a distributed monitoring and automatic failover system for Redis:
+| Container | Port | Purpose |
+|-----------|------|---------|
+| `sentinel` | 26379 | Redis Sentinel process — monitors the primary, detects failures, coordinates failover |
+
+Each Sentinel pod mounts its own **PVC** (`needSnapshot: true`) for the Sentinel data directory, preserving Sentinel configuration across restarts.
+
+### High Availability via Redis Sentinel
 
 | Sentinel Concept | Description |
 |-----------------|-------------|
-| **Monitoring** | Each Sentinel continuously pings the Redis primary and all replicas to detect failures |
+| **Monitoring** | Each Sentinel continuously pings the Redis primary and all replicas |
 | **Subjective down (SDOWN)** | A Sentinel marks a node as subjectively down when it fails to respond within `down-after-milliseconds` |
 | **Objective down (ODOWN)** | A primary is declared objectively down when a quorum of Sentinels agree it is unreachable |
-| **Leader election** | Sentinels elect one of themselves as the failover coordinator using a Raft-based voting process |
-| **Failover** | The elected Sentinel promotes the most up-to-date replica to primary and reconfigures other replicas to follow the new primary |
-| **Quorum** | Typically `(N/2 + 1)` Sentinels must agree to trigger a failover; 3 Sentinels require 2 to agree |
+| **Leader election** | Sentinels elect one of themselves as the failover coordinator |
+| **Failover** | The elected Sentinel promotes the most up-to-date replica and reconfigures other replicas |
+| **Quorum** | `(N/2 + 1)` Sentinels must agree; 3 Sentinels require 2 to agree |
 
-## Traffic Routing
-
-KubeBlocks creates services for both the Redis data component and the Sentinel component:
+### Traffic Routing
 
 | Service | Type | Port | Selector |
 |---------|------|------|----------|
-| `{cluster}-redis` | ClusterIP | 6379 | `kubeblocks.io/role=primary` |
-| `{cluster}-redis-headless` | Headless | 6379 | all Redis data pods |
-| `{cluster}-redis-sentinel` | ClusterIP | 26379 | all Sentinel pods |
-| `{cluster}-redis-sentinel-headless` | Headless | 26379 | all Sentinel pods |
+| `{cluster}-redis-redis` | ClusterIP | 6379 | `kubeblocks.io/role=primary` |
+| `{cluster}-redis-sentinel-redis-sentinel` | ClusterIP | 26379 | all Sentinel pods |
 
-The key mechanism is `roleSelector: primary` on the Redis ClusterIP service. KubeBlocks probes each data pod via `kbagent` every second and updates the pod label `kubeblocks.io/role`. The service Endpoints always point at the current primary — no VIP or external load balancer required.
+- **Write traffic**: connect to `{cluster}-redis-redis:6379` (always routes to the current primary)
+- **Sentinel queries** (for client-side Sentinel discovery): connect to `{cluster}-redis-sentinel-redis-sentinel:26379`
 
-- **Write traffic**: connect to `{cluster}-redis:6379`
-- **Replica access** (read scaling): use the headless service DNS `{pod-name}.{cluster}-redis-headless.{namespace}.svc.cluster.local:6379`
-- **Sentinel queries** (for client-side Sentinel discovery): connect to `{cluster}-redis-sentinel:26379`
+### Automatic Failover
 
-## Automatic Failover
-
-When the Redis primary pod fails, the following sequence restores write access automatically:
-
-1. **Primary stops responding** — Sentinels detect the missing ping responses within `down-after-milliseconds` (default 5 s)
+1. **Primary stops responding** — Sentinels detect missing pings within `down-after-milliseconds` (default 20 s)
 2. **Quorum agreement (ODOWN)** — the configured quorum of Sentinels agree the primary is objectively down
 3. **Sentinel leader election** — Sentinels elect one of themselves as the failover coordinator
-4. **Replica selection** — the coordinator chooses the replica with the smallest replication lag (most up-to-date)
-5. **Promotion** — the coordinator sends `SLAVEOF NO ONE` to the chosen replica, making it the new primary
-6. **Reconfiguration** — other replicas and Sentinels are informed of the new primary and update their configuration
-7. **KubeBlocks detects role change** — `kbagent` returns `primary` for the new winner; the `kubeblocks.io/role=primary` label is applied
+4. **Replica selection** — the coordinator picks the replica with the smallest replication lag
+5. **Promotion** — the coordinator sends `REPLICAOF NO ONE` to the chosen replica
+6. **Reconfiguration** — other replicas and Sentinels update their configuration to the new primary
+7. **Pod label updated** — `kubeblocks.io/role=primary` applied to the new primary pod
 8. **Service Endpoints switch** — the ClusterIP service automatically routes traffic to the new primary
 
-Total failover time is typically within **10–30 seconds**, bounded by the `down-after-milliseconds` setting and the Sentinel quorum agreement time.
+Total failover time is typically **10–30 seconds**.
 
-For a **planned switchover**, KubeBlocks calls the Sentinel `SENTINEL FAILOVER` command via `kbagent`, which performs a graceful promotion of a chosen replica.
+---
+
+## Redis Cluster Architecture
+
+Redis Cluster (also called sharding mode) distributes data across multiple independent shards using hash-slot-based partitioning. Each shard is an independent KubeBlocks `Sharding` component with its own primary and replicas. There are no Sentinel processes — nodes coordinate through a gossip protocol on the cluster bus.
+
+<RedisClusterArchitectureDiagram />
+
+### Resource Hierarchy
+
+Redis Cluster uses the KubeBlocks `Sharding` abstraction, which is different from the standard `Component`-based hierarchy:
+
+```
+Cluster  →  Sharding  →  Shard × N  →  InstanceSet  →  Pod × replicas
+```
+
+| Resource | Role |
+|----------|------|
+| **Cluster** | User-facing declaration — uses `spec.shardings` to specify the number of shards and per-shard configuration |
+| **Sharding** | KubeBlocks sharding spec — creates and manages N identical shard Components |
+| **Shard** | An individual Component; each shard owns a range of hash slots (contiguous at creation; may become non-contiguous after rebalancing) and runs its own primary + replica pods |
+| **InstanceSet** | Manages pods within a shard with stable identities |
+| **Pod** | Actual running `redis-cluster` process; each pod gets its own PVC |
+
+A minimum of **3 shards** is required for Redis Cluster to achieve quorum. Each shard tolerates 1 pod failure when at least 1 replica is configured.
+
+### Containers Inside Each Pod
+
+Every Redis Cluster pod runs two main containers (plus an `init-dbctl` init container that copies `dbctl` into `/tools/` for use by the roleProbe):
+
+| Container | Port | Purpose |
+|-----------|------|---------|
+| `redis-cluster` | 6379 (client), 16379 (cluster bus) | Redis node in cluster mode; handles client requests and participates in gossip; roleProbe runs `/tools/dbctl redis getrole` inside this container |
+| `metrics` | 9121 | Prometheus metrics exporter (`redis_exporter`) |
+
+Each pod mounts its own **PVC** for the Redis data directory.
+
+### Hash Slot Distribution
+
+Redis Cluster divides the key space into **16384 hash slots**. Each key is assigned to a slot via `CRC16(key) mod 16384`. Slots are distributed evenly across shards at cluster creation:
+
+| Shard | Initial slot range (at creation) |
+|-------|----------------------------------|
+| shard-0 | 0 – 5460 |
+| shard-1 | 5461 – 10922 |
+| shard-2 | 10923 – 16383 |
+
+:::note
+The shard names in this table (`shard-0`, `shard-1`, `shard-2`) are simplified for illustration. KubeBlocks assigns each shard component a **random 3-character suffix** at creation time (e.g., `shard-x7k`, `shard-m2p`). The actual component and service names therefore differ from these examples. To use predictable names, set explicit shard IDs in `shardTemplates[].shardIDs` when creating the cluster.
+:::
+
+When shards are added or removed, KubeBlocks triggers a slot rebalancing operation to redistribute slots across the new shard count. After rebalancing, each shard may hold multiple non-contiguous slot ranges rather than a single interval.
+
+### High Availability via Gossip Protocol
+
+Redis Cluster nodes use a peer-to-peer **gossip protocol** over port 16379 (cluster bus) for failure detection and topology propagation — no external coordinator is needed:
+
+| Concept | Description |
+|---------|-------------|
+| **PFAIL** | A node is marked "possibly failed" when it stops responding to pings |
+| **FAIL** | A node is declared failed when a majority of primaries agree it is unreachable |
+| **Replica promotion** | The shard's replica requests votes from other primaries; the winner steps up |
+| **MOVED redirect** | When a client sends a key to the wrong shard, that node responds with a `MOVED` reply pointing to the correct shard |
+
+### Traffic Routing
+
+Redis Cluster does **not** use a standard ClusterIP service for write routing. Instead, a cluster-aware client fetches the slot map directly from the cluster:
+
+1. The client connects to **any cluster node** on port 6379
+2. It issues `CLUSTER SLOTS` (or `CLUSTER SHARDS`) to retrieve the full slot-to-node mapping
+3. The client routes each command directly to the shard primary owning the key's slot
+4. On a `MOVED` or `ASK` response, the client updates its routing table and retries
+
+For external access, per-pod NodePort or LoadBalancer services (`redis-advertised`) can be enabled to expose each pod's advertised address.
+
+### Automatic Failover
+
+1. **Shard primary stops responding** — peers detect missing gossip heartbeats
+2. **PFAIL declared** — nodes that cannot reach the primary mark it as `PFAIL`
+3. **FAIL declared** — a majority of other primaries agree → `FAIL` state propagated cluster-wide
+4. **Replica election** — the shard replica requests votes from other primaries; majority vote promotes it
+5. **Slot ownership transferred** — cluster topology updated with the new primary for the affected slots
+6. **Pod label updated** — `kubeblocks.io/role=primary` applied by KubeBlocks
+7. **Clients follow MOVED** — cluster-aware clients refresh their routing table automatically
+
+---
 
 ## System Accounts
 
-KubeBlocks automatically manages the following Redis system account. The password is auto-generated and stored in a Secret named `{cluster}-{component}-account-default`.
+KubeBlocks manages the following Redis account for both architectures. The password is auto-generated and stored in a Secret named `{cluster}-{component}-account-default`.
 
 | Account | Role | Purpose |
 |---------|------|---------|
-| `default` | Admin | Default Redis authentication account; used for all client connections and inter-component communication (data pods, Sentinel, `kbagent`) |
+| `default` | Admin | Default Redis authentication account; used for all client connections and inter-component communication |

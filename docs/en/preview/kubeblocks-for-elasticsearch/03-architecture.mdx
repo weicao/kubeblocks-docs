@@ -6,9 +6,13 @@ sidebar_position: 3
 sidebar_label: Architecture
 ---
 
+import ElasticsearchArchitectureDiagram from '@/components/ElasticsearchArchitectureDiagram';
+
 # Elasticsearch Architecture in KubeBlocks
 
 This page describes how KubeBlocks deploys an Elasticsearch cluster on Kubernetes — covering the resource hierarchy, pod internals, node roles, and built-in HA through Elasticsearch's cluster coordination protocol.
+
+<ElasticsearchArchitectureDiagram />
 
 ## Resource Hierarchy
 
@@ -27,13 +31,13 @@ Cluster  →  Component  →  InstanceSet  →  Pod × N
 
 ## Containers Inside Each Pod
 
-Every Elasticsearch pod runs three containers:
+Every Elasticsearch pod runs three main containers (plus three init containers on startup: `prepare-plugins` stages plugin files from a plugin image into a shared volume, `install-plugins` installs those plugins and prepares the filesystem layout, and `install-es-agent` copies the `es-agent` binary into the container's local bin path):
 
 | Container | Port | Purpose |
 |-----------|------|---------|
 | `elasticsearch` | 9200 (HTTP REST), 9300 (transport/inter-node) | Elasticsearch engine handling indexing, search, and cluster coordination |
-| `kbagent` | 5001 | Role probe endpoint — KubeBlocks queries `GET /v1.0/getrole` periodically |
-| `metrics-exporter` | 9187 | Prometheus metrics exporter |
+| `es-agent` | 8080 | Sidecar agent for configuration management and lifecycle operations |
+| `exporter` | 9114 | Prometheus metrics exporter (`elasticsearch-exporter`) |
 
 Each pod mounts its own **PVC** for the Elasticsearch data directory (`/usr/share/elasticsearch/data`), providing independent persistent storage per node.
 
@@ -52,30 +56,31 @@ In smaller deployments, a single node type can hold all roles. For production, d
 
 ## High Availability via Cluster Coordination
 
-Elasticsearch provides built-in HA through its own cluster coordination protocol (ZenDiscovery in older versions, Raft-based in 7.x+). No external coordinator is required:
+Elasticsearch provides built-in HA through its own cluster coordination protocol (quorum-based master election). No external coordinator is required:
 
 | Mechanism | Description |
 |-----------|-------------|
-| **Master election** | Master-eligible nodes elect a leader via Raft-based voting; requires a quorum of `(N/2 + 1)` master-eligible nodes |
+| **Master election** | Master-eligible nodes elect a leader via quorum voting; requires `(N/2 + 1)` master-eligible nodes to agree |
 | **Shard replication** | Each index shard has a primary and one or more replica shards; replicas are placed on different nodes for fault tolerance |
 | **Primary shard promotion** | If a node holding a primary shard fails, Elasticsearch automatically promotes an in-sync replica to primary |
 | **Cluster state replication** | The elected master replicates cluster state changes to all nodes before acknowledging writes |
 
-The `minimum_master_nodes` setting (or quorum configuration in 7.x+) prevents split-brain scenarios during network partitions.
+In Elasticsearch 7.x and later, the quorum is configured via the **voting configuration** — a set of master-eligible nodes whose agreement is required. Split-brain prevention relies on maintaining quorum rather than the legacy `minimum_master_nodes` setting (which was removed in 7.0). KubeBlocks provides separate `ComponentDefinition` configurations for Elasticsearch 6.x, 7.x, and 8.x.
 
 ## Traffic Routing
 
-KubeBlocks creates two services for each Elasticsearch cluster:
+KubeBlocks creates three services for each Elasticsearch cluster:
 
-| Service | Type | Ports | Selector |
-|---------|------|-------|----------|
-| `{cluster}-elasticsearch` | ClusterIP | 9200 (HTTP) | `kubeblocks.io/role=master` (or all data nodes, depending on topology) |
-| `{cluster}-elasticsearch-headless` | Headless | 9200, 9300 | all pods |
+| Service | Type | Port | Notes |
+|---------|------|------|-------|
+| `{cluster}-{component}-http` | ClusterIP | 9200 | Client REST API endpoint; all pods (no roleSelector) |
+| `{cluster}-{component}-agent` | ClusterIP | 8080 | `es-agent` sidecar endpoint; used for lifecycle operations and configuration management |
+| `{cluster}-{component}-headless` | Headless | 9200, 9300 | Per-pod DNS — inter-node transport and operator probes |
 
-Client applications send REST API requests to port 9200 on the ClusterIP service. Inter-node transport communication (shard replication, cluster state gossip) uses port 9300 over the headless service so each pod is individually addressable:
+The component name depends on the topology — for example `mdit` (single combined node) or `master`/`dit` (multi-node). Client applications send REST API requests to `{cluster}-{component}-http:9200`. Inter-node transport communication (shard replication, cluster state synchronization) uses port 9300 over the headless service so each pod is individually addressable:
 
 ```
-{pod-name}.{cluster}-elasticsearch-headless.{namespace}.svc.cluster.local:9300
+{pod-name}.{cluster}-{component}-headless.{namespace}.svc.cluster.local:9300
 ```
 
 ## Automatic Failover
@@ -96,3 +101,4 @@ KubeBlocks automatically manages the following Elasticsearch system account. Pas
 | Account | Role | Purpose |
 |---------|------|---------|
 | `elastic` | Superuser | Built-in Elasticsearch superuser; used for cluster setup, index management, and security configuration |
+| `kibana_system` | Monitor / manage index | Built-in account used by Kibana to communicate with Elasticsearch |

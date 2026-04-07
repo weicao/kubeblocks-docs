@@ -1,18 +1,32 @@
 ---
-title: MongoDB High Availability Architecture in KubeBlocks
-description: Learn how KubeBlocks deploys and manages MongoDB replica sets on Kubernetes, including the resource hierarchy, pod layout, replica set protocol, traffic routing, and automatic failover.
-keywords: [MongoDB, KubeBlocks, high availability, replica set, architecture, Kubernetes, failover]
-sidebar_position: 3.5
+title: MongoDB Architecture in KubeBlocks
+description: Learn how KubeBlocks deploys and manages MongoDB on Kubernetes. Covers both Replica Set (primary/secondary HA) and Sharding (mongos + config servers + data shards) architectures, including pod layout, traffic routing, and failover behavior.
+keywords: [MongoDB, KubeBlocks, high availability, replica set, sharding, mongos, config server, architecture, Kubernetes, failover]
+sidebar_position: 3
 sidebar_label: Architecture
 ---
 
-# MongoDB High Availability Architecture in KubeBlocks
+import MongodbArchitectureDiagram from '@/components/MongodbArchitectureDiagram';
+import MongodbShardingArchitectureDiagram from '@/components/MongodbShardingArchitectureDiagram';
 
-This page describes how KubeBlocks deploys a MongoDB replica set on Kubernetes — covering the resource hierarchy, pod internals, replica set HA protocol, traffic routing, and automatic failover.
+# MongoDB Architecture in KubeBlocks
 
-## Resource Hierarchy
+KubeBlocks supports two distinct MongoDB deployment architectures:
 
-KubeBlocks models a MongoDB cluster as a hierarchy of Kubernetes custom resources:
+| Architecture | Topology | Use Case |
+|---|---|---|
+| **Replica Set** | Primary + secondaries, oplog replication | Single-dataset HA; datasets that fit on one node |
+| **Sharding** | Mongos routers + config servers + data shards | Horizontal scaling; datasets too large for a single replica set; high write throughput |
+
+---
+
+## Replica Set Architecture
+
+A MongoDB replica set maintains multiple copies of the same dataset across pods. One pod acts as the primary (accepts all writes); the others are secondaries that replicate the primary's oplog and can serve reads.
+
+<MongodbArchitectureDiagram />
+
+### Resource Hierarchy
 
 ```
 Cluster  →  Component  →  InstanceSet  →  Pod × N
@@ -21,74 +35,135 @@ Cluster  →  Component  →  InstanceSet  →  Pod × N
 | Resource | Role |
 |----------|------|
 | **Cluster** | User-facing declaration — specifies topology, replica count, storage size, and resources |
-| **Component** | Generated automatically; references a `ComponentDefinition` that describes container specs, lifecycle actions, and services |
+| **Component** | Generated automatically; references a `ComponentDefinition` describing container specs, lifecycle actions, and services |
 | **InstanceSet** | KubeBlocks custom workload (replaces `StatefulSet`); manages pods with stable identities and role awareness |
 | **Pod** | Actual running MongoDB instance; each pod gets a unique ordinal and its own PVC |
 
-## Containers Inside Each Pod
-
-Every MongoDB pod runs three containers:
+### Containers Inside Each Pod
 
 | Container | Port | Purpose |
 |-----------|------|---------|
-| `mongodb` | 27017 (MongoDB wire protocol) | MongoDB database engine; participates in replica set replication and election |
-| `kbagent` | 5001 | Role probe endpoint — KubeBlocks queries `GET /v1.0/getrole` every second to determine primary vs. secondary |
-| `metrics-exporter` | 9187 | Prometheus metrics exporter |
+| `mongodb` | 27017 | MongoDB database engine; participates in replica set replication and election; roleProbe runs `/tools/syncerctl getrole` inside this container |
+| `mongodb-backup-agent` | — | Percona Backup for MongoDB (PBM) agent; coordinates cluster-wide consistent backups |
+| `exporter` | 9216 | Prometheus metrics exporter |
 
-Each pod mounts its own **PVC** for the MongoDB data directory (`/data/db`), providing independent persistent storage per replica.
+Each pod mounts its own **PVC** for the MongoDB data directory (default `/data/mongodb`, set by `dataMountPath` in chart values).
 
-## High Availability via MongoDB Replica Set Protocol
+### High Availability
 
-KubeBlocks deploys MongoDB as a **replica set** — a group of `mongod` instances that maintain the same dataset using MongoDB's built-in oplog-based replication:
+MongoDB replica sets use **oplog-based replication** and a **majority-vote (Raft-like) election** protocol:
 
-| Replica Set Concept | Description |
-|--------------------|-------------|
-| **Primary** | Receives all write operations; records changes to the oplog; at most one primary exists at a time |
-| **Secondary** | Replicates the primary's oplog asynchronously; can serve read operations when `readPreference` is set accordingly |
-| **Arbiter** | Participates in elections but holds no data; used to achieve an odd number of voting members without additional storage cost |
-| **Oplog** | A capped collection (`local.oplog.rs`) that records all write operations; secondaries tail this to stay in sync |
-| **Election protocol** | Raft-based; a primary is elected when a majority of voting members agree; requires `(N/2 + 1)` votes |
+| Concept | Description |
+|---------|-------------|
+| **Primary** | Receives all write operations; records changes to the oplog |
+| **Secondary** | Replicates the primary's oplog; can serve reads when `readPreference` is configured |
+| **Election** | When the primary fails, secondaries vote; the candidate with the most up-to-date oplog and a majority of votes wins |
+| **Write concern** | `w:majority` ensures a write is durable on a quorum before acknowledging |
 
-A replica set of 3 members (1 primary + 2 secondaries) tolerates **1 failure** and maintains a voting majority.
+A 3-member replica set tolerates **1 failure**. Failover typically completes within **10–30 seconds**.
 
-## Traffic Routing
-
-KubeBlocks creates two services for each MongoDB cluster:
+### Traffic Routing
 
 | Service | Type | Port | Selector |
 |---------|------|------|----------|
-| `{cluster}-mongodb` | ClusterIP | 27017 | `kubeblocks.io/role=primary` |
+| `{cluster}-mongodb-mongodb` | ClusterIP | 27017 | `kubeblocks.io/role=primary` |
+| `{cluster}-mongodb-mongodb-ro` | ClusterIP | 27017 | `kubeblocks.io/role=secondary` |
+| `{cluster}-mongodb` | ClusterIP | 27017 | all pods (no roleSelector — `everypod`) |
 | `{cluster}-mongodb-headless` | Headless | 27017 | all pods |
 
-The key mechanism is `roleSelector: primary` on the ClusterIP service. KubeBlocks probes each pod via `kbagent` every second and updates the pod label `kubeblocks.io/role`. The service Endpoints always point at the current primary — no VIP or external load balancer required.
+- **Write traffic**: connect to `{cluster}-mongodb-mongodb:27017` (roleSelector: primary — always routes to the current primary)
+- **Read-only traffic**: connect to `{cluster}-mongodb-mongodb-ro:27017` (roleSelector: secondary)
+- **`{cluster}-mongodb`** (two-segment name) is the `everypod` service — it routes to all pods and is **not** a write-only endpoint
 
-- **Write traffic**: connect to `{cluster}-mongodb:27017`
-- **Direct replica access** (for read replicas or replica set health): use the headless service DNS `{pod-name}.{cluster}-mongodb-headless.{namespace}.svc.cluster.local:27017`
+---
 
-## Automatic Failover
+## Sharding Architecture
 
-When the primary pod fails, the following sequence restores write access automatically:
+MongoDB Sharding distributes data across multiple independent replica sets (shards) using a shard key. A layer of stateless **mongos** routers sits in front, and a **config server replica set (CSRS)** stores the chunk routing metadata.
 
-1. **Primary becomes unreachable** — secondaries stop receiving heartbeats
-2. **Election triggered** — after the `electionTimeoutMillis` (default 10 s), an eligible secondary calls for a new election
-3. **Voting** — each secondary votes for the candidate with the most up-to-date oplog position; the candidate that collects a majority of votes wins
-4. **New primary elected** — the winner steps up, rolls back any uncommitted writes, and begins accepting new writes
-5. **KubeBlocks detects role change** — `kbagent` probe returns `primary` for the new winner; pod labels are updated
-6. **Service Endpoints switch** — the ClusterIP service routes traffic to the new primary
+<MongodbShardingArchitectureDiagram />
 
-Total failover time is typically within **10–30 seconds**, bounded by the election timeout and oplog catch-up time.
+### Resource Hierarchy
 
-For a **planned switchover**, KubeBlocks calls `rs.stepDown()` on the current primary via `kbagent`, triggering a graceful election with no data loss.
+The sharding topology uses both `Component` (for mongos and config-server) and `Sharding` (for data shards):
+
+```
+Cluster  →  Component (mongos)         →  InstanceSet  →  Pod × N
+         →  Component (config-server)  →  InstanceSet  →  Pod × 3
+         →  Sharding  (shard)          →  Shard × N    →  InstanceSet  →  Pod × replicas
+```
+
+| Resource | Role |
+|----------|------|
+| **Cluster** | Specifies topology `sharding`; declares mongos, config-server, and shard specs |
+| **Component (mongos)** | Stateless query routers; requires config-server to be reachable before routing |
+| **Component (config-server)** | 3-node replica set (CSRS) storing chunk map and shard membership |
+| **Sharding** | KubeBlocks sharding spec; manages N identical shard Components |
+| **Shard** | An independent replica set owning a range of chunks; each shard fails over independently |
+
+### Component Details
+
+**Mongos pods** (stateless — no PVC; each pod also runs an `init-kubectl` init container that copies the `kubectl` binary into the container's tools path for use by lifecycle scripts):
+
+| Container | Port | Purpose |
+|-----------|------|---------|
+| `mongos` | 27017 | MongoDB query router — reads chunk map from CSRS and forwards queries to the correct shard |
+| `exporter` | 9216 | Prometheus metrics exporter |
+
+**Config server pods** (3-node CSRS replica set):
+
+| Container | Port | Purpose |
+|-----------|------|---------|
+| `mongodb` | 27017 | Config server mongod — stores chunk routing metadata; must use `w:majority` for all config writes; roleProbe runs `/tools/syncerctl getrole` |
+| `mongodb-backup-agent` | — | Percona Backup for MongoDB (PBM) agent |
+| `exporter` | 9216 | Prometheus metrics exporter |
+
+**Shard pods** (each shard = independent replica set):
+
+| Container | Port | Purpose |
+|-----------|------|---------|
+| `mongodb` | 27017 | Data shard mongod — stores documents assigned to this shard's chunk range; roleProbe runs `/tools/syncerctl getrole` |
+| `mongodb-backup-agent` | — | Percona Backup for MongoDB (PBM) agent |
+| `exporter` | 9216 | Prometheus metrics exporter |
+
+Each shard pod mounts its own **PVC** for its data directory. At least **3 shards** are recommended for balanced distribution (not enforced by the addon).
+
+### How Query Routing Works
+
+1. Client connects to **any mongos** on port 27017 — no cluster-aware driver required
+2. Mongos reads the **chunk map** from the CSRS to determine which shard owns the target key range
+3. Mongos forwards the query to the **primary of the target shard**
+4. For scatter-gather queries (no shard key filter), mongos fans out to **all shard primaries** and merges results
+5. On chunk migrations or shard additions, mongos automatically discovers the updated routing table
+
+### Traffic Routing
+
+| Service | Type | Port | Notes |
+|---------|------|------|-------|
+| `{cluster}-mongos-mongos-<ordinal>` | ClusterIP (per-pod) | 27017 | One service per mongos pod (`podService: true`); use all pod addresses as URI seed list |
+| `{cluster}-mongos-headless` | Headless | 27017 | DNS-based discovery of all mongos pods |
+| `{cluster}-mongos-internal` | ClusterIP | 27018 | Intra-cluster use only; not for application traffic |
+
+Clients connect through mongos using a MongoDB URI seed list, e.g.:
+```
+mongodb://{cluster}-mongos-mongos-0:27017,{cluster}-mongos-mongos-1:27017/
+```
+Or use `{cluster}-mongos-headless` for DNS-based discovery. Direct shard or config server access is not intended for application traffic.
+
+### Automatic Failover
+
+Each component fails over independently:
+
+- **Shard primary fails** → that shard's replica set elects a new primary (≈10 s); mongos retries on the new primary automatically
+- **Config server primary fails** → CSRS elects a new primary; chunk map reads resume; mongos does not lose routing data (it caches the chunk map locally)
+- **Mongos pod fails** → clients reconnect to another mongos pod; mongos is stateless so no data is lost
+
+---
 
 ## System Accounts
 
-KubeBlocks automatically creates and manages the following MongoDB system accounts. Passwords are auto-generated and stored in Secrets named `{cluster}-{component}-account-{name}`.
+KubeBlocks automatically manages the following MongoDB system accounts. Passwords are stored in Secrets named `{cluster}-{component}-account-{name}`.
 
 | Account | Role | Purpose |
 |---------|------|---------|
-| `root` | Superuser | Default administrative account; full access to all databases |
-| `kbadmin` | Superuser | KubeBlocks internal management operations |
-| `kbdataprotection` | Admin | Backup and restore operations via `mongodump`/`mongorestore` |
-| `kbprobe` | Monitor (read-only) | Health check queries; used by `kbagent` for role detection |
-| `kbmonitoring` | Monitor | Prometheus metrics collection via `mongodb_exporter` |
-| `kbreplicator` | Replication | Manages oplog tailing for replica set synchronization |
+| `root` | Superuser | Default administrative account used for cluster initialization and management |

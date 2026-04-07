@@ -6,9 +6,13 @@ sidebar_position: 3
 sidebar_label: Architecture
 ---
 
+import ZookeeperArchitectureDiagram from '@/components/ZookeeperArchitectureDiagram';
+
 # ZooKeeper Architecture in KubeBlocks
 
 This page describes how KubeBlocks deploys an Apache ZooKeeper ensemble on Kubernetes — covering the resource hierarchy, pod internals, the ZAB consensus protocol, and traffic routing.
+
+<ZookeeperArchitectureDiagram />
 
 ## Resource Hierarchy
 
@@ -29,15 +33,15 @@ ZooKeeper requires an **odd number of members** (3, 5, or 7) to maintain a votin
 
 ## Containers Inside Each Pod
 
-Every ZooKeeper pod runs three containers:
+Every ZooKeeper pod runs one container:
 
 | Container | Port | Purpose |
 |-----------|------|---------|
-| `zookeeper` | 2181 (client), 2888 (quorum/follower), 3888 (leader election) | ZooKeeper server participating in the ZAB consensus protocol and serving client requests |
-| `kbagent` | 5001 | Role probe endpoint — KubeBlocks queries `GET /v1.0/getrole` periodically to identify leader vs. follower vs. observer |
-| `metrics-exporter` | 9187 | Prometheus metrics exporter |
+| `zookeeper` | 2181 (client), 2888 (quorum/follower), 3888 (leader election), 7000 (metrics), 8080 (admin) | ZooKeeper server participating in the ZAB consensus protocol and serving client requests; exposes Prometheus metrics natively on port 7000; roleProbe runs `/kubeblocks/scripts/roleprobe.sh` inside this container |
 
-Each pod mounts its own **PVC** for the ZooKeeper data directory (`/data`), preserving the transaction log and snapshot files across pod restarts.
+Each pod mounts two PVCs:
+- **data** PVC → `/bitnami/zookeeper/data` — snapshot files and the ZooKeeper data tree
+- **snapshot-log** PVC → `/bitnami/zookeeper/log` — transaction log files
 
 ## Node Roles
 
@@ -45,7 +49,7 @@ Each pod mounts its own **PVC** for the ZooKeeper data directory (`/data`), pres
 |------|-------------|
 | **Leader** | Coordinates all write transactions; broadcasts proposals to followers and observers; elected via the ZAB leader election protocol |
 | **Follower** | Participates in voting for write quorum; serves client read requests locally; forwards writes to the leader |
-| **Observer** | Non-voting member that replicates state from the leader; serves read requests; used to scale read throughput without affecting write quorum |
+| **Observer** | Non-voting member that replicates state from the leader; serves read requests; used to scale read throughput without affecting write quorum. Observer is **not part of the default addon deployment** — it requires explicit configuration in `zoo.cfg` and is not provisioned automatically by KubeBlocks. |
 
 ## High Availability via ZAB Protocol
 
@@ -72,14 +76,18 @@ When the leader becomes unavailable:
 
 ## Traffic Routing
 
-KubeBlocks creates two services for each ZooKeeper ensemble:
+KubeBlocks creates three services for each ZooKeeper ensemble:
 
 | Service | Type | Port | Selector |
 |---------|------|------|----------|
-| `{cluster}-zookeeper` | ClusterIP | 2181 (client) | all pods |
+| `{cluster}-zookeeper` | ClusterIP | 2181 (client), 2888 (quorum), 8080 (admin) | `kubeblocks.io/role=leader` |
+| `{cluster}-zookeeper-readable` | ClusterIP | 2181 (client), 2888 (quorum), 8080 (admin) | all pods (no roleSelector) |
 | `{cluster}-zookeeper-headless` | Headless | 2181, 2888, 3888 | all pods |
 
-Client applications (e.g., Kafka, ClickHouse, or application code) connect to port 2181 on the ClusterIP service. Any ZooKeeper server (leader or follower) can serve client read requests; write requests are automatically forwarded to the leader.
+- **Write / coordination traffic**: connect to `{cluster}-zookeeper:2181` — the Endpoints always point at the current leader. Write requests go directly to the leader without any forwarding overhead.
+- **Read-heavy workloads**: connect to `{cluster}-zookeeper-readable:2181` — distributes client connections across all ensemble members (leader and followers). Followers serve read requests locally; write requests are still forwarded to the leader by the follower that receives them.
+
+Port 7000 (Prometheus metrics) is exposed on each pod but is **not included in any ClusterIP service**. To scrape metrics, connect directly to the pod on port 7000, or configure a `PodMonitor` targeting port 7000 on the headless service.
 
 Quorum and leader election traffic (ports 2888 and 3888) uses the headless service, where each ensemble member is individually addressable by its stable pod DNS name:
 

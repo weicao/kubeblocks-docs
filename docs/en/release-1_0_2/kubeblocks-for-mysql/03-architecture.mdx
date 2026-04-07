@@ -1,103 +1,188 @@
 ---
-title: MySQL High Availability Architecture in KubeBlocks
-description: Learn how KubeBlocks deploys and manages ApeCloud MySQL (wesql-server) clusters on Kubernetes, including the resource hierarchy, pod layout, Raft-based HA, traffic routing, and automatic failover.
-keywords: [MySQL, ApeCloud, wesql-server, KubeBlocks, high availability, Raft, architecture, Kubernetes, failover]
-sidebar_position: 3.5
+title: MySQL Architecture in KubeBlocks
+description: Learn how KubeBlocks deploys and manages MySQL clusters on Kubernetes. Covers Semisync (binlog replication), MGR (Group Replication with Paxos consensus on :33061), and Orchestrator-based HA architectures, with optional ProxySQL frontend.
+keywords: [MySQL, KubeBlocks, architecture, Kubernetes, semisync, MGR, Group Replication, Orchestrator, ProxySQL, high availability, binlog, Paxos]
+sidebar_position: 3
 sidebar_label: Architecture
 ---
 
-# MySQL High Availability Architecture in KubeBlocks
+import MysqlArchitectureDiagram from '@/components/MysqlArchitectureDiagram';
+import MysqlMGRArchitectureDiagram from '@/components/MysqlMGRArchitectureDiagram';
+import MysqlOrchestratorArchitectureDiagram from '@/components/MysqlOrchestratorArchitectureDiagram';
 
-This page describes how KubeBlocks deploys an ApeCloud MySQL (wesql-server) cluster on Kubernetes — covering the resource hierarchy, pod internals, built-in Raft-based HA, traffic routing, and automatic failover.
+# MySQL Architecture in KubeBlocks
 
-## Resource Hierarchy
+KubeBlocks supports three distinct MySQL HA architectures:
 
-KubeBlocks models a MySQL cluster as a hierarchy of Kubernetes custom resources:
+| Architecture | HA Mechanism | Use Case |
+|---|---|---|
+| **Semisync** | Async/semi-sync binlog replication; syncer roleProbe + KubeBlocks drives failover | General HA; single primary + replicas |
+| **MGR (Group Replication)** | Paxos-based group consensus on :33061; group elects new primary automatically | Stronger consistency guarantees; multi-region deployments |
+| **Orchestrator** | Semisync replication + external Orchestrator component manages failover | Large-scale clusters; topology visualization and manual control |
+
+Each architecture can optionally be combined with a **ProxySQL** frontend component, which provides connection pooling, query routing, and read/write splitting.
+
+---
+
+## Semisync Architecture
+
+MySQL Semisync uses native binlog replication between a primary and one or more replicas. Semi-synchronous mode requires at least one replica to acknowledge each transaction before the primary commits, reducing the risk of data loss on failover. KubeBlocks drives failover via a syncer-based roleProbe that runs `/tools/syncerctl getrole` inside the `mysql` container.
+
+<MysqlArchitectureDiagram />
+
+### Resource Hierarchy
 
 ```
-Cluster  →  Component  →  InstanceSet  →  Pod × N
+Cluster  →  Component (mysql)  →  InstanceSet  →  Pod × N
 ```
 
 | Resource | Role |
 |----------|------|
 | **Cluster** | User-facing declaration — specifies topology, replica count, storage size, and resources |
-| **Component** | Generated automatically; references a `ComponentDefinition` that describes container specs, lifecycle actions, and services |
+| **Component** | Generated automatically; references a `ComponentDefinition` describing container specs, lifecycle actions, and services |
 | **InstanceSet** | KubeBlocks custom workload (replaces `StatefulSet`); manages pods with stable identities and role awareness |
 | **Pod** | Actual running MySQL instance; each pod gets a unique ordinal and its own PVC |
 
-## Topologies
-
-KubeBlocks supports three MySQL topologies:
-
-| Topology | Description | Use Case |
-|----------|-------------|----------|
-| **standalone** | Single MySQL pod; no replication or HA | Development, testing, non-critical workloads |
-| **replication** | Traditional async/semi-sync replication (primary + replicas); external coordinator manages failover | General HA workloads |
-| **raftGroup** | Raft consensus built into the wesql-server engine (primary + N followers); no external coordinator required | Production workloads requiring strong consistency |
-
-## Containers Inside Each Pod
-
-Every MySQL pod runs three containers:
+### Containers Inside Each Pod
 
 | Container | Port | Purpose |
 |-----------|------|---------|
-| `mysql` | 3306 (MySQL protocol) | wesql-server (ApeCloud MySQL) database engine with built-in Raft consensus |
-| `kbagent` | 5001 | Role probe endpoint — KubeBlocks queries `GET /v1.0/getrole` every second to determine primary vs. follower |
-| `metrics-exporter` | 9187 | Prometheus metrics exporter |
+| `mysql` | 3306 | MySQL database engine; roleProbe runs `/tools/syncerctl getrole` inside this container |
+| `mysql-exporter` | 9104 | Prometheus metrics exporter (`mysqld_exporter`) |
 
-Each pod mounts its own **PVC** for the MySQL data directory (`/data/mysql`), providing independent persistent storage per replica.
+Each pod also runs multiple init containers on startup: `init-syncer` (copies syncer and syncerctl to `/tools`), `init-data` (sets up data directories and copies MySQL plugins), `init-xtrabackup` (copies Percona XtraBackup to `/tools`), and `init-jemalloc` (copies the jemalloc library to `/tools`).
 
-## High Availability via Built-in Raft (raftGroup Topology)
+### High Availability
 
-The wesql-server engine embeds a **Raft consensus module** directly into the MySQL storage layer. Unlike Patroni (PostgreSQL) or MySQL Group Replication with an external coordinator, wesql-server handles leader election and log replication natively:
+| Concept | Description |
+|---------|-------------|
+| **Primary** | Receives all writes; streams binlog events to replicas |
+| **Semi-sync replica** | Must acknowledge each transaction before the primary commits (when semi-sync is enabled) |
+| **Failover trigger** | syncer roleProbe fails repeatedly → KubeBlocks selects replica with most advanced binlog position |
+| **Promotion** | KubeBlocks calls the switchover API to promote the chosen replica; remaining replicas repoint to new primary |
 
-| Raft Concept | Description |
-|-------------|-------------|
-| **Primary (leader)** | Receives all write transactions; replicates log entries to followers before committing |
-| **Follower** | Replicates from the primary via Raft log; can serve read queries when `readPreference` allows |
-| **Write quorum** | A majority `(N/2 + 1)` of Raft members must acknowledge a transaction before it commits |
-| **Election timeout** | When the primary is unreachable, followers trigger a new election after a configurable timeout |
-| **No external coordinator** | All leader election and log replication is handled inside the wesql-server process; no ZooKeeper, etcd, or Patroni required |
+Failover typically completes within **30–60 seconds**.
 
-A raftGroup of 3 members (1 primary + 2 followers) tolerates **1 failure** while maintaining a voting majority and write quorum.
-
-## Traffic Routing
-
-KubeBlocks creates two services for each MySQL cluster:
+### Traffic Routing
 
 | Service | Type | Port | Selector |
 |---------|------|------|----------|
 | `{cluster}-mysql` | ClusterIP | 3306 | `kubeblocks.io/role=primary` |
 | `{cluster}-mysql-headless` | Headless | 3306 | all pods |
 
-The key mechanism is `roleSelector: primary` on the ClusterIP service. KubeBlocks probes each pod via `kbagent` every second and updates the pod label `kubeblocks.io/role`. The service Endpoints always point at the current primary — no VIP or external load balancer required.
+- **Write traffic**: `{cluster}-mysql:3306` (always routes to current primary)
+- **Direct pod access**: `{pod-name}.{cluster}-mysql-headless.{namespace}.svc.cluster.local:3306`
 
-- **Write traffic**: connect to `{cluster}-mysql:3306`
-- **Direct replica access** (read replicas, replication monitoring): use the headless service DNS `{pod-name}.{cluster}-mysql-headless.{namespace}.svc.cluster.local:3306`
+### Semisync ± ProxySQL
 
-## Automatic Failover
+Adding `proxysql` to the topology inserts a ProxySQL Component in front of MySQL. ProxySQL provides connection pooling, automatic read/write splitting, and query caching. Client traffic goes to `{cluster}-proxysql:6033` instead of directly to MySQL pods.
 
-When the primary pod fails in a raftGroup topology, the following sequence restores service automatically:
+---
 
-1. **Primary becomes unreachable** — followers stop receiving Raft heartbeats
-2. **Election triggered** — after the election timeout, an eligible follower increments its term and requests votes
-3. **New primary elected** — the follower that collects a majority of votes wins, promoting itself to primary and resuming write operations
-4. **KubeBlocks detects role change** — `kbagent` returns `primary` for the new winner; pod labels are updated
-5. **Service Endpoints switch** — the ClusterIP service automatically routes traffic to the new primary
+## MGR Architecture (Group Replication)
 
-Total failover time is typically within **5–15 seconds**, bounded by the Raft election timeout.
+MySQL Group Replication (MGR) runs a Paxos-based group consensus protocol on port `:33061` across all member pods. All transaction commits require certification by the group. In single-primary mode, one pod is elected PRIMARY by the group; the others are SECONDARY. On primary failure, the group autonomously elects a new primary without external coordination.
 
-For a **planned switchover** (e.g., maintenance), KubeBlocks invokes a graceful switchover operation that demotes the current primary and promotes a chosen follower with zero data loss.
+<MysqlMGRArchitectureDiagram />
+
+### Resource Hierarchy
+
+```
+Cluster  →  Component (mysql)  →  InstanceSet  →  Pod × N
+```
+
+The resource hierarchy is identical to Semisync. The difference is the replication protocol running inside each pod (`group_replication_start_on_boot=off`, `group_replication_single_primary_mode=ON`). KubeBlocks starts group replication manually via the lifecycle action rather than relying on `start_on_boot`.
+
+### Containers Inside Each Pod
+
+| Container | Port | Purpose |
+|-----------|------|---------|
+| `mysql` | 3306, 33061 | MySQL database engine; port 33061 is used for Group Replication communication (GCS — Group Communication System) |
+| `mysql-exporter` | 9104 | Prometheus metrics exporter |
+
+The roleProbe runs `/tools/syncerctl getrole` inside the `mysql` container. Each pod also runs multiple init containers on startup: `init-syncer` (copies syncer and syncerctl to `/tools`), `init-data` (sets up data directories and copies plugins), and `init-jemalloc` (copies the jemalloc library to `/tools`).
+
+### High Availability
+
+| HA Mechanism | Description |
+|--------------|-------------|
+| **Paxos group consensus** | All members exchange heartbeats and transaction certification messages on :33061 |
+| **Conflict detection** | Each transaction is certified by the group before commit — conflicts are detected and rolled back |
+| **Group-driven election** | When the primary fails, the GCS expels it and the remaining members elect a new primary |
+| **syncer role update** | syncer roleProbe detects the new primary role → updates `kubeblocks.io/role` label → ClusterIP service endpoints switch |
+| **Quorum tolerance** | 3-member group tolerates 1 failure; 5-member tolerates 2 |
+
+Failover typically completes within **5–15 seconds**. Group-internal primary election is near-instant after expulsion; the subsequent `kubeblocks.io/role` label update and Service endpoint switch still depend on the syncer roleProbe cycle.
+
+### Traffic Routing
+
+| Service | Type | Port | Selector |
+|---------|------|------|----------|
+| `{cluster}-mysql` | ClusterIP | 3306 | `kubeblocks.io/role=primary` |
+| `{cluster}-mysql-headless` | Headless | 3306 | all pods |
+
+Traffic routing is identical to Semisync. The `roleSelector: primary` mechanism on the ClusterIP service works the same way — the syncer roleProbe detects the current GR role and updates the pod label accordingly.
+
+### MGR ± ProxySQL
+
+The `mgr-proxysql` topology adds ProxySQL for connection pooling and read/write splitting, identical to the Semisync+ProxySQL variant.
+
+---
+
+## Orchestrator Architecture
+
+The Orchestrator topology pairs semi-sync MySQL replication with an external **Orchestrator** component. Orchestrator continuously monitors the replication topology via MySQL's `SHOW SLAVE STATUS` and `performance_schema`, detects failures, and drives automated failover and topology recovery.
+
+<MysqlOrchestratorArchitectureDiagram />
+
+### Resource Hierarchy
+
+Orchestrator is a **separate KubeBlocks addon** — it is deployed as an independent KubeBlocks `Cluster` (using the `orchestrator` ClusterDefinition), not as a Component inside the MySQL Cluster. The MySQL `orc` topology provisions only the MySQL Component, which then connects to a separately deployed Orchestrator cluster via `serviceRefs` (backed by the `serviceRefDeclarations` in the ComponentDefinition).
+
+```
+MySQL Cluster   →  Component (mysql)  →  InstanceSet  →  Pod × N
+
+Orchestrator Cluster  →  Component (orchestrator)  →  InstanceSet  →  Pod × N
+```
+
+### How Orchestrator Manages Failover
+
+1. Orchestrator polls all MySQL pods on port 3306 at a configurable interval
+2. On primary failure, Orchestrator identifies the most eligible replica (most advanced relay log)
+3. Orchestrator promotes the chosen replica and reconnects all other replicas to it
+4. KubeBlocks detects the new primary via an exec roleProbe that runs `orchestrator-client -c which-cluster-master` and updates the `kubeblocks.io/role` label on the new primary pod
+5. The `kubeblocks.io/role` label update is consumed by the control plane and observability tooling (e.g. `kbcli describe cluster`); the `mysql-server` ClusterIP service has no `roleSelector` and continues to load-balance across all ready pods — it does not automatically become a single-primary endpoint
+
+Orchestrator also provides a **web UI** for visualizing and manually managing the replication topology, which is useful for large clusters with complex topologies or when manual intervention is needed.
+
+### Traffic Routing
+
+| Service | Type | Port | Notes |
+|---------|------|------|-------|
+| `{cluster}-mysql-server` | ClusterIP | 3306 | All MySQL pods — service name is `{cluster}-{component}-{serviceName}` = `{cluster}-mysql-server`; no roleSelector (Orchestrator drives failover externally); load-balances to all ready pods |
+| `{cluster}-mysql-headless` | Headless | 3306 | all MySQL pods |
+| `{orc-cluster}-orchestrator` | ClusterIP | 80 | Orchestrator web UI + HTTP API (container listens on :3000, Service exposes :80 as `orc-http`) |
+
+:::note
+Because `mysql-server` has no `roleSelector`, it load-balances across all ready pods and does not automatically route writes to the current primary. For write-only routing, use the `orc-proxysql` topology (ProxySQL queries Orchestrator for the current master) or have the application discover the primary via Orchestrator's HTTP API and connect directly via the headless service.
+:::
+
+### Orchestrator ± ProxySQL
+
+The `orc-proxysql` topology adds ProxySQL for connection pooling and read/write splitting, as in other variants.
+
+---
 
 ## System Accounts
 
-KubeBlocks automatically creates and manages the following MySQL system accounts. Passwords are auto-generated and stored in Secrets named `{cluster}-{component}-account-{name}`.
+KubeBlocks automatically creates and manages the following MySQL system accounts. Passwords are stored in Secrets named `{cluster}-{component}-account-{name}`.
 
 | Account | Role | Purpose |
 |---------|------|---------|
-| `root` | Superuser | Default administrative account; full privileges on all databases |
-| `kbadmin` | Superuser | KubeBlocks internal management operations |
-| `kbdataprotection` | Admin | Backup and restore operations (xtrabackup, mysqldump) |
-| `kbprobe` | Monitor (read-only) | Health check queries; used by `kbagent` for role detection |
-| `kbmonitoring` | Monitor | Prometheus metrics collection via `mysqld_exporter` |
-| `kbreplicator` | Replication | Binary log replication between primary and followers |
+| `root` | Superuser | Default administrative account |
+| `kbadmin` | Superuser | KubeBlocks internal management |
+| `kbdataprotection` | Admin | Backup and restore (xtrabackup, mysqldump) |
+| `kbprobe` | Monitor (read-only) | Health check queries; role detection is handled by the lifecycle roleProbe (`syncerctl` / `orchestrator-client`), not by this account |
+| `kbmonitoring` | Monitor | Prometheus metrics collection |
+| `kbreplicator` | Replication | Binlog replication between primary and replicas |
+| `proxysql` | Monitor | Used by ProxySQL for health checking and query routing (present in semisync/MGR topologies) |

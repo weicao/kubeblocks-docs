@@ -6,9 +6,13 @@ sidebar_position: 3
 sidebar_label: Architecture
 ---
 
+import QdrantArchitectureDiagram from '@/components/QdrantArchitectureDiagram';
+
 # Qdrant Architecture in KubeBlocks
 
 This page describes how KubeBlocks deploys a Qdrant vector database cluster on Kubernetes — covering the resource hierarchy, pod internals, Raft-based distributed sharding, and traffic routing.
+
+<QdrantArchitectureDiagram />
 
 ## Resource Hierarchy
 
@@ -27,13 +31,11 @@ Cluster  →  Component  →  InstanceSet  →  Pod × N
 
 ## Containers Inside Each Pod
 
-Every Qdrant pod runs three containers:
+Every Qdrant pod runs one main application container (plus a `qdrant-tools` init container that copies `jq` and `curl` into `/qdrant/tools/` for use by lifecycle scripts):
 
 | Container | Port | Purpose |
 |-----------|------|---------|
-| `qdrant` | 6333 (REST API), 6334 (gRPC API), 6335 (internal P2P) | Qdrant vector search engine handling collection management and query processing |
-| `kbagent` | 5001 | Role probe endpoint — KubeBlocks queries `GET /v1.0/getrole` periodically |
-| `metrics-exporter` | 9187 | Prometheus metrics exporter |
+| `qdrant` | 6333 (REST API), 6334 (gRPC API), 6335 (internal P2P) | Qdrant vector search engine handling collection management and query processing; exposes Prometheus metrics natively at `/metrics` on port 6333 |
 
 Each pod mounts its own **PVC** for the Qdrant storage directory (`/qdrant/storage`), providing independent persistent storage for vector data and payload indexes.
 
@@ -69,10 +71,10 @@ KubeBlocks creates two services for each Qdrant cluster:
 
 | Service | Type | Ports | Selector |
 |---------|------|-------|----------|
-| `{cluster}-qdrant` | ClusterIP | 6333 (REST), 6334 (gRPC) | all pods |
+| `{cluster}-qdrant-qdrant` | ClusterIP | 6333 (REST), 6334 (gRPC) | all pods |
 | `{cluster}-qdrant-headless` | Headless | 6333, 6334, 6335 | all pods |
 
-Client applications connect to the ClusterIP service on port 6333 (REST) or 6334 (gRPC). Any Qdrant node can handle incoming API requests; the receiving node acts as a coordinator, forwarding the request to the appropriate shard leader and aggregating results.
+Client applications connect to `{cluster}-qdrant-qdrant` on port 6333 (REST) or 6334 (gRPC). The service name follows `{cluster}-{component}-{serviceName}` because `serviceName: qdrant` is set explicitly in the ComponentDefinition. Any Qdrant node can handle incoming API requests; the receiving node acts as a coordinator, forwarding the request to the appropriate shard leader and aggregating results.
 
 Internal P2P communication (Raft messages, shard data replication, query forwarding) uses port 6335 over the headless service, where each pod is individually addressable:
 

@@ -6,9 +6,13 @@ sidebar_position: 3
 sidebar_label: Architecture
 ---
 
+import MinioArchitectureDiagram from '@/components/MinioArchitectureDiagram';
+
 # MinIO Architecture in KubeBlocks
 
 This page describes how KubeBlocks deploys a MinIO distributed object storage cluster on Kubernetes — covering the resource hierarchy, pod internals, erasure coding, and traffic routing.
+
+<MinioArchitectureDiagram />
 
 ## Resource Hierarchy
 
@@ -25,17 +29,15 @@ Cluster  →  Component  →  InstanceSet  →  Pod × N
 | **InstanceSet** | KubeBlocks custom workload (replaces `StatefulSet`); manages pods with stable identities |
 | **Pod** | Actual running MinIO server node; each pod gets a unique ordinal and its own PVC |
 
-MinIO requires a minimum of **4 pods** (nodes) for a distributed deployment to enable erasure coding. All pods in a deployment are peers — there is no primary/replica distinction.
+MinIO requires a minimum of **2 pods** (nodes) for a distributed deployment. For production, the chart example recommends **at least 4 replicas**, and the count must be a **multiple of 2** (e.g., 4, 6, 8, 12) to maintain balanced erasure coding. All pods are peers — there is no primary/replica distinction at the S3 layer. KubeBlocks assigns an internal `readwrite` or `notready` role label via roleProbe (`mc admin info`) purely for rolling-update ordering; these roles carry no S3 routing semantics.
 
 ## Containers Inside Each Pod
 
-Every MinIO pod runs three containers:
+Every MinIO pod runs one main application container (plus an `init` init container that runs `replicas-history-config.sh` to set up the replica history configuration before the main process starts):
 
 | Container | Port | Purpose |
 |-----------|------|---------|
-| `minio` | 9000 (S3 API), 9001 (web console) | MinIO object storage server handling S3-compatible API requests |
-| `kbagent` | 5001 | Health probe endpoint — KubeBlocks queries `GET /v1.0/getrole` periodically |
-| `metrics-exporter` | 9187 | Prometheus metrics exporter |
+| `minio` | 9000 (S3 API + metrics), 9001 (web console) | MinIO object storage server; handles S3-compatible API requests; exposes Prometheus metrics on port 9000 at `/minio/v2/metrics/cluster` (auth disabled via `MINIO_PROMETHEUS_AUTH_TYPE=public`); MinIO also provides `/minio/health/live` and `/minio/health/ready` endpoints, but this addon does not declare HTTP liveness/readiness probes on the Pod — KubeBlocks uses an exec `roleProbe` (`mc admin info`) to label each pod `readwrite` or `notready` for rolling-update ordering |
 
 Each pod mounts its own **PVC** (`/data`), which MinIO treats as a single drive. Multiple PVCs per pod can be configured for higher throughput in advanced deployments.
 
@@ -59,7 +61,7 @@ Unlike primary/replica replication, erasure coding stores no full copies of any 
 MinIO nodes discover each other at startup using the headless service DNS. Each node is started with the full list of peer addresses:
 
 ```
-http://{cluster}-minio-{0..N-1}.{cluster}-minio-headless.{namespace}.svc.cluster.local:9000/data
+http://{cluster}-minio-{0...N-1}.{cluster}-minio-headless.{namespace}.svc.cluster.local:9000/data
 ```
 
 MinIO uses an internal distributed locking mechanism to coordinate object writes and ensure read-after-write consistency across all nodes. There is no external coordinator — all consensus is handled within the MinIO process.
@@ -80,6 +82,14 @@ http://{cluster}-minio.{namespace}.svc.cluster.local:9000
 ```
 
 The web console on port 9001 provides a management interface for bucket management, object browsing, and access key administration.
+
+## System Accounts
+
+KubeBlocks automatically manages the following MinIO system account. The password is auto-generated and stored in a Secret named `{cluster}-{component}-account-root`.
+
+| Account | Role | Purpose |
+|---------|------|---------|
+| `root` | Admin (superuser) | MinIO root user used for cluster setup, bucket operations, and access-key administration; credentials injected as `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` |
 
 ## Data Durability Without Traditional Failover
 
