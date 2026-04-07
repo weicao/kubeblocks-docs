@@ -21,6 +21,9 @@ import tencent           from '@/assets/customers/tencent.svg';
 import tilaa             from '@/assets/customers/tilaa.svg';
 import xiaomi            from '@/assets/customers/xiaomi.svg';
 import zhongxinzhengquan from '@/assets/customers/zhongxinzhengquan.svg';
+import olares            from '@/assets/customers/olares.svg';
+import changan           from '@/assets/customers/changan.svg';
+import stategrid         from '@/assets/customers/stategrid.svg';
 
 // ── Logo marquee data ───────────────────────────────────────────────────────
 const logos = [
@@ -33,13 +36,16 @@ const logos = [
   { img: weipinhui,         title: 'VIP.com' },
   { img: kuaishou,          title: 'Kwai' },
   { img: tigerbrokers,      title: 'Tiger Brokers' },
-  { img: zhongxinzhengquan, title: 'CITIC' },
+  { img: zhongxinzhengquan, title: 'CITIC Securities' },
   { img: sealos,            title: 'SealOS' },
   { img: fastgpt,           title: 'FastGPT' },
   { img: kubesphere,        title: 'KubeSphere' },
   { img: momenta,           title: 'Momenta' },
   { img: logo360,           title: '360' },
   { img: tilaa,             title: 'Tilaa' },
+  { img: olares,            title: 'Olares' },
+  { img: changan,           title: 'Changan Automobile' },
+  { img: stategrid,         title: 'State Grid' },
 ];
 
 // ── Case data ───────────────────────────────────────────────────────────────
