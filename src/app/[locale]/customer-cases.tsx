@@ -246,7 +246,7 @@ export default function CustomerCases() {
 
         {/* Header */}
         <Box textAlign="center" mb={5}>
-          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: '8px', mb: 1.5, fontSize: '11px', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: t3, '&::before': { content: '""', width: '14px', height: '2px', borderRadius: '1px', bgcolor: t3, display: 'block' } }}>
+          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: '8px', mb: 1.5, fontSize: '11px', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'primary.main', '&::before': { content: '""', width: '14px', height: '2px', borderRadius: '1px', bgcolor: 'primary.main', display: 'block' } }}>
             Trusted by
           </Box>
           <Typography variant="h4" fontWeight={600} sx={{ letterSpacing: '-0.02em', lineHeight: 1.25, mb: 1.75, color: t1 }}>

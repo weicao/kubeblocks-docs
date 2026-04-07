@@ -1,6 +1,5 @@
 'use client';
 
-import { Link } from '@/components/Link';
 import {
   ElasticSearchIcon,
   KafkaIcon,
@@ -15,17 +14,14 @@ import {
 } from '@/components/icons';
 import {
   AccountTree,
-  GitHub,
   Inventory2,
   LockOutlined,
-  OpenInNew,
   Rocket,
   Storage,
   ViewInAr,
 } from '@mui/icons-material';
 import {
   Box,
-  Button,
   Container,
   Tooltip,
   Typography,
@@ -195,7 +191,7 @@ export default function DatabasesShowcase() {
     <Box sx={{ py: 8, bgcolor: 'background.default' }}>
       <Container>
         <Box textAlign="center" mb={5}>
-          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: '8px', mb: 1.5, fontSize: '11px', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'text.disabled', '&::before': { content: '""', width: '14px', height: '2px', borderRadius: '1px', bgcolor: 'text.disabled', display: 'block' } }}>Supported Engines</Box>
+          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: '8px', mb: 1.5, fontSize: '11px', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'primary.main', '&::before': { content: '""', width: '14px', height: '2px', borderRadius: '1px', bgcolor: 'primary.main', display: 'block' } }}>Supported Engines</Box>
           <Typography variant="h4" fontWeight="bold" gutterBottom>
             35+ Database Engines, One Operator
           </Typography>
@@ -252,19 +248,21 @@ export default function DatabasesShowcase() {
           </Typography>
         </Box>
 
-        <Box textAlign="center" mt={3}>
-          <Button
-            component={Link}
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3, borderTop: 1, borderColor: 'divider', pt: 2 }}>
+          <Box
+            component="a"
             href="https://github.com/apecloud/kubeblocks-addons"
             target="_blank"
             rel="noopener noreferrer"
-            variant="outlined"
-            startIcon={<GitHub />}
-            endIcon={<OpenInNew fontSize="small" />}
-            size="large"
+            sx={{
+              display: 'inline-flex', alignItems: 'center', gap: 0.75,
+              fontSize: '0.875rem', fontWeight: 600, color: 'primary.main',
+              textDecoration: 'none', transition: 'gap .15s, opacity .15s',
+              '&:hover': { gap: '10px', opacity: 0.8 },
+            }}
           >
-            View all Add-ons on GitHub
-          </Button>
+            View all 35+ Add-ons on GitHub →
+          </Box>
         </Box>
       </Container>
     </Box>

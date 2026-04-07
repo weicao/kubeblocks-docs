@@ -117,7 +117,7 @@ export default function Banner({ version }: { version?: string }) {
                 fontWeight: 'bold',
               }}
             >
-              Contact Us
+              Get a Demo
             </Button>
             <Button
               variant="outlined"
@@ -130,7 +130,7 @@ export default function Banner({ version }: { version?: string }) {
                 paddingBlock: 1.5,
               }}
             >
-              Try KubeBlocks Online
+              Try it Free
             </Button>
           </Stack>
         </Box>
