@@ -47,7 +47,7 @@ Cluster  →  Component (mysql)  →  InstanceSet  →  Pod × N
 
 | Container | Port | Purpose |
 |-----------|------|---------|
-| `mysql` | 3306 | MySQL database engine; roleProbe runs `/tools/syncerctl getrole` inside this container |
+| `mysql` | 3306, 3601 (ha replication) | MySQL database engine; roleProbe runs `/tools/syncerctl getrole` inside this container |
 | `mysql-exporter` | 9104 | Prometheus metrics exporter (`mysqld_exporter`) |
 
 Each pod also runs multiple init containers on startup: `init-syncer` (copies syncer and syncerctl to `/tools`), `init-data` (sets up data directories and copies MySQL plugins), `init-xtrabackup` (copies Percona XtraBackup to `/tools`), and `init-jemalloc` (copies the jemalloc library to `/tools`).
@@ -97,7 +97,7 @@ The resource hierarchy is identical to Semisync. The difference is the replicati
 
 | Container | Port | Purpose |
 |-----------|------|---------|
-| `mysql` | 3306, 33061 | MySQL database engine; port 33061 is used for Group Replication communication (GCS — Group Communication System) |
+| `mysql` | 3306, 3601 (ha replication), 33061 (GCS) | MySQL database engine; port 33061 is used for Group Replication communication (GCS — Group Communication System); port 3601 is the ha replication port |
 | `mysql-exporter` | 9104 | Prometheus metrics exporter |
 
 The roleProbe runs `/tools/syncerctl getrole` inside the `mysql` container. Each pod also runs multiple init containers on startup: `init-syncer` (copies syncer and syncerctl to `/tools`), `init-data` (sets up data directories and copies plugins), and `init-jemalloc` (copies the jemalloc library to `/tools`).

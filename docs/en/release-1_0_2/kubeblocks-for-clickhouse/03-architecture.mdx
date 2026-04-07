@@ -40,13 +40,23 @@ Cluster  →  Component (ch-keeper)              →  InstanceSet  →  Pod × 3
 
 ## Containers Inside Each Pod
 
+### ClickHouse Data Pods
+
 Every ClickHouse data pod runs one main application container (plus a `copy-tools` init container that copies `curl` into a shared volume at startup):
 
 | Container | Port | Purpose |
 |-----------|------|---------|
-| `clickhouse` | 8123 (HTTP), 9000 (TCP native), 8001 (metrics) | ClickHouse database engine handling queries and replication; exposes Prometheus metrics natively on port 8001 (`http-metrics`) |
+| `clickhouse` | 8123 (HTTP), 8443 (HTTPS), 9000 (TCP native), 9004 (MySQL wire protocol), 9005 (PostgreSQL wire protocol), 9009 (inter-server HTTP), 9010 (inter-server HTTPS), 9440 (TCP secure), 8001 (metrics) | ClickHouse database engine handling queries and replication; exposes Prometheus metrics natively on port 8001 (`http-metrics`) |
 
 Each pod mounts its own **PVC** for the ClickHouse data directory (`/bitnami/clickhouse`), providing independent persistent storage per replica.
+
+### ClickHouse Keeper Pods (`topology: cluster` only)
+
+Each Keeper pod runs one container (plus a `copy-tools` init container that copies `nc` — netcat — into a shared volume for health-check scripts):
+
+| Container | Port | Purpose |
+|-----------|------|---------|
+| `clickhouse` | 9181 (ZooKeeper-compatible client), 9234 (Raft internal), 8123 (HTTP), 9000 (TCP), 8001 (metrics) | ClickHouse Keeper process — provides ZooKeeper-compatible coordination for replica sync and DDL replication; port 9181 is the client endpoint for data pods |
 
 ## Distributed Coordination via ClickHouse Keeper
 
