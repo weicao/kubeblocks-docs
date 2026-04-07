@@ -105,9 +105,10 @@ export default function OperatorSprawl() {
             {' '}for N databases
           </Typography>
 
-          <Typography sx={{ fontSize: '15px', color: t2, maxWidth: 420, mx: 'auto', lineHeight: 1.7 }}>
-            Every database you add shouldn&apos;t multiply your operational burden.
-            KubeBlocks replaces operator sprawl with a single, unified control plane.
+          <Typography sx={{ fontSize: '15px', color: t2, maxWidth: 500, mx: 'auto', lineHeight: 1.7 }}>
+            KubeBlocks is the only Kubernetes operator purpose-built to manage multiple database engines—
+            designed from the ground up to help teams build and run internal database platforms,
+            without multiplying your operational burden.
           </Typography>
         </Box>
 
