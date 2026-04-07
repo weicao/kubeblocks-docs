@@ -1,96 +1,289 @@
 ---
 title: Kafka Architecture in KubeBlocks
-description: Learn how KubeBlocks deploys and manages Apache Kafka clusters on Kubernetes, including the resource hierarchy, pod layout, KRaft mode, and partition leader election.
-keywords: [Kafka, KubeBlocks, architecture, Kubernetes, KRaft, high availability, partition leader, broker]
+description: Learn how KubeBlocks deploys and manages Apache Kafka clusters on Kubernetes. Covers Combined (broker+controller co-located), Separated (independent controller and broker components), and Kafka 2.x (ZooKeeper-based) topologies with KRaft consensus, partition leader election, per-pod service routing, and SASL account management.
+keywords: [Kafka, KubeBlocks, architecture, Kubernetes, KRaft, combined, separated, ZooKeeper, high availability, partition leader, ISR, SASL]
 sidebar_position: 3
 sidebar_label: Architecture
 ---
 
+import KafkaCombinedArchitectureDiagram from '@/components/KafkaCombinedArchitectureDiagram';
+import KafkaArchitectureDiagram from '@/components/KafkaArchitectureDiagram';
+
 # Kafka Architecture in KubeBlocks
 
-This page describes how KubeBlocks deploys an Apache Kafka cluster on Kubernetes — covering the resource hierarchy, pod internals, KRaft-based consensus, and traffic routing.
+KubeBlocks supports three Kafka deployment topologies:
 
-## Resource Hierarchy
+| Topology | Node layout | Coordination | Use Case |
+|---|---|---|---|
+| **combined** / **combined_monitor** | Single Component; every pod runs broker + controller roles | KRaft (no ZooKeeper) | Smaller clusters; simplified operations; fewer pods to manage |
+| **separated** / **separated_monitor** | Controller and broker Components are independent; scale each separately | KRaft (no ZooKeeper) | Production workloads; large clusters; independent controller and broker scaling |
+| **kafka2-external-zk** | Broker-only Component; coordination delegated to external ZooKeeper | ZooKeeper (external) | Legacy Kafka 2.7 deployments that already have a ZooKeeper ensemble |
 
-KubeBlocks models a Kafka cluster as a hierarchy of Kubernetes custom resources:
+The `*_monitor` variants add a standalone `kafka-exporter` Component that scrapes Kafka-specific metrics (consumer group lag, partition offsets, topic throughput) and exposes them on port 9308 for Prometheus.
+
+---
+
+## Combined Architecture (combined / combined_monitor)
+
+In the combined topology every pod simultaneously acts as both a **broker** (stores and serves partition data) and a **controller** (participates in the KRaft metadata quorum). There is a single KubeBlocks Component (`kafka-combine`) for all combined nodes, and the entire set of pods forms both the KRaft controller quorum and the broker cluster.
+
+<KafkaCombinedArchitectureDiagram />
+
+### Resource Hierarchy
 
 ```
-Cluster  →  Component  →  InstanceSet  →  Pod × N
+Cluster  →  Component (kafka-combine)   →  InstanceSet  →  Pod × N
+         →  Component (kafka-exporter)  →  InstanceSet  →  Pod × 1   [combined_monitor only]
 ```
 
 | Resource | Role |
 |----------|------|
-| **Cluster** | User-facing declaration — specifies topology, broker count, controller count, storage, and resources |
-| **Component** | Generated automatically; references a `ComponentDefinition` describing container specs, lifecycle actions, and services |
-| **InstanceSet** | KubeBlocks custom workload (replaces `StatefulSet`); manages pods with stable identities and role awareness |
-| **Pod** | Actual running Kafka node; each pod gets a unique ordinal and its own PVC |
+| **Cluster** | User-facing declaration — specifies topology, combined node count, storage, and resources |
+| **Component (kafka-combine)** | Generated automatically; references the `cmpd-kafka-combine` ComponentDefinition; all pods are identical (each runs broker + controller) |
+| **Component (kafka-exporter)** | Optional; present in `combined_monitor` only; references `cmpd-kafka-exporter`; scrapes Kafka cluster metrics and exposes them on port 9308 |
+| **InstanceSet** | KubeBlocks custom workload (replaces `StatefulSet`); manages pods with stable identities |
+| **Pod** | Actual running combined node; each pod gets a unique ordinal and its own PVC |
 
-KubeBlocks supports Kafka in **KRaft mode** (Kafka Raft Metadata) for Kafka 3.x, which eliminates the dependency on an external ZooKeeper ensemble. Kafka 2.7 is also supported via a separate ComponentDefinition that uses ZooKeeper for metadata management. In KRaft mode, nodes can serve as **brokers**, **controllers**, or **combined** (both roles) depending on the chosen topology.
+KubeBlocks provisions `kafka-combine` first; `kafka-exporter` (if present) starts after.
 
-## Containers Inside Each Pod
+### Containers Inside Each Pod
 
-Every Kafka pod runs two containers. The exact port set depends on the node type (broker, controller, or combined):
+Each combined pod runs two containers. A `kafkatool` init container runs before the main containers start, copying the `/sasl` directory to `/shared-tools/sasl` for SASL authentication support:
 
 | Container | Port | Purpose |
 |-----------|------|---------|
-| `kafka` | 9092 (broker client), 9093 (controller quorum), 9094 (inter-broker) | Kafka node; broker pods expose 9092 + 9094, controller pods expose 9093, combined pods expose all three |
-| `jmx-exporter` | 5556 | JMX-based Prometheus metrics exporter |
+| `kafka` | 9092 (client), 9093 (controller quorum), 9094 (inter-broker) | Kafka node running in combined `broker,controller` mode (`KAFKA_CFG_PROCESS_ROLES=broker,controller`); serves producer/consumer traffic on 9092; participates in KRaft consensus on 9093; replicates partition data between brokers on 9094 |
+| `jmx-exporter` | 5556 | JMX-based Prometheus metrics exporter; scrapes the local JVM's JMX registry and exposes all Kafka JMX metrics |
 
-Broker and combined pods also run an **init container** before the main containers start:
+Each pod mounts a single **PVC** at `/bitnami/kafka`. Kafka stores the partition log data under `/bitnami/kafka/data` and the KRaft metadata log under `/bitnami/kafka/metadata`, both on the same PVC.
 
-| Init Container | Purpose |
-|----------------|---------|
-| `kafkatool` | Copies SASL authentication tools to the `/shared-tools` volume for use by the `kafka` container |
+### KRaft Consensus
 
-Each pod mounts its own **PVC** for the Kafka log directory (`/var/lib/kafka/data`), providing independent persistent storage per broker.
-
-## KRaft Mode: No ZooKeeper Required
-
-Since Kafka 3.3 (KIP-833), the KRaft metadata quorum fully replaces ZooKeeper. KubeBlocks deploys Kafka 3.x in KRaft mode:
+Since Kafka 3.3 (KIP-833), the KRaft metadata quorum fully replaces ZooKeeper. In the combined topology every pod is a controller-eligible node, so the whole pod set forms the controller quorum:
 
 | KRaft Concept | Description |
 |---------------|-------------|
-| **Controller quorum** | A set of controller nodes runs Raft consensus to manage cluster metadata (topic configs, partition assignments, ISR lists) |
-| **Active controller** | The Raft leader among controllers; all metadata writes go through it |
-| **Broker** | Stores partition log data and serves producer/consumer requests; fetches metadata from the active controller |
-| **Combined node** | Runs both controller and broker roles; suitable for smaller clusters |
-| **Metadata log** | An internal Kafka topic (`__cluster_metadata`) replicated by the controller quorum; brokers tail this log to stay current |
+| **Controller quorum** | All combined pods participate in Raft consensus on port 9093 to manage cluster metadata — topic configurations, partition assignments, and ISR lists |
+| **Active controller** | The Raft leader among controllers; all metadata writes go through it; elected automatically via Raft |
+| **Metadata log** | An internal Kafka topic (`__cluster_metadata`) replicated across all controller-eligible pods; brokers tail this log to stay current |
+| **Quorum tolerance** | 3 pods tolerate 1 failure; 5 pods tolerate 2 failures |
 
-The controller quorum requires a majority of controller nodes to be available for metadata operations. A quorum of 3 controllers tolerates 1 failure; 5 controllers tolerate 2.
+A combined node that fails loses both its broker and controller roles simultaneously. The remaining quorum elects a new active controller; partition leaders for the affected partitions are re-elected from the ISR.
+
+### Traffic Routing
+
+Kafka clients do not use a single ClusterIP service for all brokers. Instead, KubeBlocks creates one **per-pod ClusterIP service** (via `podService: true`) for each combined pod so that every broker can advertise a unique, stable address:
+
+| Service | Type | Port | Notes |
+|---------|------|------|-------|
+| `{cluster}-kafka-combine-advertised-listener-{n}` | ClusterIP | 9092 | One service per pod; clients use all per-pod addresses as the bootstrap seed list |
+| `{cluster}-kafka-combine-headless` | Headless | — | All pods; always created; used for internal cluster bus (port 9093 and 9094) and operator access |
+
+Clients bootstrap by connecting to the seed list of per-pod ClusterIP addresses on port 9092. After bootstrap, the client fetches the full cluster metadata and connects directly to the partition leader for each partition using the advertised per-pod address.
+
+```
+# Bootstrap seed list (all per-pod ClusterIP addresses)
+{cluster}-kafka-combine-advertised-listener-0.{namespace}.svc.cluster.local:9092,
+{cluster}-kafka-combine-advertised-listener-1.{namespace}.svc.cluster.local:9092,
+{cluster}-kafka-combine-advertised-listener-2.{namespace}.svc.cluster.local:9092
+```
+
+### Combined ± Monitor
+
+The `combined` topology provisions only the `kafka-combine` Component. The `combined_monitor` topology additionally provisions the `kafka-exporter` Component, which connects to the Kafka cluster and exposes consumer group lag, topic/partition offsets, and throughput metrics on port 9308. If you use `combined_monitor`, configure your Prometheus scrape target to point at the `kafka-exporter` pod on port 9308.
+
+---
+
+## Separated Architecture (separated / separated_monitor)
+
+In the separated topology the **controller** and **broker** roles are placed in independent KubeBlocks Components, each backed by its own InstanceSet. This allows you to scale and update controllers and brokers independently and provides clear operational isolation between the metadata plane (controllers) and the data plane (brokers).
+
+<KafkaArchitectureDiagram />
+
+### Resource Hierarchy
+
+```
+Cluster  →  Component (kafka-controller)  →  InstanceSet  →  Pod × N
+         →  Component (kafka-broker)      →  InstanceSet  →  Pod × N
+         →  Component (kafka-exporter)    →  InstanceSet  →  Pod × 1  [separated_monitor only]
+```
+
+| Resource | Role |
+|----------|------|
+| **Cluster** | User-facing declaration — specifies topology, controller count, broker count, storage per component type, and resources |
+| **Component (kafka-controller)** | References `cmpd-kafka-controller`; controller-eligible pods only; forms the KRaft quorum; no client traffic |
+| **Component (kafka-broker)** | References `cmpd-kafka-broker`; broker-only pods; serves all producer/consumer traffic; fetches metadata from controllers |
+| **Component (kafka-exporter)** | Optional; present in `separated_monitor` only; scrapes Kafka metrics and exposes them on port 9308 |
+| **InstanceSet** | KubeBlocks custom workload; manages pods within each Component with stable identities |
+| **Pod** | Actual running process; each pod gets a unique ordinal and its own PVC |
+
+KubeBlocks provisions the components in order: **kafka-controller** first (the quorum must elect an active controller before brokers can register), then **kafka-broker**, then **kafka-exporter** (if present). On termination, the order reverses.
+
+### Containers Inside Each Pod
+
+**Controller pods** (no init containers):
+
+| Container | Port | Purpose |
+|-----------|------|---------|
+| `kafka` | 9093 (controller quorum) | Kafka node running as controller only (`KAFKA_CFG_PROCESS_ROLES=controller`); participates in KRaft Raft consensus; manages cluster metadata; does not serve client traffic |
+| `jmx-exporter` | 5556 | JMX-based Prometheus metrics exporter |
+
+Each controller pod mounts a **PVC** at `/bitnami/kafka` for the KRaft metadata log (`/bitnami/kafka/metadata`).
+
+**Broker pods** (init container: `kafkatool` copies `/sasl` to `/shared-tools/sasl` before startup):
+
+| Container | Port | Purpose |
+|-----------|------|---------|
+| `kafka` | 9092 (client), 9094 (inter-broker) | Kafka node running as broker only (`KAFKA_CFG_PROCESS_ROLES=broker`); serves producer/consumer requests; replicates partition data to other brokers on port 9094; fetches metadata from the active controller |
+| `jmx-exporter` | 5556 | JMX-based Prometheus metrics exporter |
+
+Each broker pod mounts a **PVC** at `/bitnami/kafka/data` for partition log storage.
+
+**Exporter pod** (present in `separated_monitor` only; no init containers):
+
+| Container | Port | Purpose |
+|-----------|------|---------|
+| `kafka-exporter` | 9308 | Standalone Kafka metrics exporter — connects to the broker cluster and exposes consumer group lag, topic/partition offsets, and throughput in Prometheus format |
+
+### KRaft Consensus
+
+The controller Component forms a dedicated KRaft quorum. Brokers do not participate in the quorum — they only consume the `__cluster_metadata` log and register themselves with the active controller:
+
+| KRaft Concept | Description |
+|---------------|-------------|
+| **Controller quorum** | All controller pods run Raft consensus on port 9093; replicate the `__cluster_metadata` log |
+| **Active controller** | The current Raft leader; brokers send all metadata updates (topic creation, ISR changes) through it |
+| **Broker registration** | Each broker pod fetches the controller quorum address on startup and registers itself with the active controller |
+| **Quorum tolerance** | 3 controller pods tolerate 1 failure; 5 tolerate 2. Broker count has no effect on quorum tolerance |
+
+:::note
+The controller quorum size and the broker count are independently configurable in the separated topology. A common production pattern is **3 controller pods + N broker pods**, where N scales with data throughput requirements.
+:::
+
+### Traffic Routing
+
+Controllers have no client-facing service. Only broker pods get per-pod ClusterIP services:
+
+| Service | Type | Port | Notes |
+|---------|------|------|-------|
+| `{cluster}-kafka-broker-advertised-listener-{n}` | ClusterIP | 9092 | One per broker pod (`podService: true`); use all as bootstrap seed list |
+| `{cluster}-kafka-broker-headless` | Headless | — | All broker pods; internal use (inter-broker replication on port 9094, operator access) |
+| `{cluster}-kafka-controller-headless` | Headless | — | All controller pods; used by brokers to reach the controller quorum on port 9093 |
+
+Clients connect to broker pods only. The controller headless service is for internal Kafka use:
+
+```
+# Bootstrap seed list (all broker per-pod ClusterIP addresses)
+{cluster}-kafka-broker-advertised-listener-0.{namespace}.svc.cluster.local:9092,
+{cluster}-kafka-broker-advertised-listener-1.{namespace}.svc.cluster.local:9092,
+...
+```
+
+### Separated ± Monitor
+
+The `separated` topology provisions only `kafka-controller` and `kafka-broker`. The `separated_monitor` topology additionally provisions the `kafka-exporter` Component on port 9308 for consumer group and partition metrics.
+
+---
+
+## Kafka 2.x Architecture (kafka2-external-zk)
+
+The `kafka2-external-zk` topology deploys Kafka 2.7 in the traditional ZooKeeper-based mode. Instead of the KRaft metadata quorum, an external ZooKeeper ensemble (deployed as a separate KubeBlocks cluster or external service) provides cluster coordination, controller election, and topic metadata storage.
+
+### Resource Hierarchy
+
+```
+Cluster  →  Component (kafka-broker)    →  InstanceSet  →  Pod × N
+         →  Component (kafka-exporter)  →  InstanceSet  →  Pod × 1
+```
+
+The `kafka-broker` ComponentDefinition for Kafka 2.x declares a `serviceRefDeclaration` named `kafkaZookeeper` (required; matches ZooKeeper 3.5–3.9). The Cluster CR must provide a `serviceRef` pointing to an available ZooKeeper ensemble before the broker component can start:
+
+```yaml
+spec:
+  topology: kafka2-external-zk
+  serviceRefs:
+    - name: kafkaZookeeper
+      namespace: <zk-namespace>
+      cluster: <zk-cluster-name>
+```
+
+### Containers Inside Each Pod
+
+Each broker pod runs two containers. The `kafkatool` init container copies `/sasl` to `/shared-tools/sasl` before startup, as in Kafka 3.x:
+
+| Container | Port | Purpose |
+|-----------|------|---------|
+| `kafka` | 9092 (client), 9094 (inter-broker) | Kafka 2.7 broker node; uses ZooKeeper for metadata (topic configs, controller election, ISR management); serves producer/consumer traffic on 9092; replicates partition data on 9094 |
+| `jmx-exporter` | 5556 | JMX-based Prometheus metrics exporter |
+
+Each broker pod mounts a **PVC** at `/bitnami/kafka/data` for partition log storage.
+
+### ZooKeeper Coordination
+
+In Kafka 2.x, ZooKeeper is responsible for all coordination tasks that KRaft handles in Kafka 3.x:
+
+| ZooKeeper Role | Description |
+|----------------|-------------|
+| **Controller election** | One broker is elected Kafka controller via a ZooKeeper ephemeral node; it manages partition leader assignments |
+| **Topic metadata** | Topic configurations, partition assignments, and ISR lists are stored as ZooKeeper znodes |
+| **Broker registration** | Each broker registers an ephemeral node in ZooKeeper on startup; the controller detects broker failures via session expiry |
+| **SASL credentials** | SCRAM-SHA-256/512 credentials are provisioned using `kafka-configs.sh --zookeeper` (via the KubeBlocks `accountProvision` lifecycle action) |
+
+:::note
+Kafka 2.x is a legacy topology. It requires an operational ZooKeeper ensemble and does not support the KRaft metadata management or the operational simplifications available in Kafka 3.x. For new deployments, use `combined` or `separated`.
+:::
+
+### Traffic Routing
+
+Traffic routing is identical to Kafka 3.x brokers — per-pod ClusterIP services via `advertised-listener`:
+
+| Service | Type | Port | Notes |
+|---------|------|------|-------|
+| `{cluster}-kafka-broker-advertised-listener-{n}` | ClusterIP | 9092 | One per broker pod; use all as bootstrap seed list |
+| `{cluster}-kafka-broker-headless` | Headless | — | All broker pods; inter-broker replication on port 9094 |
+
+---
 
 ## Partition Leader Election
 
-Kafka data availability is governed by per-partition leader election:
+Partition leader election governs data availability and is the core HA mechanism across all Kafka topologies. The active KRaft controller (or ZooKeeper-elected controller in Kafka 2.x) manages all partition leader assignments:
 
 | Concept | Description |
 |---------|-------------|
-| **Partition leader** | The single broker responsible for all reads and writes for a given partition |
-| **Follower replicas** | Brokers that replicate from the leader; form the In-Sync Replica (ISR) set |
-| **ISR (In-Sync Replicas)** | Replicas fully caught up with the leader; only ISR members are eligible to become leader |
-| **Leader election** | When the leader broker fails, the active controller selects a new leader from the ISR set |
-| **Unclean leader election** | Disabled by default; enabling it risks data loss but speeds recovery when the ISR is empty |
+| **Partition leader** | The single broker responsible for all reads and writes for a given partition; elected by the active controller |
+| **Follower replicas** | Brokers that replicate the leader's partition log via port 9094; form the In-Sync Replica (ISR) set |
+| **ISR (In-Sync Replicas)** | Replicas fully caught up with the leader; only ISR members are eligible to become the new leader |
+| **Leader election** | When a partition leader fails, the active controller selects the next leader from the current ISR set |
+| **Unclean leader election** | Disabled by default (`unclean.leader.election.enable=false`); enabling it risks data loss but allows recovery when the ISR is empty |
 
-## Traffic Routing
+The replication factor for each topic determines how many ISR replicas exist per partition. A replication factor of 3 tolerates 1 broker failure per partition without any data loss or unavailability.
 
-KubeBlocks creates two services for each Kafka cluster:
-
-| Service | Type | Ports | Selector |
-|---------|------|-------|----------|
-| `{cluster}-kafka-broker` | ClusterIP | 9092 (broker) | all broker pods |
-| `{cluster}-kafka-headless` | Headless | 9092, 9093 | all pods |
-
-Kafka clients initially connect to any broker (via the ClusterIP service) to fetch cluster metadata, then connect directly to partition leaders using the headless service addresses. Each broker advertises its stable pod DNS name as its listener address so clients can route directly:
-
-```
-{pod-name}.{cluster}-kafka-headless.{namespace}.svc.cluster.local:9092
-```
+---
 
 ## Automatic Failover
 
-When a Kafka broker or controller fails:
+When a Kafka node fails, KubeBlocks and Kafka's internal protocols respond as follows:
 
-1. **Broker failure** — the active controller detects the broker's session timeout and removes it from ISR lists
-2. **Partition leader election** — for each partition where the failed broker was leader, the controller elects a new leader from the remaining ISR members
-3. **Producer/consumer continuity** — clients refresh metadata and reconnect to new partition leaders; brief retries are normal
-4. **Controller failure** — if a controller node fails, the remaining controller quorum elects a new active controller via Raft within seconds
-5. **KubeBlocks recovery** — KubeBlocks restarts the failed pod; on startup, the broker fetches metadata from the controller quorum and resumes replication
+1. **Broker failure** — the active controller detects the broker's session timeout and removes it from all ISR lists
+2. **Partition leader election** — for each partition where the failed broker was leader, the controller elects a new leader from the remaining ISR members; clients refreshing metadata see the new leader
+3. **Producer/consumer continuity** — clients encounter a `NOT_LEADER_OR_FOLLOWER` error, refresh metadata from any available broker, and reconnect to the new partition leaders; brief retries are normal
+4. **Controller failure (combined topology)** — if the active controller's pod fails, the remaining quorum members hold a Raft election and elect a new active controller within seconds
+5. **Controller failure (separated topology)** — controller Component pods independently hold Raft election; broker pods continue serving data traffic without interruption while the quorum recovers
+6. **KubeBlocks pod recovery** — KubeBlocks restarts the failed pod; on startup the broker fetches the current metadata from the active controller, re-joins the cluster, and begins catching up on missed partition data
+
+---
+
+## System Accounts
+
+KubeBlocks automatically creates the following Kafka SASL accounts for the broker and combined components. Credentials are stored in Secrets named `{cluster}-{component}-account-{name}`.
+
+| Account | Purpose |
+|---------|---------|
+| `admin` | Superuser account for cluster administration — topic management, ACL configuration, quota management; injected as `KAFKA_ADMIN_USER` / `KAFKA_ADMIN_PASSWORD` and added to `super.users` |
+| `client` | Default client SASL account for producer and consumer authentication — use the credentials from the `{cluster}-{component}-account-client` Secret in your Kafka client configuration |
+
+Both accounts use **SCRAM-SHA-256** and **SCRAM-SHA-512** for authentication. In Kafka 3.x, credentials are stored in the `__cluster_metadata` log. In Kafka 2.x (`kafka2-external-zk`), credentials are provisioned via `kafka-configs.sh --zookeeper` during the KubeBlocks `accountProvision` lifecycle action.
+
+:::note
+The `kafka-controller` Component in the separated topology and the `kafka-exporter` Component in monitor topologies do not have system accounts — accounts are only needed on the broker-eligible components (`kafka-broker` and `kafka-combine`).
+:::
