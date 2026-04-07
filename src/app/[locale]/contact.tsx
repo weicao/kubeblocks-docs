@@ -1,5 +1,4 @@
 'use client';
-import { Link } from '@/components/Link';
 import {
   alpha,
   Box,
@@ -61,9 +60,10 @@ export default function Contact() {
             <Button
               variant="contained"
               size="large"
-              href="mailto:marcom@kubeblocks.com"
-              component={Link}
               color="warning"
+              href="https://kubeblocks.com/contact"
+              target="_blank"
+              rel="noopener noreferrer"
               sx={{
                 border: 1,
                 borderColor: '#FFF',
@@ -77,6 +77,20 @@ export default function Contact() {
             >
               Start Now, at No Cost!
             </Button>
+            <Stack
+              direction="row"
+              spacing={3}
+              flexWrap="wrap"
+              justifyContent="center"
+              sx={{ fontSize: '0.82rem', color: colorSecondary }}
+            >
+              {['Open Source', '35+ Engines', 'Production-grade HA', 'Active Community'].map((item) => (
+                <Box key={item} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                  <Box component="span" sx={{ color: '#FFF', fontWeight: 700 }}>✓</Box>
+                  {item}
+                </Box>
+              ))}
+            </Stack>
           </Stack>
         </Box>
       </Container>

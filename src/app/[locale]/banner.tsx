@@ -1,19 +1,17 @@
 'use client';
 
 import { Link } from '@/components/Link';
-import { ForwardToInboxOutlined } from '@mui/icons-material';
 import {
   alpha,
   Box,
   Button,
-  Chip,
   Container,
   Stack,
   Typography,
   useTheme,
 } from '@mui/material';
 
-export default function Banner() {
+export default function Banner({ version }: { version?: string }) {
   const theme = useTheme();
   const isDark = theme.palette.mode.includes('dark');
 
@@ -68,23 +66,36 @@ export default function Banner() {
             unified API.
           </Typography>
 
-          <Chip
-            icon={
-              <ForwardToInboxOutlined
-                color="disabled"
-                sx={{ scale: 0.6, color: textColor }}
+          {version && (
+            <Box
+              sx={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 1,
+                px: 1.75,
+                py: 0.625,
+                borderRadius: 100,
+                border: 1,
+                borderColor: isDark ? 'rgba(99,131,255,0.3)' : 'rgba(99,131,255,0.25)',
+                bgcolor: isDark ? 'rgba(99,131,255,0.08)' : 'rgba(99,131,255,0.06)',
+                fontSize: 12,
+                fontWeight: 600,
+                color: isDark ? '#93a8f4' : '#5b7fff',
+                mb: 3,
+              }}
+            >
+              <Box
+                component="span"
+                sx={{
+                  width: 6, height: 6, borderRadius: '50%',
+                  bgcolor: 'primary.main',
+                  boxShadow: '0 0 6px currentColor',
+                  flexShrink: 0,
+                }}
               />
-            }
-            sx={{ color: textColor, background: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)' }}
-            label={
-              <Box>
-                For technical questions, contact us by &nbsp;
-                <Link href="mailto:marcom@kubeblocks.com" underline="always">
-                  Email
-                </Link>
-              </Box>
-            }
-          />
+              {version} · Production Ready · Open Source
+            </Box>
+          )}
 
           <Stack
             direction="row"
@@ -95,9 +106,10 @@ export default function Banner() {
             mb={2}
           >
             <Button
-              component={Link}
               variant="contained"
-              href="/docs/preview/user_docs"
+              href="https://kubeblocks.com/contact"
+              target="_blank"
+              rel="noopener noreferrer"
               size="large"
               sx={{
                 paddingInline: 4,
@@ -105,7 +117,7 @@ export default function Banner() {
                 fontWeight: 'bold',
               }}
             >
-              Documentation
+              Contact Us
             </Button>
             <Button
               variant="outlined"

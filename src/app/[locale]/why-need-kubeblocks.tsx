@@ -74,6 +74,7 @@ export default function WhyNeedKubeBlocks() {
     >
       <Container>
         <Box textAlign="center" mb={8}>
+          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: '8px', mb: 1.5, fontSize: '11px', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'text.disabled', '&::before': { content: '""', width: '14px', height: '2px', borderRadius: '1px', bgcolor: 'text.disabled', display: 'block' } }}>Architecture</Box>
           <Typography variant="h3" mb={2}>
             Why you need KubeBlocks
           </Typography>

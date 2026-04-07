@@ -2,11 +2,16 @@ import Footer from '@/components/Footer';
 import { getStaticParams } from '@/locales/server';
 import { getBlogs } from '@/utils/markdown';
 import { toAbsoluteUrl } from '@/utils/site';
-import { Box, Divider } from '@mui/material';
+import { Box } from '@mui/material';
 import type { Metadata } from 'next';
 import Banner from './banner';
 import BlogsPreview from './blogs-preview';
+import DatabasesShowcase from './databases-showcase';
+import GithubStats from './github-stats';
+import OperatorSprawl from './operator-sprawl';
+import QuickStart from './quick-start';
 import Contact from './contact';
+import CustomerCases from './customer-cases';
 import Customers from './customers';
 import { Evaluate } from './Evaluate';
 import Features from './features';
@@ -104,6 +109,19 @@ const homeJsonLd = [
 ];
 
 
+async function getLatestVersion(): Promise<string> {
+  try {
+    const res = await fetch('https://api.github.com/repos/apecloud/kubeblocks/releases/latest', {
+      next: { revalidate: 3600 },
+      headers: { Accept: 'application/vnd.github+json' },
+    });
+    const data = await res.json();
+    return (data.tag_name as string) ?? '';
+  } catch {
+    return '';
+  }
+}
+
 export default async function HomePage({
   params,
 }: {
@@ -111,7 +129,7 @@ export default async function HomePage({
 }) {
   const { locale } = await params;
 
-  const blogs = await getBlogs(locale);
+  const [blogs, version] = await Promise.all([getBlogs(locale), getLatestVersion()]);
 
   return (
     <>
@@ -120,13 +138,16 @@ export default async function HomePage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(homeJsonLd).replace(/</g, '\\u003c') }}
       />
       <Box style={{ minHeight: 'var(--container-min-height)' }}>
-        <Banner />
-        <Divider />
+        <Banner version={version} />
+        <GithubStats />
+        <OperatorSprawl />
+        <DatabasesShowcase />
         <Customers />
+        <CustomerCases />
         <Evaluate />
-        <Divider />
         <WhyNeedKubeBlocks />
         <Features />
+        <QuickStart />
         <Contact />
         <BlogsPreview blogs={blogs} />
       </Box>
