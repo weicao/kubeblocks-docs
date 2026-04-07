@@ -93,7 +93,7 @@ export default function Banner({ version }: { version?: string }) {
                   flexShrink: 0,
                 }}
               />
-              {version} · Production Ready · Open Source
+              {version} · Production Ready · Open Source · CNCF Landscape
             </Box>
           )}
 

@@ -50,8 +50,8 @@ export default function OperatorSprawl() {
   const isDark = theme.palette.mode === 'dark';
 
   // Tokens
-  const panelBg     = isDark ? '#111118' : '#fff';
-  const s2          = isDark ? '#16161F' : '#F8FAFC';
+  const panelBg     = theme.palette.background.paper;
+  const s2          = theme.palette.background.default;
   const line        = isDark ? 'rgba(255,255,255,.07)' : '#E2E8F0';
   const line2       = isDark ? 'rgba(255,255,255,.12)' : '#CBD5E1';
   const t2          = isDark ? 'rgba(255,255,255,.5)'  : '#475569';
