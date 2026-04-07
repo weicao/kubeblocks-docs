@@ -196,13 +196,6 @@ export default function DatabasesShowcase() {
           ))}
         </Box>
 
-        <Box sx={{ mt: 2, display: 'flex', gap: 3, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <Typography variant="caption" color="text.disabled" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Box component="span" sx={{ fontSize: '0.6rem', fontWeight: 700, px: 0.75, py: 0.25, borderRadius: 0.5, bgcolor: 'action.selected', color: 'text.secondary', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Enterprise</Box>
-            Closed-source, available in KubeBlocks Enterprise
-          </Typography>
-        </Box>
-
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3, borderTop: 1, borderColor: 'divider', pt: 2 }}>
           <Box
             component="a"

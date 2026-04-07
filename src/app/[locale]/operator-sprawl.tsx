@@ -106,7 +106,7 @@ export default function OperatorSprawl() {
           </Typography>
 
           <Typography sx={{ fontSize: '15px', color: t2, maxWidth: 500, mx: 'auto', lineHeight: 1.7 }}>
-            Every operator ships its own CRDs, its own backup logic, its own upgrade path. Whether you're using kubectl, Helm or ArgoCD—you're learning a new dialect for every engine you add.
+            Every operator ships its own CRDs, its own backup logic, its own upgrade path. Whether you&apos;re using kubectl, Helm or ArgoCD—you&apos;re learning a new dialect for every engine you add.
           </Typography>
         </Box>
 

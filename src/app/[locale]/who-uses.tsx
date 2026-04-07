@@ -62,7 +62,7 @@ export default function WhoUses() {
             <Box component="span" sx={{ color: 'primary.main' }}>Databases on Kubernetes</Box>
           </Typography>
           <Typography color="text.secondary" sx={{ maxWidth: 560, mx: 'auto' }}>
-            Whether you're managing databases as code, building an internal developer platform, or shipping a database service—KubeBlocks fits your workflow.
+            Whether you&apos;re managing databases as code, building an internal developer platform, or shipping a database service—KubeBlocks fits your workflow.
           </Typography>
         </Box>
 
