@@ -68,7 +68,9 @@ Failover typically completes within **30–60 seconds**.
 | Service | Type | Port | Selector |
 |---------|------|------|----------|
 | `{cluster}-mysql` | ClusterIP | 3306 | `kubeblocks.io/role=primary` |
-| `{cluster}-mysql-headless` | Headless | 3306 | all pods |
+| `{cluster}-mysql-headless` | Headless | 3306, 3601 (ha), chart metrics port (default **9104**) | all pods |
+
+KubeBlocks **headless** Services follow the InstanceSet pattern: every **declared** container port appears as a ServicePort (semisync / non‑Orchestrator builds: **3306**, **3601**, exporter).
 
 - **Write traffic**: `{cluster}-mysql:3306` (always routes to current primary)
 - **Direct pod access**: `{pod-name}.{cluster}-mysql-headless.{namespace}.svc.cluster.local:3306`
@@ -119,9 +121,11 @@ Failover typically completes within **5–15 seconds**. Group-internal primary e
 | Service | Type | Port | Selector |
 |---------|------|------|----------|
 | `{cluster}-mysql` | ClusterIP | 3306 | `kubeblocks.io/role=primary` |
-| `{cluster}-mysql-headless` | Headless | 3306 | all pods |
+| `{cluster}-mysql-headless` | Headless | 3306, 3601, **33061** (Group Replication), exporter (default **9104**) | all pods |
 
-Traffic routing is identical to Semisync. The `roleSelector: primary` mechanism on the ClusterIP service works the same way — the syncer roleProbe detects the current GR role and updates the pod label accordingly.
+Traffic routing matches Semisync except the headless Service also publishes **33061** from the `mysql` container.
+
+The `roleSelector: primary` mechanism on the ClusterIP service works the same way — the syncer roleProbe detects the current GR role and updates the pod label accordingly.
 
 ### MGR ± ProxySQL
 
@@ -170,7 +174,7 @@ Orchestrator also provides a **web UI** for visualizing and manually managing th
 |---------|------|------|-------|
 | `{cluster}-mysql-server` | ClusterIP | 3306 | All MySQL pods — service name is `{cluster}-{component}-{serviceName}` = `{cluster}-mysql-server`; no roleSelector (Orchestrator drives failover externally); load-balances to all ready pods |
 | `{cluster}-mysql-mysql-{n}` | ClusterIP (per-pod) | 3306 | One per MySQL pod (`podService: true`); created so Orchestrator can poll each instance individually by stable address |
-| `{cluster}-mysql-headless` | Headless | 3306 | all MySQL pods |
+| `{cluster}-mysql-headless` | Headless | 3306, 9104 (Orchestrator topology omits **3601** on the `mysql` container) | all MySQL pods |
 | `{orc-cluster}-orchestrator` | ClusterIP | 80 | Orchestrator web UI + HTTP API (container listens on :3000, Service exposes :80 as `orc-http`; `roleSelector: primary` routes to the active Orchestrator leader) |
 
 :::note
