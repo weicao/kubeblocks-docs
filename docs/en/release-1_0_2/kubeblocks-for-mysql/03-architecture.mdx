@@ -75,7 +75,7 @@ Failover typically completes within **30–60 seconds**.
 
 ### Semisync ± ProxySQL
 
-Adding `proxysql` to the topology inserts a ProxySQL Component in front of MySQL. ProxySQL provides connection pooling, automatic read/write splitting, and query caching. Client traffic goes to `{cluster}-proxysql:6033` instead of directly to MySQL pods.
+Adding `proxysql` to the topology inserts a ProxySQL Component in front of MySQL. ProxySQL provides connection pooling, automatic read/write splitting, and query caching. Client traffic goes to **`{cluster}-proxysql-proxy-server:6033`** (the ClusterIP Service from the ProxySQL `ComponentDefinition`, where `serviceName` is `proxy-server`) instead of directly to MySQL pods. Per-pod Services **`{cluster}-proxysql-proxy-ordinal-<n>`** expose the same DB port on each ProxySQL pod when you need ordinal-specific endpoints.
 
 ---
 
@@ -125,7 +125,7 @@ Traffic routing is identical to Semisync. The `roleSelector: primary` mechanism 
 
 ### MGR ± ProxySQL
 
-The `mgr-proxysql` topology adds ProxySQL for connection pooling and read/write splitting, identical to the Semisync+ProxySQL variant.
+The `mgr-proxysql` topology adds ProxySQL for connection pooling and read/write splitting, identical to the Semisync+ProxySQL variant — clients connect to **`{cluster}-proxysql-proxy-server:6033`** (and optionally per-pod **`{cluster}-proxysql-proxy-ordinal-<n>`**).
 
 ---
 
@@ -145,6 +145,15 @@ MySQL Cluster   →  Component (mysql)  →  InstanceSet  →  Pod × N
 Orchestrator Cluster  →  Component (orchestrator)  →  InstanceSet  →  Pod × N
 ```
 
+### Containers Inside Each Pod
+
+| Container | Port | Purpose |
+|-----------|------|---------|
+| `mysql` | 3306 | MySQL database engine; does **not** use syncer as a process wrapper — port 3601 is absent; roleProbe runs `/kubeblocks/orchestrator-client -c which-cluster-master -i ${KB_AGENT_POD_NAME}` |
+| `mysql-exporter` | 9104 | Prometheus metrics exporter (`mysqld_exporter`) |
+
+Each pod also runs two init containers on startup: `init-data` (sets up data directories and copies MySQL plugins) and `init-jq` (copies `jq`, `orchestrator-client`, and `curl` to `/kubeblocks` for use by the roleProbe and lifecycle scripts).
+
 ### How Orchestrator Manages Failover
 
 1. Orchestrator polls all MySQL pods on port 3306 at a configurable interval
@@ -160,8 +169,9 @@ Orchestrator also provides a **web UI** for visualizing and manually managing th
 | Service | Type | Port | Notes |
 |---------|------|------|-------|
 | `{cluster}-mysql-server` | ClusterIP | 3306 | All MySQL pods — service name is `{cluster}-{component}-{serviceName}` = `{cluster}-mysql-server`; no roleSelector (Orchestrator drives failover externally); load-balances to all ready pods |
+| `{cluster}-mysql-mysql-{n}` | ClusterIP (per-pod) | 3306 | One per MySQL pod (`podService: true`); created so Orchestrator can poll each instance individually by stable address |
 | `{cluster}-mysql-headless` | Headless | 3306 | all MySQL pods |
-| `{orc-cluster}-orchestrator` | ClusterIP | 80 | Orchestrator web UI + HTTP API (container listens on :3000, Service exposes :80 as `orc-http`) |
+| `{orc-cluster}-orchestrator` | ClusterIP | 80 | Orchestrator web UI + HTTP API (container listens on :3000, Service exposes :80 as `orc-http`; `roleSelector: primary` routes to the active Orchestrator leader) |
 
 :::note
 Because `mysql-server` has no `roleSelector`, it load-balances across all ready pods and does not automatically route writes to the current primary. For write-only routing, use the `orc-proxysql` topology (ProxySQL queries Orchestrator for the current master) or have the application discover the primary via Orchestrator's HTTP API and connect directly via the headless service.
@@ -169,7 +179,7 @@ Because `mysql-server` has no `roleSelector`, it load-balances across all ready 
 
 ### Orchestrator ± ProxySQL
 
-The `orc-proxysql` topology adds ProxySQL for connection pooling and read/write splitting, as in other variants.
+The `orc-proxysql` topology adds ProxySQL for connection pooling and read/write splitting, as in other variants — clients connect to **`{cluster}-proxysql-proxy-server:6033`** (and optionally per-pod **`{cluster}-proxysql-proxy-ordinal-<n>`**).
 
 ---
 
@@ -177,12 +187,16 @@ The `orc-proxysql` topology adds ProxySQL for connection pooling and read/write 
 
 KubeBlocks automatically creates and manages the following MySQL system accounts. Passwords are stored in Secrets named `{cluster}-{component}-account-{name}`.
 
-| Account | Role | Purpose |
-|---------|------|---------|
-| `root` | Superuser | Default administrative account |
-| `kbadmin` | Superuser | KubeBlocks internal management |
-| `kbdataprotection` | Admin | Backup and restore (xtrabackup, mysqldump) |
-| `kbprobe` | Monitor (read-only) | Health check queries; role detection is handled by the lifecycle roleProbe (`syncerctl` / `orchestrator-client`), not by this account |
-| `kbmonitoring` | Monitor | Prometheus metrics collection |
-| `kbreplicator` | Replication | Binlog replication between primary and replicas |
-| `proxysql` | Monitor | Used by ProxySQL for health checking and query routing (present in semisync/MGR topologies) |
+| Account | Role | Purpose | Topologies |
+|---------|------|---------|------------|
+| `root` | Superuser | Default administrative account | All |
+| `kbadmin` | Superuser | KubeBlocks internal management | All |
+| `kbdataprotection` | Admin | Backup and restore (xtrabackup, mysqldump) | `semisync`, `semisync-proxysql`, `mgr`, `mgr-proxysql` |
+| `kbprobe` | Monitor (read-only) | Health check queries; role detection is handled by the lifecycle roleProbe (`syncerctl` / `orchestrator-client`), not by this account | `semisync`, `semisync-proxysql`, `mgr`, `mgr-proxysql` |
+| `kbmonitoring` | Monitor | Prometheus metrics collection | `semisync`, `semisync-proxysql`, `mgr`, `mgr-proxysql` |
+| `kbreplicator` | Replication | Binlog replication between primary and replicas | `semisync`, `semisync-proxysql`, `mgr`, `mgr-proxysql` |
+| `proxysql` | Monitor | Used by ProxySQL for health checking and query routing | `semisync-proxysql`, `mgr-proxysql`, `orc-proxysql` |
+
+:::note
+The `orc` and `orc-proxysql` topologies provision only `root`, `kbadmin`, and `proxysql` (present in `orc-proxysql` only). The accounts `kbdataprotection`, `kbprobe`, `kbmonitoring`, and `kbreplicator` are defined only in the semisync and MGR ComponentDefinitions.
+:::
