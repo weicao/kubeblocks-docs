@@ -1,6 +1,5 @@
 'use client';
 
-import { ContactUs } from '@/components/ContactUs';
 import SearchModal from '@/components/SearchModal';
 import { SlackIconNoColor } from '@/components/icons';
 import { useI18n } from '@/locales/client';
@@ -274,7 +273,7 @@ function MoreSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
             <ListItemIcon><GitHub /></ListItemIcon>
             <ListItemText primary="GitHub" />
           </ListItemButton>
-          <ListItemButton component="a" href="https://kubeblocks.slack.com" target="_blank" rel="noopener noreferrer" onClick={onClose} sx={{ py: 1.5 }}>
+          <ListItemButton component="a" href="https://kubeblockshq.slack.com/" target="_blank" rel="noopener noreferrer" onClick={onClose} sx={{ py: 1.5 }}>
             <ListItemIcon><SlackIconNoColor /></ListItemIcon>
             <ListItemText primary="Slack" />
           </ListItemButton>
@@ -423,8 +422,8 @@ export const ElevationScrollAppBar = (props: AppBarProps) => {
             alignItems="center"
             gap={1}
           >
-            <DocumentationNav />
             <DatabasesNav />
+            <DocumentationNav />
             <Button
               component={Link}
               color="inherit"
@@ -434,15 +433,17 @@ export const ElevationScrollAppBar = (props: AppBarProps) => {
             >
               {t('navigation.blogs')}
             </Button>
-            <ContactUs
+            <Button
               size="large"
               color="inherit"
-              title="Trial Account Request"
+              href="https://kubeblocks.com/products/kubeblocks-enterprise"
+              target="_blank"
+              rel="noopener noreferrer"
               sx={{ paddingInline: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
               endIcon={<LaunchOutlined />}
             >
               Enterprise
-            </ContactUs>
+            </Button>
 
             <Box sx={searchBarStyles.container}>
               <TextField
@@ -483,7 +484,7 @@ export const ElevationScrollAppBar = (props: AppBarProps) => {
 
             {/* Social icons — desktop only */}
             <IconButton
-              href="https://kubeblocks.slack.com"
+              href="https://kubeblockshq.slack.com/"
               target="_blank"
               aria-label="Join KubeBlocks on Slack"
               sx={{ display: { xs: 'none', md: 'flex' } }}

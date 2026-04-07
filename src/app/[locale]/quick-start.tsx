@@ -138,6 +138,7 @@ export default function QuickStart() {
     <Box sx={{ py: 8, bgcolor: 'background.paper' }}>
       <Container maxWidth="md">
         <Box textAlign="center" mb={6}>
+          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: '8px', mb: 1.5, fontSize: '11px', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'text.disabled', '&::before': { content: '""', width: '14px', height: '2px', borderRadius: '1px', bgcolor: 'text.disabled', display: 'block' } }}>Quick Start</Box>
           <Typography variant="h4" fontWeight="bold" gutterBottom>
             Up and Running in Minutes
           </Typography>

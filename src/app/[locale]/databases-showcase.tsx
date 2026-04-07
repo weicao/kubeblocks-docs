@@ -26,10 +26,7 @@ import {
 import {
   Box,
   Button,
-  Chip,
   Container,
-  Divider,
-  Stack,
   Typography,
 } from '@mui/material';
 
@@ -89,6 +86,7 @@ export default function DatabasesShowcase() {
     <Box sx={{ py: 8, bgcolor: 'background.default' }}>
       <Container>
         <Box textAlign="center" mb={5}>
+          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: '8px', mb: 1.5, fontSize: '11px', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'text.disabled', '&::before': { content: '""', width: '14px', height: '2px', borderRadius: '1px', bgcolor: 'text.disabled', display: 'block' } }}>Supported Engines</Box>
           <Typography variant="h4" fontWeight="bold" gutterBottom>
             35+ Database Engines, One Operator
           </Typography>
@@ -97,35 +95,75 @@ export default function DatabasesShowcase() {
           </Typography>
         </Box>
 
-        <Stack spacing={3}>
-          {categories.map((cat) => (
-            <Box key={cat.label}>
-              <Typography
-                variant="overline"
-                color="text.secondary"
-                sx={{ mb: 1.5, display: 'block', letterSpacing: '0.1em' }}
+        <Box
+          sx={{
+            border: 1,
+            borderColor: 'divider',
+            borderRadius: 2,
+            overflow: 'hidden',
+          }}
+        >
+          {categories.map((cat, i) => (
+            <Box
+              key={cat.label}
+              sx={{
+                display: 'flex',
+                alignItems: 'stretch',
+                borderBottom: i < categories.length - 1 ? 1 : 0,
+                borderColor: 'divider',
+              }}
+            >
+              <Box
+                sx={{
+                  width: 140,
+                  flexShrink: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  px: 2.5,
+                  py: 2,
+                  borderRight: 1,
+                  borderColor: 'divider',
+                  bgcolor: 'action.hover',
+                }}
               >
-                {cat.label}
-              </Typography>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                {cat.items.map((db) => (
-                  <Chip
+                <Typography
+                  sx={{
+                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    color: 'text.disabled',
+                  }}
+                >
+                  {cat.label}
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', flex: 1 }}>
+                {cat.items.map((db, j) => (
+                  <Box
                     key={db.name}
-                    icon={db.icon}
-                    label={db.name}
-                    variant="outlined"
                     sx={{
-                      fontWeight: 500,
-                      px: 0.5,
-                      '& .MuiChip-icon': { ml: 1 },
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      px: 2.5,
+                      py: 2,
+                      borderRight: j < cat.items.length - 1 ? 1 : 0,
+                      borderColor: 'divider',
+                      transition: 'background 0.15s',
+                      '&:hover': { bgcolor: 'action.hover' },
                     }}
-                  />
+                  >
+                    {db.icon}
+                    <Typography sx={{ fontSize: '0.85rem', fontWeight: 500, color: 'text.secondary', whiteSpace: 'nowrap' }}>
+                      {db.name}
+                    </Typography>
+                  </Box>
                 ))}
               </Box>
-              <Divider sx={{ mt: 3 }} />
             </Box>
           ))}
-        </Stack>
+        </Box>
 
         <Box textAlign="center" mt={4}>
           <Button

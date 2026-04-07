@@ -109,6 +109,19 @@ const homeJsonLd = [
 ];
 
 
+async function getLatestVersion(): Promise<string> {
+  try {
+    const res = await fetch('https://api.github.com/repos/apecloud/kubeblocks/releases/latest', {
+      next: { revalidate: 3600 },
+      headers: { Accept: 'application/vnd.github+json' },
+    });
+    const data = await res.json();
+    return (data.tag_name as string) ?? '';
+  } catch {
+    return '';
+  }
+}
+
 export default async function HomePage({
   params,
 }: {
@@ -116,7 +129,7 @@ export default async function HomePage({
 }) {
   const { locale } = await params;
 
-  const blogs = await getBlogs(locale);
+  const [blogs, version] = await Promise.all([getBlogs(locale), getLatestVersion()]);
 
   return (
     <>
@@ -125,7 +138,7 @@ export default async function HomePage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(homeJsonLd).replace(/</g, '\\u003c') }}
       />
       <Box style={{ minHeight: 'var(--container-min-height)' }}>
-        <Banner />
+        <Banner version={version} />
         <GithubStats />
         <OperatorSprawl />
         <DatabasesShowcase />

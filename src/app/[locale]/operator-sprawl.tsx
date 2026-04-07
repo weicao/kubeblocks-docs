@@ -66,14 +66,22 @@ export default function OperatorSprawl() {
 
         {/* ── Header ── */}
         <Box textAlign="center" mb={8}>
-          <Typography
+          <Box
             sx={{
-              fontSize: '11px', fontWeight: 600, letterSpacing: '.12em',
-              textTransform: 'uppercase', color: t3, display: 'block', mb: 3,
+              display: 'inline-flex', alignItems: 'center', gap: '8px', mb: 3,
+              fontSize: '11px', fontWeight: 700, letterSpacing: '.12em',
+              textTransform: 'uppercase', color: t3,
+              '&::before': {
+                content: '""',
+                width: '14px', height: '2px',
+                borderRadius: '1px',
+                bgcolor: t3,
+                display: 'block',
+              },
             }}
           >
             Why KubeBlocks
-          </Typography>
+          </Box>
 
           <Typography
             variant="h4" fontWeight={700}
