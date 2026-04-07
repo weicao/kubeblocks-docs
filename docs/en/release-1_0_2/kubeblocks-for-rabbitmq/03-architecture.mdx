@@ -29,19 +29,20 @@ A RabbitMQ cluster consists of multiple broker nodes that form a single logical 
 
 ## Containers Inside Each Pod
 
-Every RabbitMQ pod runs three containers:
+Every RabbitMQ pod runs one container:
 
-| Container | Port | Purpose |
-|-----------|------|---------|
-| `rabbitmq` | 5672 (AMQP), 15672 (management HTTP API) | RabbitMQ broker handling message routing, queues, and exchanges |
-| `kbagent` | 5001 | Role probe endpoint — KubeBlocks queries `GET /v1.0/getrole` periodically |
-| `metrics-exporter` | 9187 | Prometheus metrics exporter |
+| Container | Purpose |
+|-----------|---------|
+| `rabbitmq` | RabbitMQ broker handling message routing, queues, exchanges, clustering, and metrics |
 
-Additional ports used by RabbitMQ internally:
+The `rabbitmq` container exposes the following ports:
 
 | Port | Protocol | Purpose |
 |------|----------|---------|
-| 4369 | EPMD | Erlang Port Mapper Daemon — node discovery for Erlang clustering |
+| 4369 | TCP | EPMD — Erlang Port Mapper Daemon, node discovery for Erlang clustering |
+| 5672 | AMQP | Client message traffic |
+| 15672 | HTTP | Web management console and REST API |
+| 15674 | HTTP | WebSocket STOMP endpoint |
 | 25672 | Erlang distribution | Inter-node communication (Erlang Distribution Protocol) |
 | 15692 | HTTP | Built-in Prometheus metrics endpoint |
 

@@ -25,23 +25,28 @@ Cluster  →  Component  →  InstanceSet  →  Pod × N
 | **InstanceSet** | KubeBlocks custom workload (replaces `StatefulSet`); manages pods with stable identities and role awareness |
 | **Pod** | Actual running Kafka node; each pod gets a unique ordinal and its own PVC |
 
-KubeBlocks supports Kafka in **KRaft mode** (Kafka Raft Metadata), which eliminates the dependency on an external ZooKeeper ensemble. Nodes can serve as **brokers**, **controllers**, or **combined** (both roles) depending on the chosen topology.
+KubeBlocks supports Kafka in **KRaft mode** (Kafka Raft Metadata) for Kafka 3.x, which eliminates the dependency on an external ZooKeeper ensemble. Kafka 2.7 is also supported via a separate ComponentDefinition that uses ZooKeeper for metadata management. In KRaft mode, nodes can serve as **brokers**, **controllers**, or **combined** (both roles) depending on the chosen topology.
 
 ## Containers Inside Each Pod
 
-Every Kafka pod runs three containers:
+Every Kafka pod runs two containers. The exact port set depends on the node type (broker, controller, or combined):
 
 | Container | Port | Purpose |
 |-----------|------|---------|
-| `kafka` | 9092 (broker plaintext), 9093 (controller quorum) | Kafka node serving producer/consumer traffic and/or participating in KRaft metadata consensus |
-| `kbagent` | 5001 | Role probe endpoint — KubeBlocks queries `GET /v1.0/getrole` periodically |
-| `metrics-exporter` | 9187 | Prometheus metrics exporter (JMX-based) |
+| `kafka` | 9092 (broker client), 9093 (controller quorum), 9094 (inter-broker) | Kafka node; broker pods expose 9092 + 9094, controller pods expose 9093, combined pods expose all three |
+| `jmx-exporter` | 5556 | JMX-based Prometheus metrics exporter |
+
+Broker and combined pods also run an **init container** before the main containers start:
+
+| Init Container | Purpose |
+|----------------|---------|
+| `kafkatool` | Copies SASL authentication tools to the `/shared-tools` volume for use by the `kafka` container |
 
 Each pod mounts its own **PVC** for the Kafka log directory (`/var/lib/kafka/data`), providing independent persistent storage per broker.
 
 ## KRaft Mode: No ZooKeeper Required
 
-Since Kafka 3.3 (KIP-833), the KRaft metadata quorum fully replaces ZooKeeper. KubeBlocks deploys Kafka exclusively in KRaft mode:
+Since Kafka 3.3 (KIP-833), the KRaft metadata quorum fully replaces ZooKeeper. KubeBlocks deploys Kafka 3.x in KRaft mode:
 
 | KRaft Concept | Description |
 |---------------|-------------|
