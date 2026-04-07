@@ -41,17 +41,15 @@ export default function Contact() {
             fontWeight={800}
             sx={{ letterSpacing: '-0.03em', lineHeight: 1.1, mb: 2.5, color: isDark ? '#fafafa' : 'text.primary' }}
           >
-            Get started with KubeBlocks,<br />
-            with{' '}
-            <Box component="span" sx={{ color: 'primary.main' }}>risk-free trial</Box>
-            {' '}and migration support.
+            Get Started with KubeBlocks,{' '}
+            <Box component="span" sx={{ color: 'primary.main' }}>Risk-Free.</Box>
           </Typography>
 
           {/* Sub */}
           <Typography
-            sx={{ fontSize: '1.05rem', color: isDark ? '#a1a1aa' : 'text.secondary', maxWidth: 480, lineHeight: 1.75, mb: 4 }}
+            sx={{ fontSize: '1.05rem', color: isDark ? '#a1a1aa' : 'text.secondary', maxWidth: 520, lineHeight: 1.75, mb: 4 }}
           >
-            Open source, production-ready, and backed by an active global community. No credit card required.
+            Open source and production-ready. Enterprise customers get dedicated onboarding and migration support.
           </Typography>
 
           {/* Buttons */}

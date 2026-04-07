@@ -128,7 +128,10 @@ export default async function HomePage({
 }) {
   const { locale } = await params;
 
-  const [blogs, version] = await Promise.all([getBlogs(locale), getLatestVersion()]);
+  const [allBlogs, version] = await Promise.all([getBlogs(locale), getLatestVersion()]);
+
+  const blogs = allBlogs
+    .filter(b => !b.name.startsWith('announcing-') && !b.name.startsWith('community-monthly-report-'));
 
   return (
     <>
