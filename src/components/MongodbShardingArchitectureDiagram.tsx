@@ -383,7 +383,7 @@ export default function MongodbShardingArchitectureDiagram() {
                   <span>3. Shard key hashed</span><br/>→ determines target shard
                 </div>
                 <div className="routing-item">
-                  <span>4. Mongos forwards</span><br/>to that shard's primary
+                  <span>4. Mongos forwards</span><br/>to that shard&apos;s primary
                 </div>
                 <div className="routing-item">
                   <span>5. Result merged</span><br/>(for scatter-gather queries, all shards queried)

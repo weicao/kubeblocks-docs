@@ -221,7 +221,7 @@ export default function QdrantArchitectureDiagram() {
                   <div className="svc-detail">
                     ClusterIP · :6333 REST · :6334 gRPC<br/>
                     selector: all pods · vector search is distributed<br/>
-                    <span style={{color:'#484f58'}}>name = cluster + component + serviceName ("qdrant")</span>
+                    <span style={{color:'#484f58'}}>name = cluster + component + serviceName (&quot;qdrant&quot;)</span>
                   </div>
                   <span className="svc-tag tag-green">ClusterIP</span>
                 </div>
