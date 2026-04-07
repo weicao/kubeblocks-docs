@@ -1,79 +1,77 @@
-import { Link } from '@/components/Link';
-import { ForkRight, LocalOffer, Star } from '@mui/icons-material';
-import { Box, Container, Divider, Stack, Typography } from '@mui/material';
+import { Box, Container, Typography } from '@mui/material';
 
-async function getGithubStats() {
+async function getGithubStars(): Promise<string> {
   try {
-    const [repoRes, releaseRes] = await Promise.all([
-      fetch('https://api.github.com/repos/apecloud/kubeblocks', {
-        next: { revalidate: 3600 },
-        headers: { Accept: 'application/vnd.github+json' },
-      }),
-      fetch('https://api.github.com/repos/apecloud/kubeblocks/releases/latest', {
-        next: { revalidate: 3600 },
-        headers: { Accept: 'application/vnd.github+json' },
-      }),
-    ]);
-    const repo = await repoRes.json();
-    const release = await releaseRes.json();
-    return {
-      stars: repo.stargazers_count as number,
-      forks: repo.forks_count as number,
-      version: release.tag_name as string,
-    };
+    const res = await fetch('https://api.github.com/repos/apecloud/kubeblocks', {
+      next: { revalidate: 3600 },
+      headers: { Accept: 'application/vnd.github+json' },
+    });
+    const data = await res.json();
+    const n = data.stargazers_count as number;
+    if (!n) return '3k+';
+    if (n >= 1000) return `${(n / 1000).toFixed(1)}k+`;
+    return String(n);
   } catch {
-    return { stars: 0, forks: 0, version: '' };
+    return '3k+';
   }
 }
 
-function fmt(n: number) {
-  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
-  return String(n);
-}
-
 export default async function GithubStats() {
-  const { stars, forks, version } = await getGithubStats();
+  const stars = await getGithubStars();
 
-  const items = [
-    ...(stars > 0
-      ? [{ icon: <Star fontSize="small" sx={{ color: '#f5a623' }} />, label: `${fmt(stars)} Stars` }]
-      : []),
-    ...(forks > 0
-      ? [{ icon: <ForkRight fontSize="small" sx={{ color: 'text.secondary' }} />, label: `${fmt(forks)} Forks` }]
-      : []),
-    ...(version
-      ? [{ icon: <LocalOffer fontSize="small" sx={{ color: 'text.secondary' }} />, label: version }]
-      : []),
-    { icon: null, label: '35+ Databases' },
+  const stats = [
+    { value: '35+',   label: 'Database Engines' },
+    { value: '20K+',  label: 'Managed Instances' },
+    { value: '50+',   label: 'Enterprise Customers' },
+    { value: stars,   label: 'GitHub Stars' },
   ];
 
-  if (items.length === 0) return null;
-
   return (
-    <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-      <Container>
-        <Stack
-          component={Link}
-          href="https://github.com/apecloud/kubeblocks"
-          target="_blank"
-          rel="noopener noreferrer"
-          direction="row"
-          divider={<Divider orientation="vertical" flexItem />}
-          spacing={3}
-          alignItems="center"
-          justifyContent="center"
-          flexWrap="wrap"
-          sx={{ py: 1.5, gap: 1, textDecoration: 'none', color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
+    <Box sx={{ borderTop: 1, borderBottom: 1, borderColor: 'divider', py: { xs: 4, md: 6 } }}>
+      <Container maxWidth="lg">
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: 'repeat(2,1fr)', md: 'repeat(4,1fr)' },
+            gap: { xs: 4, md: 0 },
+          }}
         >
-          {items.map((item, i) => (
-            <Stack key={i} direction="row" alignItems="center" spacing={0.5}>
-              {item.icon}
-              <Typography variant="body2" fontWeight={500}>
-                {item.label}
+          {stats.map((s, i) => (
+            <Box
+              key={s.label}
+              sx={{
+                textAlign: 'center',
+                borderRight: { md: i < stats.length - 1 ? '1px solid' : 'none' },
+                borderColor: { md: 'divider' },
+                px: { md: 3 },
+              }}
+            >
+              <Typography
+                sx={{
+                  fontSize: 'clamp(1.5rem, 3vw, 2rem)',
+                  fontWeight: 800,
+                  letterSpacing: '-0.04em',
+                  lineHeight: 1,
+                  mb: 0.75,
+                  color: 'primary.main',
+                }}
+              >
+                {s.value}
               </Typography>
-            </Stack>
+              <Typography
+                sx={{
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.1em',
+                  color: 'text.disabled',
+                }}
+              >
+                {s.label}
+              </Typography>
+            </Box>
           ))}
-        </Stack>
+        </Box>
       </Container>
     </Box>
   );
