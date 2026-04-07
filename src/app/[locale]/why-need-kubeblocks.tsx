@@ -74,7 +74,7 @@ export default function WhyNeedKubeBlocks() {
     >
       <Container>
         <Box textAlign="center" mb={8}>
-          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: '8px', mb: 1.5, fontSize: '11px', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'text.disabled', '&::before': { content: '""', width: '14px', height: '2px', borderRadius: '1px', bgcolor: 'text.disabled', display: 'block' } }}>Architecture</Box>
+          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: '8px', mb: 1.5, fontSize: '11px', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'primary.main', '&::before': { content: '""', width: '14px', height: '2px', borderRadius: '1px', bgcolor: 'primary.main', display: 'block' } }}>Architecture</Box>
           <Typography variant="h3" mb={2}>
             Why you need KubeBlocks
           </Typography>
@@ -88,7 +88,20 @@ export default function WhyNeedKubeBlocks() {
             <Grid
               size={{ md: 6, sm: 12 }}
               key={index}
-              sx={{ borderBottom: '1px solid', borderColor: 'divider' }}
+              sx={{
+                borderBottom: '1px solid', borderColor: 'divider',
+                position: 'relative', overflow: 'hidden',
+                transition: 'background .2s',
+                '&:hover': { bgcolor: 'action.hover' },
+                '&::after': {
+                  content: '""', position: 'absolute',
+                  top: 0, left: 0, right: 0, height: '2px',
+                  background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.secondary?.main ?? theme.palette.primary.light})`,
+                  transform: 'scaleX(0)', transformOrigin: 'left',
+                  transition: 'transform .35s',
+                },
+                '&:hover::after': { transform: 'scaleX(1)' },
+              }}
             >
               <Stack direction="row" alignItems="center" spacing={2} mb={2}>
                 <Avatar sx={{ bgcolor: theme.palette.primary.main }}>

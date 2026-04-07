@@ -76,7 +76,7 @@ export default function Features() {
     <Box sx={{ paddingBlock: 12 }} mb={8}>
       <Container>
         <Box textAlign="center" mb={8}>
-          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: '8px', mb: 1.5, fontSize: '11px', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'text.disabled', '&::before': { content: '""', width: '14px', height: '2px', borderRadius: '1px', bgcolor: 'text.disabled', display: 'block' } }}>Key Features</Box>
+          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: '8px', mb: 1.5, fontSize: '11px', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'primary.main', '&::before': { content: '""', width: '14px', height: '2px', borderRadius: '1px', bgcolor: 'primary.main', display: 'block' } }}>Key Features</Box>
           <Typography variant="h3" mb={2}>
             Key Features & Benefits
           </Typography>

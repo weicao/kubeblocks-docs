@@ -146,8 +146,8 @@ export default async function HomePage({
         <WhyNeedKubeBlocks />
         <Features />
         <QuickStart />
-        <Contact />
         <BlogsPreview blogs={blogs} />
+        <Contact />
       </Box>
       <Footer />
     </>

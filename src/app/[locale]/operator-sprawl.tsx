@@ -70,12 +70,12 @@ export default function OperatorSprawl() {
             sx={{
               display: 'inline-flex', alignItems: 'center', gap: '8px', mb: 3,
               fontSize: '11px', fontWeight: 700, letterSpacing: '.12em',
-              textTransform: 'uppercase', color: t3,
+              textTransform: 'uppercase', color: 'primary.main',
               '&::before': {
                 content: '""',
                 width: '14px', height: '2px',
                 borderRadius: '1px',
-                bgcolor: t3,
+                bgcolor: 'primary.main',
                 display: 'block',
               },
             }}

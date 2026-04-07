@@ -1,98 +1,94 @@
 'use client';
-import {
-  alpha,
-  Box,
-  Button,
-  Container,
-  darken,
-  Stack,
-  Typography,
-  useTheme,
-} from '@mui/material';
+import { Box, Button, Container, Stack, Typography, useTheme } from '@mui/material';
+
+const checks = ['Open Source', '35+ Database Engines', 'Production-grade HA', 'Active Community'];
 
 export default function Contact() {
   const theme = useTheme();
-  const background = theme.palette.primary.main;
-  const color = '#FFF';
-  const colorSecondary = alpha(color, 0.8);
+  const isDark = theme.palette.mode === 'dark';
 
   return (
     <Box
       sx={{
-        backgroundImage: `url("/site/home-rectangles.svg")`,
-        backgroundColor: theme.palette.mode.includes('dark')
-          ? darken(background, 0.3)
-          : background,
-        backgroundPosition: 'center center',
-        backgroundSize: 'cover',
-        paddingBlock: 6,
+        position: 'relative',
+        overflow: 'hidden',
+        borderTop: '1px solid',
+        borderColor: 'divider',
+        bgcolor: isDark ? '#09090b' : '#f8fafc',
       }}
     >
-      <Container>
-        <Box>
-          <Stack spacing={4} alignItems="center">
-            <Stack flex={1}>
-              <Typography
-                textAlign="center"
-                variant="h4"
-                sx={{ color }}
-                gutterBottom
-              >
-                Get started with KubeBlocks, with risk-free trial and migration
-                support.
-              </Typography>
-              <Stack
-                direction="row"
-                spacing={3}
-                alignItems="center"
-                sx={{ width: '100%' }}
-                justifyContent="center"
-              >
-                <Typography sx={{ color: colorSecondary }}>MySQL</Typography>
-                <Typography sx={{ color: colorSecondary }}>
-                  PostgreSQL
-                </Typography>
-                <Typography sx={{ color: colorSecondary }}>Redis</Typography>
-                <Typography sx={{ color: colorSecondary }}>Mongo</Typography>
-                <Typography sx={{ color: colorSecondary }}>...</Typography>
-              </Stack>
-            </Stack>
+      {/* Glow */}
+      <Box
+        sx={{
+          position: 'absolute',
+          top: '-160px', left: '50%', transform: 'translateX(-50%)',
+          width: '800px', height: '500px', pointerEvents: 'none',
+          background: `radial-gradient(ellipse at 50% 30%, ${isDark ? 'rgba(59,130,246,0.12)' : 'rgba(59,130,246,0.08)'}, transparent 65%)`,
+        }}
+      />
+
+      <Container maxWidth="md" sx={{ position: 'relative', zIndex: 1 }}>
+        <Stack alignItems="center" textAlign="center" sx={{ py: { xs: 8, md: 12 } }} spacing={0}>
+
+          {/* Eyebrow */}
+          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: '8px', mb: 2, fontSize: '11px', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'primary.main', '&::before': { content: '""', width: '14px', height: '2px', borderRadius: '1px', bgcolor: 'primary.main', display: 'block' } }}>
+            Get Started
+          </Box>
+
+          {/* Headline */}
+          <Typography
+            variant="h3"
+            fontWeight={800}
+            sx={{ letterSpacing: '-0.03em', lineHeight: 1.1, mb: 2.5, color: isDark ? '#fafafa' : 'text.primary' }}
+          >
+            Get started with KubeBlocks,<br />
+            with{' '}
+            <Box component="span" sx={{ color: 'primary.main' }}>risk-free trial</Box>
+            {' '}and migration support.
+          </Typography>
+
+          {/* Sub */}
+          <Typography
+            sx={{ fontSize: '1.05rem', color: isDark ? '#a1a1aa' : 'text.secondary', maxWidth: 480, lineHeight: 1.75, mb: 4 }}
+          >
+            Open source, production-ready, and backed by an active global community. No credit card required.
+          </Typography>
+
+          {/* Buttons */}
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} mb={4}>
             <Button
               variant="contained"
               size="large"
-              color="warning"
               href="https://kubeblocks.com/contact"
               target="_blank"
               rel="noopener noreferrer"
-              sx={{
-                border: 1,
-                borderColor: '#FFF',
-                paddingInline: 4,
-                borderRadius: 100,
-                background: 'none',
-                color: '#FFF',
-                boxShadow: 'none',
-                fontSize: '1.1em',
-              }}
+              sx={{ fontWeight: 700, px: 3.5, py: 1.5, fontSize: '0.95rem' }}
             >
-              Start Now, at No Cost!
+              Talk to Expert →
             </Button>
-            <Stack
-              direction="row"
-              spacing={3}
-              flexWrap="wrap"
-              justifyContent="center"
-              sx={{ fontSize: '0.82rem', color: colorSecondary }}
+            <Button
+              variant="outlined"
+              size="large"
+              href="https://labs.iximiuz.com/skill-paths/kubeblocks-skill-path-1f1a0a29"
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{ fontWeight: 500, px: 3.5, py: 1.5, fontSize: '0.95rem' }}
             >
-              {['Open Source', '35+ Engines', 'Production-grade HA', 'Active Community'].map((item) => (
-                <Box key={item} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                  <Box component="span" sx={{ color: '#FFF', fontWeight: 700 }}>✓</Box>
-                  {item}
-                </Box>
-              ))}
-            </Stack>
+              Try Playground
+            </Button>
           </Stack>
-        </Box>
+
+          {/* Checklist */}
+          <Stack direction="row" flexWrap="wrap" justifyContent="center" gap={{ xs: 1.5, sm: 3 }}>
+            {checks.map((item) => (
+              <Box key={item} sx={{ display: 'flex', alignItems: 'center', gap: 0.75, fontSize: '0.82rem', color: isDark ? '#a1a1aa' : 'text.secondary' }}>
+                <Box component="span" sx={{ color: '#34d399', fontWeight: 700, fontSize: '0.9rem' }}>✓</Box>
+                {item}
+              </Box>
+            ))}
+          </Stack>
+
+        </Stack>
       </Container>
     </Box>
   );
