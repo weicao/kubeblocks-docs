@@ -229,7 +229,7 @@ For more detailed instructions, refer to [the instance template feature](https:/
 
 ## Roles
 
-Most database systems support multi-instance deployments, where each instance assumes a different role, typically determined by their internal data replication relationships. For example, in PostgreSQL, there are Primary and Secondary roles, while in etcd, there are roles like leader, follower, and learner.
+Most database systems support multi-instance deployments, where each instance assumes a different role, typically determined by their internal data replication relationships. For example, in [PostgreSQL](/docs/preview/kubeblocks-for-postgresql), there are Primary and Secondary roles, while in [etcd](/docs/preview/kubeblocks-for-etcd), there are roles like leader, follower, and learner.
 
 In a database system, instances with different roles often have distinct characteristics. For example, in terms of service capabilities, the primary node usually supports read and write capabilities, while other nodes provide read-only capabilities. During operations, following best practices for managing database, the secondary instances are typically upgraded one by one first, with the primary instance upgraded last. Before upgrading the primary instance, a switchover is usually performed to ensure data integrity and minimize service downtime.
 
@@ -325,3 +325,11 @@ InstanceSet can manage up to **10,000 instances**. When managing a large number 
 [4]  Kubernetes Pod API for in-place update: https://kubernetes.io/docs/concepts/workloads/pods/#pod-update-and-replacement
 
 [5]  In-place update: https://kubeblocks.io/docs/preview/api_docs/maintenance/in-place-update/overview
+
+## Related
+
+- [KubeBlocks Documentation](/docs/preview/user_docs)
+- [Quick Start with KubeBlocks](/docs/preview/user_docs)
+- [KubeBlocks for PostgreSQL](/docs/preview/kubeblocks-for-postgresql)
+- [KubeBlocks for MySQL](/docs/preview/kubeblocks-for-mysql)
+- [KubeBlocks for etcd](/docs/preview/kubeblocks-for-etcd)

@@ -16,7 +16,7 @@ image: /img/blogs/thumbnails/blog-minio-kubeblocks.png
 
 # Background
 
-In the context of the rapid development of cloud-native architecture today, **object storage**, as an elastic, highly available, and cost-controllable storage method, is widely used in scenarios such as log storage, backup and recovery, machine learning, and media resource management. Among numerous object storage solutions, **MinIO** has become the preferred choice for enterprises to deploy object storage in private cloud and even hybrid cloud environments due to its characteristics of **Amazon S3 protocol compatibility**, **high performance**, and **open-source lightness**.
+In the context of the rapid development of cloud-native architecture today, **object storage**, as an elastic, highly available, and cost-controllable storage method, is widely used in scenarios such as log storage, backup and recovery, machine learning, and media resource management. Among numerous object storage solutions, [**MinIO**](/docs/preview/kubeblocks-for-minio) has become the preferred choice for enterprises to deploy object storage in private cloud and even hybrid cloud environments due to its characteristics of **Amazon S3 protocol compatibility**, **high performance**, and **open-source lightness**.
 
 KubeBlocks provides an operator-centric approach to running stateful services in Kubernetes. KubeBlocks can serve as an optional alternative to dedicated operators for a specific database or storage service. For MinIO specifically, community operator projects include examples such as the MinIO Operator (minio/minio-operator) and other storage operators like Rook (Ceph RGW) for object gateway use cases. KubeBlocks aims to simplify lifecycle management by providing a modular Addon model and unified operational capabilities.
 
@@ -258,3 +258,11 @@ After MinIO is integrated into KubeBlocks as an Addon, it inherently supports ma
 # Summary and Outlook
 
 Running MinIO in a cloud-native environment also faces challenges such as complex deployment, limited scalability, and cumbersome operations. KubeBlocks, as an open-source Kubernetes operator for stateful services, enhances MinIO's operator-based experience by providing automated cluster deployment, high service availability, and elastic expansion of Server Pools through its modular MinIO Addon. Nevertheless, MinIO still has room for optimization in terms of dynamic scaling flexibility and ecosystem compatibility. We will continue to refine these capabilities to help MinIO become a more competitive distributed storage solution in cloud-native scenarios.
+
+## Related
+
+- [KubeBlocks Documentation](/docs/preview/user_docs)
+- [Quick Start with KubeBlocks](/docs/preview/user_docs)
+- [KubeBlocks for MinIO](/docs/preview/kubeblocks-for-minio)
+- [KubeBlocks for Milvus](/docs/preview/kubeblocks-for-milvus)
+- [KubeBlocks for Qdrant](/docs/preview/kubeblocks-for-qdrant)

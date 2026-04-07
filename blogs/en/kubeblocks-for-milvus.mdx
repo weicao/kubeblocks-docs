@@ -16,7 +16,7 @@ image: /img/blogs/thumbnails/milvus_kubeblocks_thumbnail.png
 
 ## Background
 
-Milvus is a distributed vector database developed by Zilliz and is one of the mainstream vector databases in the industry. It is primarily used for **similarity search and large-scale vector retrieval**, commonly found in AI scenarios such as image recognition, recommendation systems, natural language processing, and audio recognition. The name "Milvus" means "kite," which is a bird of prey.
+[Milvus](/docs/preview/kubeblocks-for-milvus) is a distributed vector database developed by Zilliz and is one of the mainstream vector databases in the industry. It is primarily used for **similarity search and large-scale vector retrieval**, commonly found in AI scenarios such as image recognition, recommendation systems, natural language processing, and audio recognition. The name "Milvus" means "kite," which is a bird of prey.
 
 Milvus can support storing tens of billions of vectors, which is made possible by its cloud-native architecture:
 
@@ -28,7 +28,7 @@ As shown in the diagram above, Milvus separates storage and computing components
 
 Milvus depends on three stateful external components:
 
-- **etcd**: Stores Milvus metadata to enable service discovery between components. For example, a data node writes the following data to etcd:
+- **[etcd](/docs/preview/kubeblocks-for-etcd)**: Stores Milvus metadata to enable service discovery between components. For example, a data node writes the following data to etcd:
 
 ```bash
 laure-fc4d79455/meta/session/datanode-5
@@ -37,10 +37,10 @@ laure-fc4d79455/meta/session/datanode-5
 
 This contains information such as the node's ID, hostname, and connection address.
 
-- **Message queue**: Used as Milvus's Write-Ahead Log (WAL). In version 2.5, Milvus supports two types of message queues: Kafka and Pulsar.
+- **Message queue**: Used as Milvus's Write-Ahead Log (WAL). In version 2.5, Milvus supports two types of message queues: [Kafka](/docs/preview/kubeblocks-for-kafka) and Pulsar.
 - **Object storage**: Used as Milvus's primary storage. Data from WAL logs is periodically written to object storage for persistence.
 
-Milvus provides excellent support for Kubernetes, and the official Milvus Operator is available for deploying and managing Milvus on Kubernetes. However, the Milvus Operator is still limited in managing external components like etcd and MinIO, only providing functionality to spin up corresponding Pods without supporting comprehensive Day-2 operations.
+Milvus provides excellent support for Kubernetes, and the official Milvus Operator is available for deploying and managing Milvus on Kubernetes. However, the Milvus Operator is still limited in managing external components like etcd and [MinIO](/docs/preview/kubeblocks-for-minio), only providing functionality to spin up corresponding Pods without supporting comprehensive Day-2 operations.
 
 KubeBlocks is a database-neutral control plane running on Kubernetes. Through the abstraction of Addons, KubeBlocks provides a unified interface supporting any type of database, covering various aspects such as startup scripts, lifecycle hooks, and configuration management. The KubeBlocks Milvus Addon not only manages the Milvus lifecycle and operations but also provides better management of the external components that Milvus depends on. Through the APIs of KubeBlocks, users can achieve consistent Day-1 and Day-2 operations across engines.
 
@@ -215,3 +215,11 @@ Due to the stateless nature of Milvus components, they support vertical scaling,
 ## Summary
 
 This article introduces the Milvus vector database and its deployment implementation on KubeBlocks. Milvus adopts a stateless distributed architecture, supports large-scale vector retrieval, and is commonly used in AI scenarios. KubeBlocks provides standalone and cluster deployment modes by reusing modular Addons such as etcd, Kafka, and MinIO, and achieves flexible expansion and simplified operations by referencing external services through ServiceRef.
+
+## Related
+
+- [KubeBlocks Documentation](/docs/preview/user_docs)
+- [Quick Start with KubeBlocks](/docs/preview/user_docs)
+- [KubeBlocks for Milvus](/docs/preview/kubeblocks-for-milvus)
+- [KubeBlocks for Qdrant](/docs/preview/kubeblocks-for-qdrant)
+- [KubeBlocks for Kafka](/docs/preview/kubeblocks-for-kafka)

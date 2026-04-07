@@ -20,7 +20,7 @@ AI-generated content (AIGC) technology now is transforming our world at an unpre
 
 However, fully leveraging the potential of AIGC comes with a series of challenges for developers, such as high technical barriers, complex model integration, and difficult operations management. It is against this backdrop that Dify was born. Dify is an open-source large language model (LLM) application development platform that ingeniously integrates the concepts of Backend as Service and LLMOps. It aims to provide a fast track from ideas to products for developers. Dify provides a range of LLMs, intuitive prompt design tools, a powerful agent framework, and flexible process orchestration capabilities, all within a user-friendly interface and API. This greatly reduces technical barriers, enabling those without a technical background to participate in building AI applications.
 
-Although Dify greatly simplifies the development of AI applications, how to efficiently manage the infrastructure on which these applications reply remains a significant issue during deployment and operations. AIGC applications typically use various databases, such as relational databases like PostgreSQL for application metadata, in-memory databases like Redis for conversation history, and vector databases like Qdrant for RAG recall. Ensuring the stable operation of these critical components, data consistency and security, and meeting rapidly growing business demands is a considerable challenge for any team. 
+Although Dify greatly simplifies the development of AI applications, how to efficiently manage the infrastructure on which these applications reply remains a significant issue during deployment and operations. AIGC applications typically use various databases, such as relational databases like [PostgreSQL](/docs/preview/kubeblocks-for-postgresql) for application metadata, in-memory databases like [Redis](/docs/preview/kubeblocks-for-redis) for conversation history, and vector databases like [Qdrant](/docs/preview/kubeblocks-for-qdrant) for RAG recall. Ensuring the stable operation of these critical components, data consistency and security, and meeting rapidly growing business demands is a considerable challenge for any team. 
 
 This is where KubeBlocks unleashes its power. KubeBlocks is a data infrastructure management platform based on Kubernetes that provides a complete solution to help automate the management and scheduling of data infrastructure. Whether it is OLTP, OLAP, NoSQL, message queues, stream engines, or emerging vector databases and LLMs, KubeBlocks can manage them effortlessly, greatly enhancing the management efficiency of stateful workloads. KubeBlocks supports multi-cloud environments, offering one-click deployment, seamless scaling, and automatic fault recovery, ensuring high performance, high elasticity, and observability of production-grade applications.
 
@@ -358,3 +358,11 @@ kbcli cluster restart postgresql
 ## Summary
 
 This blog showcases how to build a production-grade AIGC application using KubeBlocks and Dify. The combination of KubeBlocks' power in managing data infrastructure and Dify's capabilities in AIGC application development significantly improves the efficiency of developing and deploying AIGC applications, with a highly flexible architecture that offers strong scalability and reduces the complexity of operations in a production environment.
+
+## Related
+
+- [KubeBlocks Documentation](/docs/preview/user_docs)
+- [Quick Start with KubeBlocks](/docs/preview/user_docs)
+- [KubeBlocks for PostgreSQL](/docs/preview/kubeblocks-for-postgresql)
+- [KubeBlocks for Redis](/docs/preview/kubeblocks-for-redis)
+- [KubeBlocks for Qdrant](/docs/preview/kubeblocks-for-qdrant)

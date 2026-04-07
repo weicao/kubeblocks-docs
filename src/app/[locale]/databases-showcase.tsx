@@ -8,86 +8,88 @@ import {
   Typography,
 } from '@mui/material';
 
-type DbItem = { name: string; preview?: boolean; enterprise?: boolean };
+type DbItem = { name: string; preview?: boolean; enterprise?: boolean; href?: string };
 type Category = { label: string; items: DbItem[] };
 
 const categories: Category[] = [
   {
     label: 'Relational',
     items: [
-      { name: 'MySQL' },
-      { name: 'PostgreSQL' },
-      { name: 'MariaDB', preview: true },
-      { name: 'TiDB', preview: true },
-      { name: 'OceanBase', preview: true },
-      { name: 'SQL Server', enterprise: true },
-      { name: 'Oracle', enterprise: true },
+      { name: 'MySQL',      href: '/docs/preview/kubeblocks-for-mysql' },
+      { name: 'PostgreSQL', href: '/docs/preview/kubeblocks-for-postgresql' },
+      { name: 'MariaDB',    preview: true },
+      { name: 'TiDB',       preview: true },
+      { name: 'OceanBase',  preview: true },
+      { name: 'SQL Server', enterprise: true, href: '/blog/kubeblocks-for-mssql-always-on-ag-revealed' },
+      { name: 'Oracle',     enterprise: true, href: '/blog/kubeblocks-for-oracles' },
     ],
   },
   {
     label: 'NoSQL',
     items: [
-      { name: 'Redis' },
-      { name: 'MongoDB' },
-      { name: 'etcd' },
-      { name: 'ZooKeeper' },
+      { name: 'Redis',     href: '/docs/preview/kubeblocks-for-redis' },
+      { name: 'MongoDB',   href: '/docs/preview/kubeblocks-for-mongodb' },
+      { name: 'etcd',      href: '/docs/preview/kubeblocks-for-etcd' },
+      { name: 'ZooKeeper', href: '/docs/preview/kubeblocks-for-zookeeper' },
     ],
   },
   {
     label: 'Analytics',
     items: [
-      { name: 'ClickHouse' },
+      { name: 'ClickHouse', href: '/docs/preview/kubeblocks-for-clickhouse' },
       { name: 'StarRocks' },
     ],
   },
   {
     label: 'Message Queue',
     items: [
-      { name: 'Kafka' },
-      { name: 'RabbitMQ' },
-      { name: 'RocketMQ' },
-      { name: 'Pulsar', preview: true },
+      { name: 'Kafka',    href: '/docs/preview/kubeblocks-for-kafka' },
+      { name: 'RabbitMQ', href: '/docs/preview/kubeblocks-for-rabbitmq' },
+      { name: 'RocketMQ', href: '/docs/preview/kubeblocks-for-rocketmq' },
+      { name: 'Pulsar',   preview: true },
     ],
   },
   {
     label: 'AI / Vector / Graph',
     items: [
-      { name: 'Milvus' },
-      { name: 'Qdrant' },
-      { name: 'ElasticSearch' },
-      { name: 'OpenSearch', preview: true },
-      { name: 'Neo4j', preview: true },
-      { name: 'NebulaGraph', preview: true },
-      { name: 'FalkorDB', preview: true },
+      { name: 'Milvus',       href: '/docs/preview/kubeblocks-for-milvus' },
+      { name: 'Qdrant',       href: '/docs/preview/kubeblocks-for-qdrant' },
+      { name: 'ElasticSearch', href: '/docs/preview/kubeblocks-for-elasticsearch' },
+      { name: 'OpenSearch',   preview: true },
+      { name: 'Neo4j',        preview: true },
+      { name: 'NebulaGraph',  preview: true },
+      { name: 'FalkorDB',     preview: true },
     ],
   },
   {
     label: 'Time Series / Observability',
     items: [
-      { name: 'InfluxDB', preview: true },
-      { name: 'TDEngine', preview: true },
-      { name: 'Loki', preview: true },
+      { name: 'InfluxDB',        preview: true },
+      { name: 'TDEngine',        preview: true },
+      { name: 'Loki',            preview: true },
       { name: 'VictoriaMetrics', preview: true },
-      { name: 'GreptimeDB', preview: true },
+      { name: 'GreptimeDB',      preview: true },
     ],
   },
   {
     label: 'Object Storage',
     items: [
-      { name: 'MinIO' },
+      { name: 'MinIO', href: '/docs/preview/kubeblocks-for-minio' },
     ],
   },
 ];
 
 function DbChip({ db }: { db: DbItem }) {
 
+  const linkHref = db.href ?? (db.enterprise ? 'https://kubeblocks.com/products/kubeblocks-enterprise' : undefined);
+  const isExternal = linkHref?.startsWith('http');
+
   const chip = (
     <Box
-      {...(db.enterprise ? {
+      {...(linkHref ? {
         component: 'a',
-        href: 'https://kubeblocks.com/products/kubeblocks-enterprise',
-        target: '_blank',
-        rel: 'noopener noreferrer',
+        href: linkHref,
+        ...(isExternal ? { target: '_blank', rel: 'noopener noreferrer' } : {}),
       } : {})}
       sx={{
         display: 'flex',

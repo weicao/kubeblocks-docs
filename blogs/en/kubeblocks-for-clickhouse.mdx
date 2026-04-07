@@ -22,7 +22,7 @@ Open-sourced by Yandex in 2016, ClickHouse is a high-performance, column-oriente
 
 However, this extreme performance comes at the cost of high operational complexity. Many teams find that deploying ClickHouse in an enterprise-grade production environment is challenging. The main challenges are:
 
-- **Complex Distributed Architecture**: Planning shards and replicas, and managing metadata consistency with Keeper/ZooKeeper.
+- **Complex Distributed Architecture**: Planning shards and replicas, and managing metadata consistency with Keeper/[ZooKeeper](/docs/preview/kubeblocks-for-zookeeper).
 - **High Operational Overhead**: Cumbersome parameter configuration, and manual intervention required for scaling and failure recovery.
 - **Difficult Performance Tuning**: A vast parameter system, complex resource coordination, and continuous iteration needed for query optimization.
 
@@ -100,7 +100,7 @@ To discuss ClickHouse's topology, we must first talk about its table engines. Cl
    - **Distributed**: A logical distributed table that handles query routing and parallel execution. It's typically used with local MergeTree tables in a "local table & distributed table" mode.
    - **View**: A view engine with data stored in memory.
 
-3. **Virtual Table Engines**: Used to access external data sources like MySQL/PostgreSQL.
+3. **Virtual Table Engines**: Used to access external data sources like [MySQL](/docs/preview/kubeblocks-for-mysql)/[PostgreSQL](/docs/preview/kubeblocks-for-postgresql).
 
 ![ClickHouse Table Engines](/img/blogs/clickhouse-addon/clickhouse-table-engines.png)
 
@@ -290,3 +290,11 @@ In today's increasingly competitive OLAP landscape, emerging engines like DuckDB
 As an open-source Kubernetes Operator for stateful services, KubeBlocks abstracts complex database operational tasks through a standardized, declarative API. Its unified cluster management model, flexible component orchestration, and deep support for core ClickHouse scenarios-including Keeper high availability, shard management, parameter configuration, and backup/recovery-provide enterprises with a production-grade cloud-native solution for ClickHouse.
 
 In the future, we hope to validate and optimize KubeBlocks for ClickHouse in more production scenarios. We welcome you to join our community, exchange ideas, and contribute to the project!
+
+## Related
+
+- [KubeBlocks Documentation](/docs/preview/user_docs)
+- [Quick Start with KubeBlocks](/docs/preview/user_docs)
+- [KubeBlocks for ClickHouse](/docs/preview/kubeblocks-for-clickhouse)
+- [KubeBlocks for MySQL](/docs/preview/kubeblocks-for-mysql)
+- [KubeBlocks for PostgreSQL](/docs/preview/kubeblocks-for-postgresql)

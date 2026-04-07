@@ -14,7 +14,7 @@ image: /img/blogs/thumbnails/blog-redis-on-kb.png
 
 # KubeBlocks x Redis: Streamlining Redis Cluster and Solving Network Compatibility
 
-Redis Cluster is the distributed solution for the Redis database, used to distribute data across multiple nodes to provide high availability and scalability. It allows storing a large amount of data sharded across multiple nodes and automatically handles data sharding and migration.
+[Redis](/docs/preview/kubeblocks-for-redis) Cluster is the distributed solution for the Redis database, used to distribute data across multiple nodes to provide high availability and scalability. It allows storing a large amount of data sharded across multiple nodes and automatically handles data sharding and migration.
 Redis Cluster uses the hash slots to manage data distribution. Data is divided into a fixed number of hash slots, and each slot can be assigned to a different node. Each node is responsible for handling a portion of the data within the assigned hash slots. Clients can directly connect to any node without the need for an intermediate proxy.
 In application deployment, the overall architecture is generally composed of the backend Redis Cluster and the application-side smart client.
 Redis Cluster provides the following features:
@@ -553,3 +553,10 @@ If using only the pod IP, the Redis cluster will meet normally, and the cluster 
    - External communication: announced network, can be NodePort/LoadBalancer, no need to reconnect, doesn't matter if NAT or not.
    Of course, internal communication can also go through NodePort and LoadBalancer, but the prerequisite is to carry the original source IP (the announced IP is also a kind of source IP), 5. which is also the current solution of KubeBlocks.
 5. Using NodePort will introduce another problem. When the Node is down, the cluster nodes' announced IP needs to be updated, which is also not an easy implementation, requiring the cooperation of the operator and HA node.
+
+## Related
+
+- [KubeBlocks Documentation](/docs/preview/user_docs)
+- [Quick Start with KubeBlocks](/docs/preview/user_docs)
+- [KubeBlocks for Redis](/docs/preview/kubeblocks-for-redis)
+- [KubeBlocks for MySQL](/docs/preview/kubeblocks-for-mysql)

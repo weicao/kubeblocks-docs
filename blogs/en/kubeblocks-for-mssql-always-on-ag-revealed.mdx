@@ -23,7 +23,7 @@ This blog is part of our ongoing series about running Microsoft SQL Server. Chec
 
 ### MSSQL and Always On AG
 
-Microsoft SQL Server (MSSQL) is an enterprise-level relational database management system developed by Microsoft. It has a history of over 30 years since its first version, SQL Server 1.0, was released in 1989. According to the [DB-Engines Ranking Trend](https://db-engines.com/en/ranking_trend), MSSQL has consistently ranked among the top three globally for the past decade, second only to Oracle and MySQL, making it one of the industry's recognized mainstream database products.
+Microsoft SQL Server (MSSQL) is an enterprise-level relational database management system developed by Microsoft. It has a history of over 30 years since its first version, SQL Server 1.0, was released in 1989. According to the [DB-Engines Ranking Trend](https://db-engines.com/en/ranking_trend), MSSQL has consistently ranked among the top three globally for the past decade, second only to [Oracle](/blog/kubeblocks-for-oracles) and [MySQL](/docs/preview/kubeblocks-for-mysql), making it one of the industry's recognized mainstream database products.
 
 ![MSSQL consistently ranks among top 3 databases globally](/img/blogs/mssql-addon/1-mssql-db-ranking.png)
 
@@ -147,7 +147,7 @@ We implemented three backup methods for the MSSQL Addon:
 * Differential backup: Differential backup only backs up modifications since the last full backup, which is more efficient than full backup. It's also implemented by calling MSSQL differential backup commands
 * Continuous log backup: Regularly calls the `BACKUP LOG` command to upload database log files to achieve point-in-time recovery
 
-With the help of KubeBlocks' abstraction of backup destinations, namely BackupRepo, the above backups can be easily uploaded to object storage provided by mainstream cloud vendors, including object storage services from Alibaba Cloud, Huawei Cloud, Tencent Cloud, AWS, Google Cloud, Microsoft Azure, Oracle Cloud, etc. For on-premise deployment scenarios, it also supports self-deployed storage services such as MinIO, XSKY, NAS, etc.
+With the help of KubeBlocks' abstraction of backup destinations, namely BackupRepo, the above backups can be easily uploaded to object storage provided by mainstream cloud vendors, including object storage services from Alibaba Cloud, Huawei Cloud, Tencent Cloud, AWS, Google Cloud, Microsoft Azure, Oracle Cloud, etc. For on-premise deployment scenarios, it also supports self-deployed storage services such as [MinIO](/docs/preview/kubeblocks-for-minio), XSKY, NAS, etc.
 
 ## Deployment and Operational Practice
 
@@ -297,3 +297,11 @@ After integrating with KubeBlocks in Addon form, it naturally supports many clus
 Running MSSQL in cloud-native environments faces many challenges. KubeBlocks, as an open-source K8s Operator framework designed specifically for stateful applications, provides strong support for operator-based MSSQL deployments. This article detailed how to implement an MSSQL Addon supporting Always On AG based on open-source KubeBlocks and demonstrated its advantages in operatorized deployment, high availability, and automated operations. Currently, KubeBlocks for MSSQL has been launched in [KubeBlocks Enterprise Edition](https://www.apecloud.cn/products/kubeblocks-enterprise). Interested readers are welcome to apply for experience.
 
 Although KubeBlocks has solved many key problems of MSSQL Always On AG operatorization, it still faces some challenges in enterprise application scenarios, such as existing tool ecosystem integration, AD domain integration, etc., which we are actively solving and improving. We believe that by continuously solving these practical pain points in enterprise scenarios, operatorized MSSQL will truly become a trusted choice for enterprise data management.
+
+## Related
+
+- [KubeBlocks Documentation](/docs/preview/user_docs)
+- [Quick Start with KubeBlocks](/docs/preview/user_docs)
+- [KubeBlocks x MSSQL: High Availability Implementation](/blog/kubeblocks-x-mssql-high-availability-implementation)
+- [KubeBlocks for MySQL](/docs/preview/kubeblocks-for-mysql)
+- [KubeBlocks for PostgreSQL](/docs/preview/kubeblocks-for-postgresql)

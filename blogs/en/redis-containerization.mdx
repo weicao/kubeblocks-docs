@@ -16,7 +16,7 @@ image: /img/blogs/thumbnails/blog-redis-containerization.png
 
 In the Kubernetes era, “operatorizing” databases is both irresistibly attractive and routinely intimidating for cloud‑native teams.
 
-Open-source databases like MySQL and PostgreSQL came of age in the PC server era and often hold critical business data. Moving them to Kubernetes Operators takes real effort and conviction. Redis, on the other hand—born alongside containers and often treated as a cache—looks simpler. Many teams assume it’ll be easy. Practice says otherwise.
+Open-source databases like [MySQL](/docs/preview/kubeblocks-for-mysql) and [PostgreSQL](/docs/preview/kubeblocks-for-postgresql) came of age in the PC server era and often hold critical business data. Moving them to Kubernetes Operators takes real effort and conviction. [Redis](/docs/preview/kubeblocks-for-redis), on the other hand—born alongside containers and often treated as a cache—looks simpler. Many teams assume it’ll be easy. Practice says otherwise.
 
 ## So easy, right? Well...
 
@@ -96,3 +96,11 @@ Appendix: Practical notes (keep handy)
 - For sharding, either use a distro/proxy that supports announce-ip or accept the operational tax of HostNetwork.
 - Evaluate operator activity and support SLAs. For production, favor active ecosystems or commercial backing.
 - Run chaos/failover drills: node loss, PV loss, network partitions, and client reconnection behavior.
+
+## Related
+
+- [KubeBlocks Documentation](/docs/preview/user_docs)
+- [Quick Start with KubeBlocks](/docs/preview/user_docs)
+- [KubeBlocks for Redis](/docs/preview/kubeblocks-for-redis)
+- [KubeBlocks for MySQL](/docs/preview/kubeblocks-for-mysql)
+- [KubeBlocks for PostgreSQL](/docs/preview/kubeblocks-for-postgresql)

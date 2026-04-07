@@ -25,7 +25,7 @@ Today, I will introduce KubeBlocks and the design concept of it, and Shun will s
 The motivation we started the KubeBlocks project was quite simple: how to manage databases more effectively.
 Our team is a group of people with strong database background and K8s background, including database developers, database administors, and SREs. We deal with hundreds of cloud database issues daily, from database crashes, slow queries, high availability to data migration, resource scheduling, etc.
 
-The interesting part about our team is that we work on different database types, for instance, MySQL, PostgreSQL, Redis, MongoDB, which are widely used open source databases. When we exchange our ideas on how to manage a specific database, we find these databases actually share many things in common. If we can improve the management of one database, can others benefit from it? Besides, databases are in an era of rapid growth, with new data products emerging continuously. These new databases, to some extent, still inherit those common characteristics.
+The interesting part about our team is that we work on different database types, for instance, [MySQL](/docs/preview/kubeblocks-for-mysql), [PostgreSQL](/docs/preview/kubeblocks-for-postgresql), [Redis](/docs/preview/kubeblocks-for-redis), [MongoDB](/docs/preview/kubeblocks-for-mongodb), which are widely used open source databases. When we exchange our ideas on how to manage a specific database, we find these databases actually share many things in common. If we can improve the management of one database, can others benefit from it? Besides, databases are in an era of rapid growth, with new data products emerging continuously. These new databases, to some extent, still inherit those common characteristics.
 
 So the challenge we face is: is it possible to design a unified platform, to manage not only one, but a batch of widely-used databases, or even more, to manage those emerging databases as well? What's more, if there is such a platform, we hope the platform can be deployed on either cloud or on-premises infrastructures.
 
@@ -44,7 +44,7 @@ Here we take backup and restore as an example. Backup and restore are crucial to
 
 1. Backup methods: This procedure usually has one or more backup methods, for example regular full backups and continuous archive logs. To take regular full backups, one may adopt some widely-used database-specific backup tools, or simply take a volume snapshot.
 2. Backup scheduler: Then it has a backup scheduler to trigger the backup periodically, say, hourly, or daily or weekly or at user-specified time.
-3. Backup repo: After that, it must configure a backup repository, to store each backup for some retention time, including backup files and some meta data. The backup repository can be a local PV, or an object storage, such as S3, or OSS, or MinIO in a test environment.
+3. Backup repo: After that, it must configure a backup repository, to store each backup for some retention time, including backup files and some meta data. The backup repository can be a local PV, or an object storage, such as S3, or OSS, or [MinIO](/docs/preview/kubeblocks-for-minio) in a test environment.
 4. Restore: When restoring a database cluster from a backup, you have to set the procedure to restore data, and decide to restore data before or after the pod is running.
 
 ![Recap backup and restore](/img/blogs/dedicated-operator-1.png)
@@ -191,3 +191,11 @@ In China Mobile Cloud, our ideal goal is to build a unified cloud-native DBaaS p
 ![Cooperation](/img/blogs/dedicated-operator-9.png)
 
 As KubeBlocks continues to develop and improve, once it reaches sufficient maturity, we will consider restructuring our existing DBaaS engines based on the KubeBlocks framework. Although it may involve initial restructuring work, in the long run, we expect to save about 50% of the development resources on different DB engines.
+
+## Related
+
+- [KubeBlocks Documentation](/docs/preview/user_docs)
+- [Quick Start with KubeBlocks](/docs/preview/user_docs)
+- [KubeBlocks for MySQL](/docs/preview/kubeblocks-for-mysql)
+- [KubeBlocks for PostgreSQL](/docs/preview/kubeblocks-for-postgresql)
+- [KubeBlocks for MongoDB](/docs/preview/kubeblocks-for-mongodb)

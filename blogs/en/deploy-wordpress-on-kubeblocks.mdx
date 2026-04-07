@@ -24,7 +24,7 @@ As a result, WordPress has become the choice of millions of users worldwide, hol
 
 ### What is KubeBlocks?
 
-KubeBlocks is an open-source Kubernetes operator that manages a variety of databases and stateful middleware. It supports over 30 database systems, including MySQL, PostgreSQL, Redis, MongoDB, Kafka, ClickHouse, and Elasticsearch. The core concept behind KubeBlocks is its use of a common set of abstract APIs (CRDs) to describe the shared attributes across these diverse database engines. This allows database vendors and developers to leverage addons to account for the differences between engines.
+KubeBlocks is an open-source Kubernetes operator that manages a variety of databases and stateful middleware. It supports over 30 database systems, including [MySQL](/docs/preview/kubeblocks-for-mysql), PostgreSQL, Redis, MongoDB, Kafka, ClickHouse, and Elasticsearch. The core concept behind KubeBlocks is its use of a common set of abstract APIs (CRDs) to describe the shared attributes across these diverse database engines. This allows database vendors and developers to leverage addons to account for the differences between engines.
 
 ### Why use KubeBlocks?
 
@@ -213,3 +213,11 @@ kbcli cluster vscale mycluster --components=apecloud-mysql --cpu=500m --memory=5
 ```
 
 For more database parameter settings, please refer to [the official documentation](https://github.com/bitnami/containers/tree/main/bitnami/WordPress#connect-WordPress-container-to-an-existing-database).
+
+## Related
+
+- [KubeBlocks Documentation](/docs/preview/user_docs)
+- [Quick Start with KubeBlocks](/docs/preview/user_docs)
+- [KubeBlocks for MySQL](/docs/preview/kubeblocks-for-mysql)
+- [KubeBlocks for PostgreSQL](/docs/preview/kubeblocks-for-postgresql)
+- [KubeBlocks for Redis](/docs/preview/kubeblocks-for-redis)

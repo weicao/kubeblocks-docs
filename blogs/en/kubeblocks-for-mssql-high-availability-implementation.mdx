@@ -8,6 +8,7 @@ authors:
   image_url: https://avatars.githubusercontent.com/u/5369071?v=4
 date: 2025-07-08
 tags: [Addons, MSSQL]
+keywords: kubeblocks,mssql,sql-server,kubernetes-operator,k8s-operator,high-availability,microsoft-sql-server-kubernetes,sql-server-ha,availability-group,failover,syncer
 image: /img/blogs/thumbnails/blog-mssql-ha.png
 ---
 
@@ -34,7 +35,7 @@ The first solution is to build a "rich container" architecture based on Pacemake
 
 The second solution is to independently develop a lightweight, cloud-native-oriented distributed high-availability framework to simulate the core functions of WSFC. Although this solution has relatively higher upfront development costs and technical difficulty, it offers higher autonomy and controllability, can avoid dependence on Pacemaker, and provides a more concise and consistent user experience.
 
-Considering that KubeBlocks has already built a unified high-availability management framework-Syncer, new engines only need to implement several key interfaces to quickly complete high-availability capability integration, and the overall development and maintenance costs are within controllable ranges. At the same time, this approach can also provide MSSQL with a high-availability experience consistent with other databases (such as MySQL, MongoDB, etc.).
+Considering that KubeBlocks has already built a unified high-availability management framework-Syncer, new engines only need to implement several key interfaces to quickly complete high-availability capability integration, and the overall development and maintenance costs are within controllable ranges. At the same time, this approach can also provide MSSQL with a high-availability experience consistent with other databases (such as [MySQL](/docs/preview/kubeblocks-for-mysql), [MongoDB](/docs/preview/kubeblocks-for-mongodb), etc.).
 
 Therefore, KubeBlocks ultimately chose to implement MSSQL's high-availability capabilities based on the Syncer framework.
 
@@ -84,7 +85,7 @@ When Syncer performs shutdown operations, it waits for the database to exit norm
 
 # Fault Simulation
 
-After integrating with Syncer, MSSQL on the KubeBlocks platform gained high-availability capabilities close to those of MySQL, PostgreSQL, MongoDB, and other databases, achieving a consistent high-availability experience within a unified framework.
+After integrating with Syncer, MSSQL on the KubeBlocks platform gained high-availability capabilities close to those of MySQL, [PostgreSQL](/docs/preview/kubeblocks-for-postgresql), MongoDB, and other databases, achieving a consistent high-availability experience within a unified framework.
 
 To verify whether MSSQL's high-availability mechanism meets expectations, we conducted comprehensive fault simulation testing. To make the test environment closer to real business scenarios, we imported 90GB of test data before testing and maintained a service performing continuous writes throughout the testing process to simulate actual load.
 
@@ -332,4 +333,12 @@ Of course, since MSSQL is a closed-source system with relatively limited officia
 
 We expect that MSSQL will open more internal configuration options and runtime status metrics in the future to support more fine-grained control and automated management, thereby better adapting to the complex needs of cloud-native platforms.
 
-Finally, [KubeBlocks Cloud official website](https://console.apecloud.cn/) has opened free trial for MSSQL, and also supports multiple mainstream database engines such as MySQL, PostgreSQL, Redis, etc. Welcome to experience and provide valuable suggestions!
+Finally, [KubeBlocks Cloud official website](https://console.apecloud.cn/) has opened free trial for MSSQL, and also supports multiple mainstream database engines such as MySQL, PostgreSQL, [Redis](/docs/preview/kubeblocks-for-redis), etc. Welcome to experience and provide valuable suggestions!
+
+## Related
+
+- [KubeBlocks Documentation](/docs/preview/user_docs)
+- [Quick Start with KubeBlocks](/docs/preview/user_docs)
+- [KubeBlocks x MSSQL: Operator-based Always On AG Revealed](/blog/kubeblocks-for-mssql-always-on-ag-revealed)
+- [KubeBlocks for MySQL](/docs/preview/kubeblocks-for-mysql)
+- [KubeBlocks for PostgreSQL](/docs/preview/kubeblocks-for-postgresql)
