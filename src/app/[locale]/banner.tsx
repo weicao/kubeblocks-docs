@@ -60,10 +60,7 @@ export default function Banner({ version }: { version?: string }) {
             &nbsp; for Kubernetes
           </Typography>
           <Typography mb={8} sx={{ color: textSecondaryColor, fontSize: 22 }}>
-            Stop juggling multiple operators. KubeBlocks provides a single,
-            production-grade control plane to run, manage, and scale any
-            database—from MySQL and PostgreSQL to Kafka and MongoDB—with a
-            unified API.
+            Stop juggling multiple operators. KubeBlocks gives your team a single, production-grade control plane to run and manage any database—MySQL, PostgreSQL, Kafka, MongoDB, and 30+ more—with one unified API.
           </Typography>
 
           {version && (
