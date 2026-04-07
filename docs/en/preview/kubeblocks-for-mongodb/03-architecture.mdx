@@ -41,9 +41,11 @@ Cluster  →  Component  →  InstanceSet  →  Pod × N
 
 ### Containers Inside Each Pod
 
+Each replica set pod runs three containers (plus three init containers on startup: `init-syncer` copies `/bin/syncer` and `/bin/syncerctl` to `/tools`; `init-kubectl` copies the `kubectl` binary to `dataMountPath/tmp/bin`; `init-pbm-agent` copies `pbm`, `pbm-agent`, and `pbm-agent-entrypoint` to `/tools`):
+
 | Container | Port | Purpose |
 |-----------|------|---------|
-| `mongodb` | 27017 | MongoDB database engine; participates in replica set replication and election; roleProbe runs `/tools/syncerctl getrole` inside this container |
+| `mongodb` | 27017, 3601 (ha replication) | MongoDB database engine; participates in replica set replication and election; roleProbe runs `/tools/syncerctl getrole` inside this container |
 | `mongodb-backup-agent` | — | Percona Backup for MongoDB (PBM) agent; coordinates cluster-wide consistent backups |
 | `exporter` | 9216 | Prometheus metrics exporter |
 
@@ -110,19 +112,19 @@ Cluster  →  Component (mongos)         →  InstanceSet  →  Pod × N
 | `mongos` | 27017 | MongoDB query router — reads chunk map from CSRS and forwards queries to the correct shard |
 | `exporter` | 9216 | Prometheus metrics exporter |
 
-**Config server pods** (3-node CSRS replica set):
+**Config server pods** (3-node CSRS replica set; same three init containers as replica set pods — `init-syncer`, `init-kubectl`, `init-pbm-agent`):
 
 | Container | Port | Purpose |
 |-----------|------|---------|
-| `mongodb` | 27017 | Config server mongod — stores chunk routing metadata; must use `w:majority` for all config writes; roleProbe runs `/tools/syncerctl getrole` |
+| `mongodb` | 27017, 3601 (ha replication) | Config server mongod — stores chunk routing metadata; must use `w:majority` for all config writes; roleProbe runs `/tools/syncerctl getrole` |
 | `mongodb-backup-agent` | — | Percona Backup for MongoDB (PBM) agent |
 | `exporter` | 9216 | Prometheus metrics exporter |
 
-**Shard pods** (each shard = independent replica set):
+**Shard pods** (each shard = independent replica set; same three init containers — `init-syncer`, `init-kubectl`, `init-pbm-agent`):
 
 | Container | Port | Purpose |
 |-----------|------|---------|
-| `mongodb` | 27017 | Data shard mongod — stores documents assigned to this shard's chunk range; roleProbe runs `/tools/syncerctl getrole` |
+| `mongodb` | 27017, 3601 (ha replication) | Data shard mongod — stores documents assigned to this shard's chunk range; roleProbe runs `/tools/syncerctl getrole` |
 | `mongodb-backup-agent` | — | Percona Backup for MongoDB (PBM) agent |
 | `exporter` | 9216 | Prometheus metrics exporter |
 

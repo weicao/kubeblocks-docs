@@ -1,99 +1,122 @@
 ---
 title: RabbitMQ Architecture in KubeBlocks
-description: Learn how KubeBlocks deploys and manages RabbitMQ clusters on Kubernetes, including the resource hierarchy, pod layout, Erlang clustering, quorum queues, and traffic routing.
-keywords: [RabbitMQ, KubeBlocks, architecture, Kubernetes, quorum queues, Erlang, high availability, AMQP]
+description: Learn how KubeBlocks deploys and manages RabbitMQ clusters on Kubernetes. Covers the cluster mode topology with Erlang distributed clustering, quorum queue HA via Raft consensus, per-pod layout, traffic routing, and automatic failover.
+keywords: [RabbitMQ, KubeBlocks, architecture, Kubernetes, quorum queues, Erlang, high availability, AMQP, Raft]
 sidebar_position: 3
 sidebar_label: Architecture
 ---
 
+import RabbitmqArchitectureDiagram from '@/components/RabbitmqArchitectureDiagram';
+
 # RabbitMQ Architecture in KubeBlocks
 
-This page describes how KubeBlocks deploys a RabbitMQ cluster on Kubernetes — covering the resource hierarchy, pod internals, Erlang distributed clustering, quorum queue HA, and traffic routing.
+KubeBlocks supports one RabbitMQ deployment topology:
 
-## Resource Hierarchy
+| Topology | Layout | HA Mechanism | Use Case |
+|---|---|---|---|
+| **clustermode** | N broker nodes in a single Erlang cluster | Quorum Queues (Raft consensus); Erlang Distribution Protocol for inter-node communication | General HA; message durability; odd node count (3 or 5) recommended for quorum |
 
-KubeBlocks models a RabbitMQ cluster as a hierarchy of Kubernetes custom resources:
+---
+
+## Cluster Mode Architecture (clustermode)
+
+In the `clustermode` topology, every pod is a full RabbitMQ broker node that participates in the same Erlang cluster. There is a single KubeBlocks Component (`rabbitmq`) for all nodes, and the entire pod set forms one logical RabbitMQ broker. Quorum Queues use a Raft-based majority protocol to replicate message data across nodes and elect a new queue leader when a node fails.
+
+<RabbitmqArchitectureDiagram />
+
+### Resource Hierarchy
 
 ```
-Cluster  →  Component  →  InstanceSet  →  Pod × N
+Cluster  →  Component (rabbitmq)  →  InstanceSet  →  Pod × N
 ```
 
 | Resource | Role |
 |----------|------|
-| **Cluster** | User-facing declaration — specifies the number of broker nodes, storage size, and resources |
-| **Component** | Generated automatically; references a `ComponentDefinition` that describes container specs, lifecycle actions, and services |
+| **Cluster** | User-facing declaration — specifies the broker node count, storage size, and resources |
+| **Component (rabbitmq)** | Generated automatically; references the `cmpd-rabbitmq` ComponentDefinition; all pods are identical broker nodes |
 | **InstanceSet** | KubeBlocks custom workload (replaces `StatefulSet`); manages pods with stable identities |
-| **Pod** | Actual running RabbitMQ broker node; each pod gets a unique ordinal and its own PVC |
+| **Pod** | Actual running RabbitMQ broker; each pod gets a unique ordinal and its own PVC |
 
-A RabbitMQ cluster consists of multiple broker nodes that form a single logical broker. An **odd number of nodes** (3 or 5) is recommended so that quorum queues can maintain a majority for leader election.
+An **odd number of nodes** (3 or 5) is recommended so that quorum queues can maintain a write majority after a single-node failure.
 
-## Containers Inside Each Pod
+### Containers Inside Each Pod
 
-Every RabbitMQ pod runs three containers:
+Each RabbitMQ pod runs one container (no init containers):
 
 | Container | Port | Purpose |
 |-----------|------|---------|
-| `rabbitmq` | 5672 (AMQP), 15672 (management HTTP API) | RabbitMQ broker handling message routing, queues, and exchanges |
-| `kbagent` | 5001 | Role probe endpoint — KubeBlocks queries `GET /v1.0/getrole` periodically |
-| `metrics-exporter` | 9187 | Prometheus metrics exporter |
+| `rabbitmq` | 4369 (EPMD), 5672 (AMQP), 15672 (management), 15674 (web-stomp), 25672 (Erlang distribution), 15692 (Prometheus metrics) | RabbitMQ broker — handles message routing, exchanges, queues, Erlang clustering, and built-in Prometheus metrics |
 
-Additional ports used by RabbitMQ internally:
+Each pod mounts a single **PVC** at `/var/lib/rabbitmq`. RabbitMQ stores the Mnesia database (queue state, message data) under `/var/lib/rabbitmq/mnesia` and logs under `/var/lib/rabbitmq/logs`, both on the same PVC.
 
-| Port | Protocol | Purpose |
-|------|----------|---------|
-| 4369 | EPMD | Erlang Port Mapper Daemon — node discovery for Erlang clustering |
-| 25672 | Erlang distribution | Inter-node communication (Erlang Distribution Protocol) |
-| 15692 | HTTP | Built-in Prometheus metrics endpoint |
+### Erlang Distributed Clustering
 
-Each pod mounts its own **PVC** for the RabbitMQ data directory (`/var/lib/rabbitmq`), preserving queue data and durable messages across pod restarts.
-
-## Erlang Distributed Clustering
-
-RabbitMQ leverages the **Erlang Distribution Protocol** for inter-node communication. Nodes discover each other using the headless service DNS and authenticate using a shared **Erlang cookie**:
+RabbitMQ uses the **Erlang Distribution Protocol** for inter-node communication. Nodes discover each other using the headless service DNS and authenticate with a shared **Erlang cookie**:
 
 | Mechanism | Description |
 |-----------|-------------|
-| **Erlang cookie** | A shared secret stored in a Kubernetes Secret; all nodes in the cluster must use the same cookie |
-| **Node naming** | Each broker node is identified as `rabbit@{pod-name}.{cluster}-rabbitmq-headless.{namespace}.svc.cluster.local` |
-| **EPMD** | Erlang Port Mapper Daemon runs on each node (port 4369) and maps node names to listener ports |
-| **Cluster join** | On startup, new nodes join by contacting an existing cluster member via the headless service |
+| **Erlang cookie** | A shared secret mounted from the `rabbitmq-config` volume; all broker nodes in the cluster must use the same cookie |
+| **Node naming** | Each broker is identified as `rabbit@{pod-name}.{cluster}-rabbitmq-headless.{namespace}.svc.cluster.local` |
+| **EPMD** | Erlang Port Mapper Daemon on port 4369 — maps node names to listener ports; required for initial node discovery |
+| **Cluster join** | On startup, each node contacts an existing cluster member via the headless service on port 25672 (Erlang distribution) |
+| **memberLeave** | Before scale-in, KubeBlocks runs the `memberLeave` lifecycle action (`rabbitmq-upgrade drain`) on the departing node to safely transfer queue leadership before the pod is terminated |
 
-## High Availability via Quorum Queues
+### High Availability via Quorum Queues
 
 RabbitMQ provides HA through **Quorum Queues**, which use the **Raft consensus protocol** for leader election and log replication:
 
 | Quorum Queue Concept | Description |
 |----------------------|-------------|
-| **Queue leader** | The node currently responsible for accepting writes to the queue; elected via Raft |
-| **Queue follower** | Maintains a replicated copy of the queue log; can be promoted to leader |
-| **Write quorum** | A majority of queue replicas must acknowledge an enqueue before the broker confirms it |
-| **Leader election** | When the leader node fails, the surviving majority elects a new leader automatically |
+| **Queue leader** | The single broker responsible for accepting writes to a queue; elected via Raft |
+| **Queue follower** | Maintains a replicated copy of the queue log on another node; eligible to become leader |
+| **Write quorum** | A majority of queue replicas must acknowledge an enqueue before the broker confirms it to the publisher |
+| **Leader election** | When the leader node fails, the surviving majority holds a Raft election and elects a new leader automatically |
+| **Quorum tolerance** | 3-node cluster tolerates 1 node failure per queue; 5-node cluster tolerates 2 |
 | **Classic mirrored queues** | Legacy HA mechanism; deprecated in RabbitMQ 3.9+ in favor of quorum queues |
 
-Quorum queues guarantee no message loss when a node failure occurs, provided a quorum of replicas remains available.
+Quorum queues protect **publisher-confirmed** messages from loss when a node fails, provided a majority of queue replicas stays available. Applications should use **publisher confirms** and appropriate **consumer acknowledgements** for end-to-end durability guarantees.
 
-## Traffic Routing
+### Traffic Routing
 
 KubeBlocks creates two services for each RabbitMQ cluster:
 
-| Service | Type | Ports | Selector |
-|---------|------|-------|----------|
-| `{cluster}-rabbitmq` | ClusterIP | 5672 (AMQP), 15672 (management) | all pods |
-| `{cluster}-rabbitmq-headless` | Headless | 5672, 15672, 25672 | all pods |
+| Service | Type | Ports | Notes |
+|---------|------|-------|-------|
+| `{cluster}-rabbitmq` | ClusterIP | 5672 (AMQP), 15672 (management), 15674 (web-stomp) | All pods; no roleSelector — any broker node can accept client connections |
+| `{cluster}-rabbitmq-headless` | Headless | — | All pods; used for Erlang inter-node communication (port 25672), EPMD (port 4369), and operator access |
 
-Client applications connect to port 5672 on the ClusterIP service. Any broker node can accept connections and will route messages to the appropriate queue leader internally. The management UI and REST API are accessible on port 15672.
+Client applications connect to the AMQP port on the ClusterIP service. Any broker node accepts connections and routes messages to the appropriate queue leader internally. The management UI and REST API are on port 15672; Web STOMP is on port 15674, both on the same ClusterIP.
 
-Erlang inter-node traffic uses port 25672 over the headless service, where each pod is individually addressable:
+Port **15692** (Prometheus metrics) is exposed on each pod container but is **not** included in the ClusterIP Service — scrape metrics via pod IP, headless endpoints, or a `PodMonitor`.
+
+Erlang inter-node traffic flows over the headless service, where each pod is addressable by its stable DNS name:
 
 ```
 {pod-name}.{cluster}-rabbitmq-headless.{namespace}.svc.cluster.local:25672
 ```
 
+---
+
 ## Automatic Failover
 
-When a RabbitMQ node fails:
+When a RabbitMQ node fails, the Erlang cluster and Raft protocol respond as follows:
 
-1. **Node becomes unreachable** — remaining nodes detect the lost Erlang distribution connection
-2. **Quorum queue leader election** — for each quorum queue whose leader was on the failed node, Raft elects a new leader from the majority
-3. **Message continuity** — producers and consumers reconnect to any remaining broker; the broker routes traffic to the new queue leaders
-4. **Node recovery** — when the failed pod restarts, it rejoins the Erlang cluster and syncs queue state from the current leaders before accepting traffic
+1. **Node becomes unreachable** — remaining nodes detect the lost Erlang distribution connection via `net_ticktime` timeout
+2. **Cluster marks node down** — the Erlang cluster removes the failed node from its membership list
+3. **Quorum queue leader election** — for each quorum queue whose leader was on the failed node, Raft elects a new leader from the surviving majority
+4. **Message continuity** — producers and consumers reconnect to any remaining broker node; the broker routes traffic to the new queue leaders; brief connection-level retries are normal
+5. **KubeBlocks pod recovery** — KubeBlocks restarts the failed pod; on startup the node re-joins the Erlang cluster via the headless service and syncs queue state from the current leaders before accepting traffic
+
+---
+
+## System Accounts
+
+KubeBlocks automatically manages the following RabbitMQ system account. The password is stored in a Secret named `{cluster}-{component}-account-{name}`.
+
+| Account | Purpose |
+|---------|---------|
+| `root` | Default administrative account — injected as `RABBITMQ_DEFAULT_USER` / `RABBITMQ_DEFAULT_PASS` at broker startup; used for initial cluster setup and management operations |
+
+:::note
+RabbitMQ's built-in `guest` account is disabled for remote connections by default (accessible on `localhost` only). Use the `root` account credentials from the `{cluster}-rabbitmq-account-root` Secret for application and management access.
+:::
