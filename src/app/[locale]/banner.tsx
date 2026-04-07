@@ -41,6 +41,19 @@ export default function Banner({ version }: { version?: string }) {
     <Box sx={isDark ? bgDark : bgLight}>
       <Container>
         <Box textAlign="center">
+          <Box
+            sx={{
+              display: 'inline-flex', alignItems: 'center', gap: '8px',
+              mb: 3, px: 2, py: 0.75, borderRadius: '999px',
+              border: '1px solid', borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+              bgcolor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+              fontSize: '12px', fontWeight: 500,
+              color: isDark ? 'rgba(255,255,255,0.5)' : 'text.secondary',
+              letterSpacing: '.01em',
+            }}
+          >
+            The only Kubernetes operator purpose-built for Database-as-a-Service
+          </Box>
           <Typography
             variant="h2"
             mb={6}
@@ -60,10 +73,7 @@ export default function Banner({ version }: { version?: string }) {
             &nbsp; for Kubernetes
           </Typography>
           <Typography mb={8} sx={{ color: textSecondaryColor, fontSize: 22 }}>
-            Stop juggling multiple operators. KubeBlocks provides a single,
-            production-grade control plane to run, manage, and scale any
-            database—from MySQL and PostgreSQL to Kafka and MongoDB—with a
-            unified API.
+            Stop juggling multiple operators. KubeBlocks gives your team a single, production-grade control plane to run and manage any database—MySQL, PostgreSQL, Kafka, MongoDB, and 30+ more—with one unified API.
           </Typography>
 
           {version && (

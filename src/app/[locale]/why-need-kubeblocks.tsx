@@ -13,54 +13,34 @@ import { Box, Container, Typography, useTheme } from '@mui/material';
 
 const mainData = [
   {
-    title: 'Unified API',
+    title: 'Zero Learning Curve Across 35+ Engines',
     icon: <CableOutlined sx={{ color: '#FFF' }} />,
-    description: `KubeBlocks provides a unified API for operating and managing
-                different types of databases, significantly reducing the
-                complexity and learning curve associated with database
-                management. This standardized approach ensures that
-                administrators can efficiently interact with various database
-                systems in the same way, streamlining operations and improving
-                productivity.`,
+    description: 'Stop learning a new operator for every database. KubeBlocks provides a single, unified API to provision, scale, and manage any database—from MySQL to vector databases—drastically reducing operational complexity and training costs.',
   },
   {
-    title: 'Extensible Addon',
+    title: 'Integrate Any Database in Days, Not Months',
     icon: <ExtensionOutlined sx={{ color: '#FFF' }} />,
-    description: `KubeBlocks' standardized API design provides robust
-                extensibility, enabling low-code integration for both in-house
-                and open-source databases. This approach eliminates the need for
-                extensive custom Golang coding, turns your database knowledge
-                into productivity efficiently, and significantly speeds up
-                development times. KubeBlocks currently supports over 40
-                database engines. Welcome to join our community.`,
+    description: "Bring your own database to Kubernetes without writing complex Golang operators. KubeBlocks' low-code Addon architecture turns your DBA knowledge into automated workflows instantly, accelerating your DBaaS platform delivery.",
   },
   {
-    title: 'High Availability',
+    title: 'Production-Grade Reliability at Scale',
     icon: <NetworkCheckOutlined sx={{ color: '#FFF' }} />,
-    description:
-      'KubeBlocks provides a decentralized, Kubernetes-native high availability architecture, perfect for managing large-scale database clusters, particularly MySQL and Redis primary-replica clusters. Its design enhances fault tolerance. Additionally, its lightweight nature reduces resource strain, boosting overall efficiency. This makes KubeBlocks highly effective for handling extensive database clusters.',
+    description: 'Ensure your mission-critical data is always accessible. KubeBlocks features a decentralized, lightweight high-availability architecture with built-in auto-failover, perfectly suited for managing massive MySQL and Redis clusters with minimal resource overhead.',
   },
   {
-    title: 'Flexible Cluster Topology',
+    title: 'Tailor Topologies to Your Workloads',
     icon: <HubOutlined sx={{ color: '#FFF' }} />,
-    description:
-      "KubeBlocks' modular design allows you to customize cluster topologies according to your needs. This flexibility lets you create database clusters tailored to specific requirements, enhancing system adaptability and functionality. For instance, when creating a Redis cluster, you can choose from single-node, primary-replica, and Redis Cluster topologies, and configure them with your preferred proxy components.",
+    description: 'Deploy databases exactly how your business demands. Whether you need a lightweight single-node instance for dev/test, a robust primary-replica setup, or a complex sharded cluster with custom proxies, KubeBlocks adapts to your specific requirements.',
   },
   {
-    title: 'Versatile Network Modes',
+    title: 'Multi-Cloud & Hybrid Deployment',
     icon: <Diversity2Outlined sx={{ color: '#FFF' }} />,
-    description:
-      'KubeBlocks offers multiple network modes, allowing you to select network configurations when creating database clusters. For example, MongoDB can be launched using host or container network modes. This flexibility ensures efficient communication and performance optimization across various environments, adapting to complex network architectures and requirements.',
+    description: 'Run your data infrastructure wherever your business demands. KubeBlocks is fully Kubernetes-native, ensuring seamless deployment across AWS EKS, Google GKE, Azure AKS, or on-premises environments including OpenShift and OpenStack Magnum—eliminating vendor lock-in completely.',
   },
   {
-    title: 'Beyond StatefulSet',
+    title: 'Zero-Downtime Maintenance',
     icon: <WebhookOutlined sx={{ color: '#FFF' }} />,
-    description: `KubeBlocks introduces InstanceSet, an improved StatefulSet that
-                manages databases in a specific role order to enhance
-                availability. Besides, InstanceSet supports heterogeneous
-                replicas with varied resources and configurations, allows
-                in-place Pod updates, and takes individual database instances
-                offline for proactive maintenance.`,
+    description: "Go beyond Kubernetes StatefulSets. KubeBlocks' innovative InstanceSet enables role-aware management, in-place pod updates, and the ability to take individual instances offline for proactive maintenance—all without disrupting your production traffic.",
   },
 ];
 
@@ -75,11 +55,11 @@ export default function WhyNeedKubeBlocks() {
       <Container>
         <Box textAlign="center" mb={8}>
           <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: '8px', mb: 1.5, fontSize: '11px', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'primary.main', '&::before': { content: '""', width: '14px', height: '2px', borderRadius: '1px', bgcolor: 'primary.main', display: 'block' } }}>Architecture</Box>
-          <Typography variant="h3" mb={2}>
-            Why you need KubeBlocks
+          <Typography variant="h4" fontWeight={700} sx={{ letterSpacing: '-0.02em', mb: 1.5 }}>
+            Why KubeBlocks
           </Typography>
-          <Typography variant="h5">
-            A Database Operator Born for Building a Unified Cloud-Native
+          <Typography color="text.secondary" sx={{ maxWidth: 480, mx: 'auto' }}>
+            Built for teams who run databases on Kubernetes at scale.
           </Typography>
         </Box>
 
@@ -107,7 +87,7 @@ export default function WhyNeedKubeBlocks() {
                 <Avatar sx={{ bgcolor: theme.palette.primary.main }}>
                   {item.icon}
                 </Avatar>
-                <Typography variant="h5">{item.title}</Typography>
+                <Typography sx={{ fontSize: '1rem', fontWeight: 700, lineHeight: 1.4 }}>{item.title}</Typography>
               </Stack>
               <Typography color="textSecondary" mb={4}>
                 {item.description}
