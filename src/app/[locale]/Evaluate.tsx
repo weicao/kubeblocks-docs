@@ -27,9 +27,9 @@ export const Evaluate = () => {
   const t1       = isDark ? '#f0f6fc'                  : '#0F172A';
   const t2       = isDark ? '#8b949e'                  : '#475569';
   const t3       = isDark ? 'rgba(255,255,255,.25)'    : '#94A3B8';
-  const cardBg   = isDark ? '#0d1117'                  : '#fff';
-  const cardBorder = isDark ? '#21262d'                : '#E2E8F0';
-  const cardHover  = isDark ? '#111820'                : '#F8FAFC';
+  const cardBg     = theme.palette.background.paper;
+  const cardBorder = theme.palette.divider;
+  const cardHover  = theme.palette.action.hover;
   const quoteMark  = isDark ? 'rgba(91,127,255,.08)'   : 'rgba(91,127,255,.06)';
 
   const quoteCardSx = {
@@ -40,7 +40,7 @@ export const Evaluate = () => {
     p: '32px',
     overflow: 'hidden',
     transition: 'border-color .2s',
-    '&:hover': { borderColor: isDark ? '#30363d' : '#CBD5E1', bgcolor: cardHover },
+    '&:hover': { borderColor: 'text.disabled', bgcolor: cardHover },
     '&::before': {
       content: '"\\201C"',
       position: 'absolute',

@@ -12,7 +12,6 @@ import OperatorSprawl from './operator-sprawl';
 import QuickStart from './quick-start';
 import Contact from './contact';
 import CustomerCases from './customer-cases';
-import Customers from './customers';
 import { Evaluate } from './Evaluate';
 import Features from './features';
 import WhyNeedKubeBlocks from './why-need-kubeblocks';
@@ -142,7 +141,6 @@ export default async function HomePage({
         <GithubStats />
         <OperatorSprawl />
         <DatabasesShowcase />
-        <Customers />
         <CustomerCases />
         <Evaluate />
         <WhyNeedKubeBlocks />
