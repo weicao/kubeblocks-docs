@@ -12,7 +12,7 @@ Keywords: PostgreSQL, Kubernetes Operator, KubeBlocks, Performance Tuning, Bench
 image: /img/blogs/thumbnails/blog-pg.png
 ---
 
-# PostgreSQL Performance Tuning on Kubernetes: A KubeBlocks Deep Dive
+# [PostgreSQL](/docs/preview/kubeblocks-for-postgresql) Performance Tuning on Kubernetes: A KubeBlocks Deep Dive
 
 ## Introduction
 
@@ -506,3 +506,10 @@ After introducing pgBouncer, PG could handle more connections without significan
 5. By default, PG is IO-bound, but after the optimizations mentioned above, it becomes CPU-bound.
 6. ACK and SLB networks are robust, meeting performance and stability requirements.
 7. K8s offers convenient adjustments to filesystem and PG parameters, and different combinations of tests can be conducted rapidly and effectively. Moreover, running a database on K8s does not incur performance degradation. With general tuning, the database can exhibit excellent results. K8s provides more freedom and autonomy to users with fewer restrictions.
+
+## Related
+
+- [KubeBlocks for PostgreSQL — Operations Guide](/docs/preview/kubeblocks-for-postgresql)
+- [Does Running MySQL on Kubernetes Lead to Significant Performance Degradation?](/blog/does-running-mysql-on-kubernetes-lead-to-significant-performance-degradation)
+- [Does Containerization Affect the Performance of Databases?](/blog/does-containerization-affect-the-performance-of-databases)
+- [Is Kubernetes a Database?](/blog/is-k8s-a-database)
