@@ -1,14 +1,22 @@
 ---
 title: Reconfigure ClickHouse Parameters
-description: Learn how to dynamically update ClickHouse configuration parameters in KubeBlocks.
-keywords: [KubeBlocks, ClickHouse, reconfigure, parameters, dynamic]
+description: Update ClickHouse configuration by supplying custom XML templates (ConfigMaps) in KubeBlocks 1.0, aligned with the ClickHouse add-on design.
+keywords: [KubeBlocks, ClickHouse, configuration, ConfigMap, user.xml, profiles]
 sidebar_position: 5
 sidebar_label: Reconfigure
 ---
 
 # Reconfigure ClickHouse Parameters
 
-KubeBlocks supports dynamic reconfiguration of ClickHouse server parameters. Changes are applied without restarting pods for parameters that support live reload.
+In **KubeBlocks 1.0**, the ClickHouse add-on manages configuration as **whole XML files** (for example `user.xml` for profiles and users, and `00_default_overrides.xml` for server/network settings). Those files are **not** reduced to flat key–value pairs inside the operator.
+
+**Supported approach:** change settings by **authoring or updating a ConfigMap** that holds the XML (or a Helm-style template), and **referencing it from the Cluster** under `spec.shardings[].template.configs` using the slot name `clickhouse-user-tpl` (user/profile XML) or `clickhouse-tpl` (server overrides).
+
+:::note
+**ClickHouse does not support the `Reconfiguring` OpsRequest** type in KubeBlocks: configuration is delivered as **whole XML templates**, not as a flat parameter map that OpsRequest reconfiguration can merge. Use **ConfigMaps and `configs`** only. Rationale and add-on details are discussed in [kubeblocks-addons](https://github.com/apecloud/kubeblocks-addons).
+:::
+
+Also see the upstream example [cluster-with-config-templates.yaml](https://github.com/apecloud/kubeblocks-addons/blob/main/examples/clickhouse/cluster-with-config-templates.yaml).
 
 ## Prerequisites
 
@@ -16,74 +24,188 @@ import Prerequisites from '../_tpl/_prerequisites.mdx'
 
 <Prerequisites />
 
-## Update a ClickHouse Parameter
+For the steps below, use the same namespace and admin `Secret` as in the [Quickstart](../02-quickstart) (`demo`, `udf-account-info`, password `password123` unless you changed them).
 
-The following example updates `clickhouse.profiles.web.max_bytes_to_read`, which limits the maximum bytes read per query for the `web` profile:
+## Update `max_bytes_to_read` for the `web` profile (recommended)
+
+The historical OpsRequest key `clickhouse.profiles.web.max_bytes_to_read` corresponds to the XML element **`max_bytes_to_read`** under **`<profiles><web>`** in **`user.xml`**.
+
+### Recommended: export the live `user.xml`, edit locally, then apply
+
+This mirrors the usual operator workflow: start from the **effective** file inside a running pod, change only what you need, then publish it as a ConfigMap.
+
+1. **Export** `user.xml` from any ready shard pod (label `apps.kubeblocks.io/sharding-name=clickhouse`). The Bitnami layout mounts it at `/bitnami/clickhouse/etc/users.d/default/user.xml` (see [`cmpd-ch.yaml`](https://github.com/apecloud/kubeblocks-addons/blob/main/addons/clickhouse/config/cmpd-ch.yaml)):
+
+   ```bash
+   CH_POD="$(kubectl get pods -n demo \
+     -l app.kubernetes.io/instance=clickhouse-cluster,apps.kubeblocks.io/sharding-name=clickhouse \
+     -o jsonpath='{.items[0].metadata.name}')"
+
+   kubectl exec -n demo "$CH_POD" -c clickhouse -- \
+     cat /bitnami/clickhouse/etc/users.d/default/user.xml > user-exported.xml
+   ```
+
+2. **Edit** the copy. Under `<profiles>`, ensure there is a `<web>` section (add it if your template only had `default`), and set:
+
+   ```xml
+   <max_bytes_to_read>200000000000</max_bytes_to_read>
+   ```
+
+   You can also patch a line in place, for example:
+
+   ```bash
+   sed -i.bak 's|<max_bytes_to_read>.*</max_bytes_to_read>|<max_bytes_to_read>200000000000</max_bytes_to_read>|' user-exported.xml
+   ```
+
+   The file on disk is **rendered XML** (not the Helm `user.xml.tpl` with `{{ ... }}`). That is expected: you are replacing the materialized `user.xml` that the Pods already consume.
+
+3. **Create or refresh the ConfigMap** from the edited file. Keep the data key name **`user.xml`** so it matches the template slot:
+
+   ```bash
+   kubectl create configmap custom-ch-user-tpl -n demo \
+     --from-file=user.xml=./user-exported.xml \
+     --dry-run=client -o yaml | kubectl apply -f -
+   ```
+
+### Alternative: apply a hand-written `user.xml` manifest
+
+If you prefer to author XML from scratch or from version control, apply a ConfigMap manifest. The following minimal example only highlights the `web` profile limit; expand profiles, quotas, and users to match your environment (for day‑to‑day work, exporting from a pod is usually safer).
+
+<details>
+<summary>Example: inline ConfigMap (<code>custom-ch-user-tpl</code>)</summary>
 
 ```bash
-kubectl apply -f - <<EOF
-apiVersion: operations.kubeblocks.io/v1alpha1
-kind: OpsRequest
+kubectl apply -f - <<'EOF'
+apiVersion: v1
+kind: ConfigMap
 metadata:
-  name: ch-reconfiguring
+  name: custom-ch-user-tpl
   namespace: demo
-spec:
-  clusterName: clickhouse-cluster
-  type: Reconfiguring
-  reconfigures:
-    - componentName: clickhouse
-      parameters:
-        - key: clickhouse.profiles.web.max_bytes_to_read
-          value: "200000000000"
+data:
+  user.xml: |
+    <clickhouse>
+      <profiles>
+        <default>
+          <max_threads>8</max_threads>
+          <log_queries>1</log_queries>
+          <log_queries_min_query_duration_ms>2000</log_queries_min_query_duration_ms>
+        </default>
+        <web>
+          <max_rows_to_read>1000000000</max_rows_to_read>
+          <max_bytes_to_read>200000000000</max_bytes_to_read>
+          <readonly>1</readonly>
+        </web>
+      </profiles>
+      <quotas>
+        <default>
+          <interval>
+            <duration>3600</duration>
+            <queries>0</queries>
+            <errors>0</errors>
+            <result_rows>0</result_rows>
+            <read_rows>0</read_rows>
+            <execution_time>0</execution_time>
+          </interval>
+        </default>
+      </quotas>
+      <users>
+        <admin replace="replace">
+          <password from_env="CLICKHOUSE_ADMIN_PASSWORD"/>
+          <access_management>1</access_management>
+          <named_collection_control>1</named_collection_control>
+          <show_named_collections>1</show_named_collections>
+          <show_named_collections_secrets>1</show_named_collections_secrets>
+          <networks replace="replace">
+            <ip>::/0</ip>
+          </networks>
+          <profile>default</profile>
+          <quota>default</quota>
+        </admin>
+      </users>
+    </clickhouse>
 EOF
 ```
 
-Monitor progress:
-
-```bash
-kubectl get opsrequest ch-reconfiguring -n demo -w
-```
-
-<details open>
-<summary>Example Output</summary>
-```text
-NAME               TYPE            CLUSTER              STATUS    PROGRESS   AGE
-ch-reconfiguring   Reconfiguring   clickhouse-cluster   Succeed   -/-        10s
-```
 </details>
 
-Verify the parameter was applied:
+For production baselines, you can also start from the chart’s [`user.xml.tpl`](https://github.com/apecloud/kubeblocks-addons/blob/main/addons/clickhouse/configs/user.xml.tpl) and render or materialize it before placing the result in a ConfigMap.
+
+### Attach the template to the Cluster
+
+Under **`spec.shardings[].template`**, add **`configs`** so the user template ConfigMap is mounted as **`clickhouse-user-tpl`**:
+
+```yaml
+configs:
+  - name: clickhouse-user-tpl
+    configMap:
+      name: custom-ch-user-tpl
+```
+
+If the cluster already exists (for example created from the Quickstart standalone manifest), merge this block into the existing **shard template** alongside `name`, `replicas`, `systemAccounts`, `resources`, and `volumeClaimTemplates`. The least error-prone method is **`kubectl edit cluster clickhouse-cluster -n demo`** and insert `configs` under `spec.shardings[0].template`.
+
+If `configs` is not yet set on that template, you can add it in one step (adjust `shardings/0` if your shard order differs):
 
 ```bash
-CH_POD=$(kubectl get pods -n demo -l app.kubernetes.io/instance=clickhouse-cluster \
-  -o jsonpath='{.items[0].metadata.name}')
+kubectl patch cluster clickhouse-cluster -n demo --type=json -p='[
+  {"op": "add", "path": "/spec/shardings/0/template/configs", "value": [
+    {"name": "clickhouse-user-tpl", "configMap": {"name": "custom-ch-user-tpl"}}
+  ]}
+]'
+```
 
-kubectl exec -n demo $CH_POD -c clickhouse -- \
-  clickhouse-client --user admin --password password123 \
-  --query "SELECT name, value FROM system.settings WHERE name = 'max_bytes_to_read'"
+After you save, wait until the Cluster returns to **`Running`**.
+
+### Verify
+
+Run a query using the `web` profile and check the setting. Select any ClickHouse data pod for the cluster (shard workloads carry `apps.kubeblocks.io/sharding-name=clickhouse`; the middle segment of the pod name may vary with topology):
+
+```bash
+CH_POD="$(kubectl get pods -n demo \
+  -l app.kubernetes.io/instance=clickhouse-cluster,apps.kubeblocks.io/sharding-name=clickhouse \
+  -o jsonpath='{.items[0].metadata.name}')"
+```
+
+If you created the cluster exactly as in the [Quickstart](../02-quickstart), the admin password is the value you stored in `udf-account-info` (example: `password123`). Otherwise, read it from the admin account `Secret` KubeBlocks created for the ClickHouse component, or from the pod environment:
+
+```bash
+CH_PASS="$(kubectl exec -n demo "$CH_POD" -c clickhouse -- printenv CLICKHOUSE_ADMIN_PASSWORD)"
+CH_USER="$(kubectl exec -n demo "$CH_POD" -c clickhouse -- printenv CLICKHOUSE_ADMIN_USER)"
+
+kubectl exec -n demo "$CH_POD" -c clickhouse -- \
+  clickhouse-client --user "$CH_USER" --password "$CH_PASS" \
+  --query "SET profile = 'web'; SELECT name, value FROM system.settings WHERE name = 'max_bytes_to_read'"
 ```
 
 <details open>
 <summary>Example Output</summary>
+
 ```text
 max_bytes_to_read	200000000000
 ```
+
 </details>
 
-## Immutable Parameters
+### Server-level settings (`00_default_overrides.xml`)
 
-The following parameters cannot be changed via OpsRequest (they require a cluster rebuild):
+Options such as **`http_port`**, **`tcp_port`**, **`listen_host`**, **`macros`**, and **`logger`** live in the **server** XML (`clickhouse-tpl` / `00_default_overrides.xml`), not in `user.xml`. To change them, supply a ConfigMap whose key matches the server template and reference it with:
 
-- `clickhouse.http_port`
-- `clickhouse.https_port`
-- `clickhouse.tcp_port`
-- `clickhouse.interserver_http_port`
-- `clickhouse.listen_host`
-- `clickhouse.macros`
-- `clickhouse.logger`
+```yaml
+configs:
+  - name: clickhouse-tpl
+    configMap:
+      name: your-server-overrides-tpl
+```
 
-## Cleanup
+Use the chart’s [`00_default_overrides.xml.tpl`](https://github.com/apecloud/kubeblocks-addons/blob/main/addons/clickhouse/configs/00_default_overrides.xml.tpl) as a baseline.
+
+## `Reconfiguring` OpsRequest is not supported
+
+For **ClickHouse**, **`Reconfiguring` OpsRequest** does not apply configuration to **`user.xml`** / server XML templates. Do not use `type: Reconfiguring` for this engine—follow the **ConfigMap** workflow above.
+
+## Cleanup (ConfigMap workflow)
 
 ```bash
-kubectl delete opsrequest ch-reconfiguring -n demo --ignore-not-found
+kubectl delete configmap custom-ch-user-tpl -n demo --ignore-not-found
 ```
+
+Remove the `configs` entry from the Cluster (or restore the previous manifest) when you no longer need the custom template.
