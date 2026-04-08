@@ -101,6 +101,20 @@ For direct pod addressing (replication traffic, ClickHouse Keeper communication)
 {pod-name}.{cluster}-{shardComponentName}-headless.{namespace}.svc.cluster.local
 ```
 
+## Automatic Failover
+
+ClickHouse does not use a primary/replica role distinction at the application level — all replicas within a shard are equivalent and can serve queries. Recovery after a pod failure does not involve a role switch:
+
+1. **A replica pod crashes** — the failed pod stops serving queries for its shard
+2. **CH Keeper detects the lost connection** (`topology: cluster` only) — remaining replicas continue serving if at least one replica is healthy; Keeper tracks which data parts each replica holds
+3. **KubeBlocks restarts the failed pod** — the InstanceSet controller schedules a pod restart
+4. **Recovered replica reconnects to CH Keeper** — the pod re-registers and fetches data parts it missed during downtime from peer replicas automatically
+5. **ClusterIP service is unchanged** — all replicas are equivalent; no endpoint update is needed; the recovered pod resumes receiving traffic once it passes its readiness check
+
+:::note
+Steps 2 and 4 require `topology: cluster` (CH Keeper deployed). In `topology: standalone`, no Keeper is present — inter-replica part synchronization is not available unless an external ZooKeeper or Keeper is configured.
+:::
+
 ## System Accounts
 
 KubeBlocks automatically manages the following ClickHouse system account. Passwords are auto-generated and stored in a Secret named `{cluster}-{component}-account-{name}`.

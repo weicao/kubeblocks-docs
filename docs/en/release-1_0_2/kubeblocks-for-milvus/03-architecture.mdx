@@ -121,3 +121,13 @@ Only the `proxy` container exposes port 19530 (gRPC) for client traffic. All com
 | `{cluster}-proxy` | ClusterIP | 19530 (gRPC), 9091 (metrics/health) | proxy pods |
 
 Client applications (Milvus SDK) connect to the proxy on port 19530 (gRPC). Port 9091 is the metrics/health endpoint — it is not a client-facing REST API. The proxy is the single entry point — it handles authentication, routing, and result aggregation across worker components.
+
+## System Accounts
+
+In the Milvus add-on, only the **in-cluster MinIO object-storage** Component (ComponentDefinition `milvus-minio`) declares KubeBlocks **`systemAccounts`**. Other Milvus stack components in this add-on (for example **etcd**, **milvus**, **proxy**, **mixcoord**, DataNode, QueryNode, IndexNode) do **not** define `systemAccounts` in their ComponentDefinitions. If you use an external object store instead of the bundled MinIO, this managed account does not apply to that store.
+
+For the bundled MinIO component (typically named **`minio`** in `componentSpecs`, for example in standalone topology), KubeBlocks creates one account. Passwords are auto-generated unless overridden at the Cluster level. Credentials are stored in a Secret named **`{cluster}-minio-account-admin`** when the component name is `minio` (substitute your Cluster `metadata.name` and the MinIO component’s `name`).
+
+| Account | Component (typical name) | Role | Purpose |
+|---------|--------------------------|------|---------|
+| `admin` | `minio` | Object store admin | MinIO root credentials; injected into MinIO pods as `MINIO_ACCESS_KEY` and `MINIO_SECRET_KEY` for S3-compatible access to buckets used by Milvus |

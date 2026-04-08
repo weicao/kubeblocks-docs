@@ -105,3 +105,11 @@ When a ZooKeeper ensemble member fails:
 2. **Leader election** (if the lost member was the leader) — surviving members elect a new leader in milliseconds to seconds
 3. **Write continuity** — as long as a quorum remains available, all write and read operations continue normally
 4. **Pod recovery** — when the failed pod restarts, it reads its `myid` from the PVC, contacts the leader, and syncs any missed transactions before rejoining the ensemble
+
+## System Accounts
+
+KubeBlocks manages the following ZooKeeper system account. The password is auto-generated and stored in a Secret named `{cluster}-{component}-account-admin` (replace `{cluster}` and `{component}` with your Cluster metadata.name and the ZooKeeper component name, typically `zookeeper`).
+
+| Account | Role | Purpose |
+|---------|------|---------|
+| `admin` | Admin | Administrator user when ZooKeeper authentication is enabled (`ZOO_ENABLE_AUTH=yes`); credentials are injected into pods as `ZK_ADMIN_USER` and `ZK_ADMIN_PASSWORD` for authenticated client and administrative access |

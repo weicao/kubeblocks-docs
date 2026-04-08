@@ -17,8 +17,6 @@ export default function MysqlArchitectureDiagram() {
         .mysql-ha-diagram .dot-blue   { background: #388bfd; }
         .mysql-ha-diagram .dot-green  { background: #3fb950; }
         .mysql-ha-diagram .dot-purple { background: #a371f7; }
-        .mysql-ha-diagram .dot-orange { background: #e3b341; }
-        .mysql-ha-diagram .dot-teal   { background: #56d4dd; }
         .mysql-ha-diagram .dot-red    { background: #f85149; }
         .mysql-ha-diagram .card-title {
           font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
@@ -30,10 +28,6 @@ export default function MysqlArchitectureDiagram() {
         }
         .mysql-ha-diagram .data-plane {
           flex: 1; display: flex; flex-direction: column; gap: 0;
-        }
-        .mysql-ha-diagram .mgmt-sidebar {
-          width: 260px; flex-shrink: 0;
-          display: flex; flex-direction: column; gap: 12px; padding-top: 4px;
         }
         .mysql-ha-diagram .client-mini {
           border-radius: 12px; border: 1px solid #30363d;
@@ -128,49 +122,7 @@ export default function MysqlArchitectureDiagram() {
           padding: 7px; border-radius: 8px; background: #0a1a14;
           border: 1px solid #238636; margin-top: 10px; font-size: 11px; color: #3fb950;
         }
-        .mysql-ha-diagram .sidebar-card { border-radius: 10px; border: 1px solid; padding: 12px 14px; }
-        .mysql-ha-diagram .dcs-card { border-color: #1b7c83; background: #0a1e20; }
-        .mysql-ha-diagram .dcs-items { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
-        .mysql-ha-diagram .dcs-item {
-          padding: 5px 9px; border-radius: 6px; border: 1px solid #1b7c8355;
-          background: #061515; font-size: 10px; color: #56d4dd; line-height: 1.5;
-        }
-        .mysql-ha-diagram .dcs-item span { color: #7d8590; }
-        .mysql-ha-diagram .failover-card { border-color: #da3633; background: #1c0a0a; }
-        .mysql-ha-diagram .failover-steps { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
-        .mysql-ha-diagram .step { display: flex; align-items: flex-start; gap: 7px; font-size: 10px; color: #cdd9e5; line-height: 1.5; }
-        .mysql-ha-diagram .step-num {
-          width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0;
-          background: #da363322; border: 1px solid #da363388;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 9px; font-weight: 700; color: #f85149; margin-top: 1px;
-        }
-        .mysql-ha-diagram .accounts-card { border-color: #d2992244; background: #1a1505; }
-        .mysql-ha-diagram .accounts-grid { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
-        .mysql-ha-diagram .acc-chip {
-          padding: 3px 8px; border-radius: 5px;
-          border: 1px solid #d2992233; background: #0d0d00; font-size: 10px; color: #e3b341;
-        }
-        .mysql-ha-diagram .acc-chip span { color: #484f58; font-size: 9px; display: block; }
-        .mysql-ha-diagram .operator-block {
-          flex: 1; border-radius: 12px; border: 1px solid #1f6feb;
-          background: #0d1f38; padding: 16px 20px;
-        }
-        .mysql-ha-diagram .operator-controllers { display: flex; gap: 8px; margin-top: 8px; }
-        .mysql-ha-diagram .ctrl-chip {
-          flex: 1; padding: 8px 10px; border-radius: 8px; border: 1px solid #1f6feb44;
-          background: #0a1628; font-size: 11px; color: #79c0ff; text-align: center;
-        }
-        .mysql-ha-diagram .ctrl-chip .ctrl-name { font-weight: 700; font-size: 12px; display: block; margin-bottom: 2px; }
-        .mysql-ha-diagram .ctrl-chip .ctrl-sub { font-size: 10px; color: #4a7ab5; }
-        .mysql-ha-diagram .crd-chain { display: flex; align-items: center; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
-        .mysql-ha-diagram .crd-chip { padding: 4px 10px; border-radius: 20px; border: 1px solid; font-size: 11px; font-weight: 600; white-space: nowrap; }
-        .mysql-ha-diagram .crd-chip.cluster     { border-color: #a371f7; color: #d2a8ff; background: #2d1f5e; }
-        .mysql-ha-diagram .crd-chip.component   { border-color: #79c0ff; color: #79c0ff; background: #1a3050; }
-        .mysql-ha-diagram .crd-chip.instanceset { border-color: #7ee787; color: #7ee787; background: #1a3020; }
-        .mysql-ha-diagram .crd-chip.pod         { border-color: #e3b341; color: #e3b341; background: #302010; }
-        .mysql-ha-diagram .crd-arrow { color: #484f58; font-size: 14px; }
-        .mysql-ha-diagram .legend {
+                .mysql-ha-diagram .legend {
           display: flex; gap: 18px; flex-wrap: wrap; justify-content: center;
           padding-top: 8px; border-top: 1px solid #21262d; margin-top: 16px;
         }
@@ -350,131 +302,13 @@ export default function MysqlArchitectureDiagram() {
 
           </div>{/* /data-plane */}
 
-          {/* RIGHT SIDEBAR */}
-          <div className="mgmt-sidebar">
-
-            {/* MySQL Replication */}
-            <div className="sidebar-card dcs-card">
-              <div className="card-title" style={{color:'#56d4dd',fontSize:'10px'}}>
-                <span className="dot dot-teal"></span>
-                MySQL Replication
-                <span style={{fontSize:'9px',color:'#1b7c83',fontWeight:400}}>(async/semi-sync)</span>
-              </div>
-              <div className="dcs-items">
-                <div className="dcs-item">
-                  <span>ConfigMap</span> {'{scope}'}-config<br/>
-                  source host · binlog position
-                </div>
-                <div className="dcs-item">
-                  <span>Endpoints</span> {'{scope}'}<br/>
-                  primary detection · role probe
-                </div>
-                <div className="dcs-item">
-                  <span>Secret</span> account-*<br/>
-                  system account passwords
-                </div>
-              </div>
-            </div>
-
-            {/* Failover */}
-            <div className="sidebar-card failover-card">
-              <div className="card-title" style={{color:'#f85149',fontSize:'10px'}}>
-                <span className="dot dot-red"></span>
-                Failover Process
-              </div>
-              <div className="failover-steps">
-                <div className="step"><span className="step-num">1</span>Primary Pod crashes</div>
-                <div className="step"><span className="step-num">2</span>syncer roleProbe fails (syncerctl getrole) (≈30s)</div>
-                <div className="step"><span className="step-num">3</span>KubeBlocks marks primary unavailable</div>
-                <div className="step"><span className="step-num">4</span>Best replica promoted to primary</div>
-                <div className="step"><span className="step-num">5</span>Replicas reconnect to new primary</div>
-                <div className="step"><span className="step-num">6</span>Pod label <code style={{color:'#3fb950'}}>role=primary</code> updated</div>
-                <div className="step"><span className="step-num">7</span>Service Endpoints auto-switch</div>
-              </div>
-            </div>
-
-            {/* System Accounts */}
-            <div className="sidebar-card accounts-card">
-              <div className="card-title" style={{color:'#e3b341',fontSize:'10px'}}>
-                <span className="dot dot-orange"></span>
-                System Accounts
-              </div>
-              <div className="accounts-grid">
-                <div className="acc-chip">root<span>superuser</span></div>
-                <div className="acc-chip">kbadmin<span>superuser</span></div>
-                <div className="acc-chip">kbdataprotection<span>backup</span></div>
-                <div className="acc-chip">kbprobe<span>monitor</span></div>
-                <div className="acc-chip">kbmonitoring<span>metrics</span></div>
-                <div className="acc-chip">kbreplicator<span>replication</span></div>
-              </div>
-            </div>
-
-          </div>{/* /sidebar */}
         </div>{/* /main-area */}
-
-        {/* ══ SEPARATOR ══ */}
-        <div style={{display:'flex',alignItems:'center',gap:'12px',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginTop:'4px'}}>
-          <div style={{flex:1,height:'1px',background:'#21262d'}}></div>
-          <span style={{color:'#484f58'}}>Management Plane · KubeBlocks Operator</span>
-          <div style={{flex:1,height:'1px',background:'#21262d'}}></div>
-        </div>
-
-        {/* ══ BOTTOM: Operator ══ */}
-        <div style={{display:'flex',gap:'16px',alignItems:'stretch',marginTop:'4px'}}>
-          <div className="operator-block">
-            <div className="card-title" style={{color:'#79c0ff'}}>
-              <span className="dot dot-blue"></span>
-              KubeBlocks Operator
-              <span style={{fontSize:'10px',fontWeight:400,color:'#4a7ab5',letterSpacing:0}}>· watches &amp; reconciles CRDs, drives creation and reconciliation of all above resources</span>
-            </div>
-            <div className="operator-controllers">
-              <div className="ctrl-chip">
-                <span className="ctrl-name">Apps Controller</span>
-                <span className="ctrl-sub">Cluster / Component</span>
-              </div>
-              <div className="ctrl-chip">
-                <span className="ctrl-name">Workloads Controller</span>
-                <span className="ctrl-sub">InstanceSet → Pods</span>
-              </div>
-              <div className="ctrl-chip">
-                <span className="ctrl-name">Ops Controller</span>
-                <span className="ctrl-sub">Switchover / Scale</span>
-              </div>
-            </div>
-            <div style={{marginTop:'10px'}}>
-              <div style={{fontSize:'10px',color:'#484f58',marginBottom:'6px',letterSpacing:'1px'}}>CRD RESOURCE HIERARCHY</div>
-              <div className="crd-chain">
-                <div className="crd-chip cluster">Cluster</div>
-                <span className="crd-arrow">→</span>
-                <div className="crd-chip component">Component</div>
-                <span className="crd-arrow">→</span>
-                <div className="crd-chip instanceset">InstanceSet</div>
-                <span className="crd-arrow">→</span>
-                <div className="crd-chip pod">Pod × 3</div>
-              </div>
-            </div>
-          </div>
-
-          <div style={{width:'220px',flexShrink:0,borderRadius:'12px',border:'1px solid #1f6feb33',background:'#0a1628',padding:'14px 16px',display:'flex',flexDirection:'column',justifyContent:'center',gap:'6px'}}>
-            <div style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.5px',textTransform:'uppercase',color:'#4a7ab5',marginBottom:'2px'}}>Operator Responsibilities</div>
-            <div style={{fontSize:'10px',color:'#4a7ab5',lineHeight:1.9}}>
-              ⚙ Create / reconcile Pods, Services, PVCs<br/>
-              ⚙ roleProbe: probe role every 1s<br/>
-              ⚙ Update Pod label <code style={{color:'#3fb950'}}>role=primary</code><br/>
-              ⚙ Execute switchover / scale ops<br/>
-              ⚙ Manage SystemAccount Secrets
-            </div>
-          </div>
-        </div>
-
         {/* Legend */}
         <div className="legend">
           <div className="legend-item"><span className="legend-dot" style={{background:'#388bfd'}}></span>KubeBlocks Operator (control plane)</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#a371f7'}}></span>CRD Resource</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#3fb950'}}></span>Primary / RW Traffic</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#79c0ff'}}></span>Replica Pod</div>
-          <div className="legend-item"><span className="legend-dot" style={{background:'#56d4dd'}}></span>MySQL Replication</div>
-          <div className="legend-item"><span className="legend-dot" style={{background:'#f85149'}}></span>Failover Path</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#e3b341'}}></span>Persistent Storage</div>
         </div>
 

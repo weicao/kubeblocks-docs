@@ -19,10 +19,6 @@ export default function MysqlOrchestratorArchitectureDiagram() {
         .mysql-orc-diagram .data-plane {
           flex: 1; display: flex; flex-direction: column; gap: 0;
         }
-        .mysql-orc-diagram .mgmt-sidebar {
-          width: 260px; flex-shrink: 0;
-          display: flex; flex-direction: column; gap: 12px; padding-top: 4px;
-        }
 
         /* Client */
         .mysql-orc-diagram .client-mini {
@@ -191,51 +187,6 @@ export default function MysqlOrchestratorArchitectureDiagram() {
           padding: 4px 6px; background: #0d1117;
           border-radius: 4px; border: 1px solid #21262d;
         }
-
-        /* Sidebar cards */
-        .mysql-orc-diagram .sb-card {
-          border-radius: 10px; border: 1px solid #30363d;
-          background: #161b22; padding: 14px;
-        }
-        .mysql-orc-diagram .sb-title {
-          font-size: 10px; font-weight: 700; letter-spacing: 1px;
-          text-transform: uppercase; margin-bottom: 10px;
-        }
-        .mysql-orc-diagram .step {
-          display: flex; align-items: flex-start; gap: 8px;
-          font-size: 10px; color: #8b949e; line-height: 1.5; margin-bottom: 6px;
-        }
-        .mysql-orc-diagram .step-num {
-          display: inline-flex; align-items: center; justify-content: center;
-          width: 16px; height: 16px; border-radius: 50%;
-          background: #21262d; color: #f0f6fc;
-          font-size: 9px; font-weight: 700; flex-shrink: 0; margin-top: 1px;
-        }
-        .mysql-orc-diagram .info-row {
-          display: flex; align-items: flex-start; gap: 6px;
-          font-size: 10px; color: #8b949e; line-height: 1.5; margin-bottom: 5px;
-        }
-        .mysql-orc-diagram .info-key {
-          color: #f0f6fc; font-weight: 600; min-width: 68px; flex-shrink: 0;
-        }
-
-        /* CRD chain */
-        .mysql-orc-diagram .crd-section {
-          border-radius: 10px; border: 1px solid #30363d;
-          background: #161b22; padding: 14px;
-        }
-        .mysql-orc-diagram .crd-chain { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
-        .mysql-orc-diagram .crd-row   { display: flex; align-items: center; gap: 6px; }
-        .mysql-orc-diagram .crd-chip {
-          font-size: 10px; font-weight: 700; padding: 3px 8px;
-          border-radius: 5px; white-space: nowrap;
-        }
-        .mysql-orc-diagram .crd-chip.cluster     { background: #1a2a0a; color: #7ee787; border: 1px solid #2ea04344; }
-        .mysql-orc-diagram .crd-chip.component   { background: #0d1f38; color: #79c0ff; border: 1px solid #1f6feb44; }
-        .mysql-orc-diagram .crd-chip.comp-orc    { background: #2a1800; color: #e3b341; border: 1px solid #5a3a0044; }
-        .mysql-orc-diagram .crd-chip.instanceset { background: #1a0d2e; color: #c084fc; border: 1px solid #6e40c944; }
-        .mysql-orc-diagram .crd-chip.pod         { background: #1c1400; color: #e3b341; border: 1px solid #e3b34144; }
-        .mysql-orc-diagram .crd-arrow { color: #484f58; font-size: 12px; }
 
         /* Legend */
         .mysql-orc-diagram .legend {
@@ -427,56 +378,6 @@ export default function MysqlOrchestratorArchitectureDiagram() {
             </div>
           </div>
 
-          {/* RIGHT: sidebar */}
-          <div className="mgmt-sidebar">
-            {/* Failover steps */}
-            <div className="sb-card">
-              <div className="sb-title" style={{color:'#e3b341'}}>⚡ Failover by Orchestrator</div>
-              <div className="step"><span className="step-num">1</span>Orchestrator polls all MySQL pods; primary stops responding</div>
-              <div className="step"><span className="step-num">2</span>Orchestrator identifies replica with most advanced relay log</div>
-              <div className="step"><span className="step-num">3</span>Orchestrator promotes chosen replica and reconnects remaining replicas</div>
-              <div className="step"><span className="step-num">4</span>exec roleProbe (orchestrator-client) detects new master → updates kubeblocks.io/role label</div>
-              <div className="step"><span className="step-num">5</span>mysql-server has no roleSelector — load-balances to all pods; use orc-proxysql for write-only routing</div>
-            </div>
-
-            {/* Orchestrator capabilities */}
-            <div className="sb-card">
-              <div className="sb-title" style={{color:'#8b949e'}}>🔭 Orchestrator Features</div>
-              <div className="info-row"><span className="info-key">Monitoring:</span><span>Continuous replication topology polling via SHOW SLAVE STATUS</span></div>
-              <div className="info-row"><span className="info-key">Web UI:</span><span>Visual replication graph; manual promote / relocate operations</span></div>
-              <div className="info-row"><span className="info-key">HTTP API:</span><span>Web UI + programmatic topology management; Service port :80 (container :3000)</span></div>
-              <div className="info-row"><span className="info-key">Recovery:</span><span>Configurable hooks for pre/post failover actions</span></div>
-            </div>
-
-            {/* CRD chain */}
-            <div className="crd-section">
-              <div className="sb-title" style={{color:'#8b949e'}}>📦 Resource Hierarchy</div>
-              <div className="crd-chain">
-                <div className="crd-row">
-                  <div className="crd-chip cluster">MySQL Cluster</div>
-                </div>
-                <div className="crd-row" style={{paddingLeft:'12px'}}>
-                  <span className="crd-arrow">↓</span>
-                  <div className="crd-chip component">Component (mysql)</div>
-                </div>
-                <div className="crd-row" style={{paddingLeft:'24px'}}>
-                  <span className="crd-arrow">↓</span>
-                  <div className="crd-chip instanceset">InstanceSet → Pod × N</div>
-                </div>
-                <div className="crd-row" style={{marginTop:'8px'}}>
-                  <div className="crd-chip comp-orc">Orchestrator Cluster</div>
-                </div>
-                <div className="crd-row" style={{paddingLeft:'12px'}}>
-                  <span className="crd-arrow">↓</span>
-                  <div className="crd-chip comp-orc">Component (orchestrator)</div>
-                </div>
-                <div className="crd-row" style={{paddingLeft:'24px'}}>
-                  <span className="crd-arrow">↓</span>
-                  <div className="crd-chip pod">Pod × N</div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Legend */}

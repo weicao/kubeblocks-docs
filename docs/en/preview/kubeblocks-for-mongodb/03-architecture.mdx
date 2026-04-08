@@ -62,7 +62,17 @@ MongoDB replica sets use **oplog-based replication** and a **majority-vote (Raft
 | **Election** | When the primary fails, secondaries vote; the candidate with the most up-to-date oplog and a majority of votes wins |
 | **Write concern** | `w:majority` ensures a write is durable on a quorum before acknowledging |
 
-A 3-member replica set tolerates **1 failure**. Failover typically completes within **10–30 seconds**.
+A 3-member replica set tolerates **1 failure**.
+
+### Automatic Failover
+
+1. **Primary pod crashes or becomes unreachable** — secondaries stop receiving heartbeat pings
+2. **Election timeout** — after approximately 10 seconds (`electionTimeoutMillis`), one secondary calls for an election
+3. **Majority vote** — the candidate with the most up-to-date oplog and a majority of votes wins and becomes the new primary
+4. **KubeBlocks roleProbe detects the change** — `syncerctl getrole` returns `primary` for the new pod → `kubeblocks.io/role=primary` label is applied
+5. **Service endpoints switch** — the `{cluster}-mongodb-mongodb` ClusterIP service automatically routes writes to the new primary
+
+Failover typically completes within **10–30 seconds**.
 
 ### Traffic Routing
 

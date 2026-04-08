@@ -21,6 +21,10 @@ KubeBlocks supports three Kafka deployment topologies:
 
 The `*_monitor` variants add a standalone `kafka-exporter` Component that scrapes Kafka-specific metrics (consumer group lag, partition offsets, topic throughput) and exposes them on port 9308 for Prometheus.
 
+:::note
+**Configuration templates and `configs`:** the Kafka `ComponentDefinition` treats main config slots (for example **`kafka-configuration-tpl`**) as **externally managed** in current addon charts. When you create a `Cluster`, you must **wire those slots** by setting **`configs`** on the matching component (or sharding template) to ConfigMaps whose keys match the template file names — typically the ConfigMaps shipped with the addon in **`kb-system`**, or your own copies in the application namespace. If provisioning fails with a message about missing templates, compare your manifest to the **Kafka examples** in [kubeblocks-addons](https://github.com/apecloud/kubeblocks-addons/tree/main/examples/kafka) for the same chart version.
+:::
+
 ---
 
 ## Combined Architecture (combined / combined_monitor)

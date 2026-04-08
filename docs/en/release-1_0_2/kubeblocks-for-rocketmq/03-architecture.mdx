@@ -133,3 +133,16 @@ When a RocketMQ component fails:
 3. **KubeBlocks pod restart** — KubeBlocks detects the failed pod and restarts it; the recovered pod resumes as master (brokerId=0) after the process starts
 4. **Master re-registers** — the recovered master re-registers with all NameServer instances; topic routing is refreshed
 5. **Slaves reconnect** — slaves re-establish the HA replication connection to the restored master on port 10912 and resync any missed log entries
+
+## System Accounts
+
+The RocketMQ add-on declares KubeBlocks **`systemAccounts`** on the **broker** and **Dashboard** ComponentDefinitions. NameServer and other components do not use this mechanism in the same way. Passwords are generated according to each account’s policy unless overridden on the Cluster.
+
+Secrets follow **`{cluster}-{component}-account-{accountName}`** — where `{component}` is each component’s **`name`** in the Cluster spec (for example **`dashboard`** for the Dashboard, and each **broker shard** component name such as **`broker-0`**, **`broker-1`**, …).
+
+| Account | Component (typical) | Role | Purpose |
+|---------|---------------------|------|---------|
+| `rocketmq-admin` | Per broker shard (`broker-*`) | Broker admin / ACL user | Injected into broker pods as `ROCKETMQ_USER` and `ROCKETMQ_PASSWORD` for broker authentication configuration |
+| `console-admin` | `dashboard` | Dashboard login | Injected into Dashboard pods as `CONSOLE_USER` and `CONSOLE_PASSWORD` for the RocketMQ Dashboard web UI |
+
+The Dashboard also needs the broker admin identity to talk to the cluster: it reads **`rocketmq-admin`** credentials from the broker ComponentDefinition via **`credentialVarRef`** (same username/password as the broker shard’s `rocketmq-admin` account).

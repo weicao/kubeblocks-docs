@@ -61,6 +61,16 @@ Each pod also runs multiple init containers on startup: `init-syncer` (copies sy
 | **Failover trigger** | syncer roleProbe fails repeatedly → KubeBlocks selects replica with most advanced binlog position |
 | **Promotion** | KubeBlocks calls the switchover API to promote the chosen replica; remaining replicas repoint to new primary |
 
+### Automatic Failover
+
+1. **Primary pod crashes** — replicas stop receiving binlog events
+2. **syncer roleProbe fails** — `syncerctl getrole` returns an error repeatedly; detection takes approximately 30 seconds
+3. **KubeBlocks marks the primary unavailable** and selects the replica with the most advanced binlog position as the promotion candidate
+4. **Chosen replica is promoted** — KubeBlocks calls the switchover lifecycle action; the replica stops replicating and takes over as primary
+5. **Remaining replicas repoint** to the new primary via `CHANGE REPLICATION SOURCE TO`
+6. **Pod label updated** — `kubeblocks.io/role=primary` applied to the new primary pod
+7. **Service endpoints switch** — the `{cluster}-mysql` ClusterIP service automatically routes writes to the new primary
+
 Failover typically completes within **30–60 seconds**.
 
 ### Traffic Routing
@@ -114,7 +124,15 @@ The roleProbe runs `/tools/syncerctl getrole` inside the `mysql` container. Each
 | **syncer role update** | syncer roleProbe detects the new primary role → updates `kubeblocks.io/role` label → ClusterIP service endpoints switch |
 | **Quorum tolerance** | 3-member group tolerates 1 failure; 5-member tolerates 2 |
 
-Failover typically completes within **5–15 seconds**. Group-internal primary election is near-instant after expulsion; the subsequent `kubeblocks.io/role` label update and Service endpoint switch still depend on the syncer roleProbe cycle.
+### Automatic Failover
+
+1. **Primary pod becomes unreachable** — group communication times out for the failed member
+2. **GCS expulsion** — the remaining members detect the failure via the Group Communication System (GCS) and expel the unreachable member
+3. **Group elects a new PRIMARY** — the remaining certified secondaries autonomously elect a new primary; no external coordinator is needed
+4. **syncer roleProbe detects the new PRIMARY** — `syncerctl getrole` returns `primary` for the elected pod → `kubeblocks.io/role=primary` label updated
+5. **Service endpoints switch** — the `{cluster}-mysql` ClusterIP service automatically routes writes to the new primary
+
+Failover typically completes within **5–15 seconds**. Group-internal primary election is near-instant after expulsion; the subsequent label update and service endpoint switch depend on the syncer roleProbe cycle.
 
 ### Traffic Routing
 

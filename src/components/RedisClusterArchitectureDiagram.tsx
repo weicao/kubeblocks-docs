@@ -118,46 +118,6 @@ export default function RedisClusterArchitectureDiagram() {
           display: flex; gap: 16px; align-items: flex-start; margin-top: 0;
         }
         .redis-cluster-diagram .data-plane { flex: 1; display: flex; flex-direction: column; gap: 0; }
-        .redis-cluster-diagram .mgmt-sidebar {
-          width: 256px; flex-shrink: 0;
-          display: flex; flex-direction: column; gap: 12px; padding-top: 4px;
-        }
-        .redis-cluster-diagram .sidebar-card { border-radius: 10px; border: 1px solid; padding: 12px 14px; }
-        .redis-cluster-diagram .hierarchy-card { border-color: #a371f744; background: #130d2a; }
-        .redis-cluster-diagram .failover-card { border-color: #da363344; background: #1c0a0a; }
-        .redis-cluster-diagram .failover-steps { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
-        .redis-cluster-diagram .step { display: flex; align-items: flex-start; gap: 7px; font-size: 10px; color: #cdd9e5; line-height: 1.5; }
-        .redis-cluster-diagram .step-num {
-          width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0;
-          background: #da363322; border: 1px solid #da363388;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 9px; font-weight: 700; color: #f85149; margin-top: 1px;
-        }
-        .redis-cluster-diagram .cluster-props { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
-        .redis-cluster-diagram .prop-row {
-          padding: 4px 8px; border-radius: 5px; border: 1px solid #a371f722;
-          background: #0d0820; font-size: 10px; color: #d2a8ff; line-height: 1.5;
-        }
-        .redis-cluster-diagram .prop-row span { color: #7d8590; }
-        .redis-cluster-diagram .operator-block {
-          flex: 1; border-radius: 12px; border: 1px solid #1f6feb;
-          background: #0d1f38; padding: 16px 20px;
-        }
-        .redis-cluster-diagram .operator-controllers { display: flex; gap: 8px; margin-top: 8px; }
-        .redis-cluster-diagram .ctrl-chip {
-          flex: 1; padding: 8px 10px; border-radius: 8px; border: 1px solid #1f6feb44;
-          background: #0a1628; font-size: 11px; color: #79c0ff; text-align: center;
-        }
-        .redis-cluster-diagram .ctrl-chip .ctrl-name { font-weight: 700; font-size: 12px; display: block; margin-bottom: 2px; }
-        .redis-cluster-diagram .ctrl-chip .ctrl-sub { font-size: 10px; color: #4a7ab5; }
-        .redis-cluster-diagram .crd-chain { display: flex; align-items: center; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
-        .redis-cluster-diagram .crd-chip { padding: 4px 10px; border-radius: 20px; border: 1px solid; font-size: 11px; font-weight: 600; white-space: nowrap; }
-        .redis-cluster-diagram .crd-chip.cluster     { border-color: #a371f7; color: #d2a8ff; background: #2d1f5e; }
-        .redis-cluster-diagram .crd-chip.sharding    { border-color: #f0883e; color: #f0883e; background: #2a1200; }
-        .redis-cluster-diagram .crd-chip.shard       { border-color: #e3b341; color: #e3b341; background: #302010; }
-        .redis-cluster-diagram .crd-chip.instanceset { border-color: #7ee787; color: #7ee787; background: #1a3020; }
-        .redis-cluster-diagram .crd-chip.pod         { border-color: #79c0ff; color: #79c0ff; background: #0d2035; }
-        .redis-cluster-diagram .crd-arrow { color: #484f58; font-size: 14px; }
         .redis-cluster-diagram .legend {
           display: flex; gap: 18px; flex-wrap: wrap; justify-content: center;
           padding-top: 8px; border-top: 1px solid #21262d; margin-top: 16px;
@@ -370,111 +330,7 @@ export default function RedisClusterArchitectureDiagram() {
 
           </div>{/* /data-plane */}
 
-          {/* RIGHT SIDEBAR */}
-          <div className="mgmt-sidebar">
-
-            {/* Cluster Properties */}
-            <div className="sidebar-card hierarchy-card">
-              <div className="card-title" style={{color:'#d2a8ff',fontSize:'10px'}}>
-                <span className="dot dot-purple"></span>
-                Cluster Properties
-              </div>
-              <div className="cluster-props">
-                <div className="prop-row">
-                  <span>Hash slots:</span> 16384 total<br/>
-                  distributed evenly across shards
-                </div>
-                <div className="prop-row">
-                  <span>Min shards:</span> 3 (for quorum)<br/>
-                  tolerates 1 full shard failure
-                </div>
-                <div className="prop-row">
-                  <span>Replication:</span> async per shard<br/>
-                  primary → replicas within shard
-                </div>
-                <div className="prop-row">
-                  <span>No Sentinel:</span> gossip protocol<br/>
-                  nodes self-manage cluster topology
-                </div>
-              </div>
-            </div>
-
-            {/* Failover */}
-            <div className="sidebar-card failover-card">
-              <div className="card-title" style={{color:'#f85149',fontSize:'10px'}}>
-                <span className="dot dot-red"></span>
-                Shard Failover Process
-              </div>
-              <div className="failover-steps">
-                <div className="step"><span className="step-num">1</span>Shard primary stops responding to gossip pings</div>
-                <div className="step"><span className="step-num">2</span>Other nodes mark primary as <code style={{color:'#f85149'}}>PFAIL</code> (possible fail)</div>
-                <div className="step"><span className="step-num">3</span>Enough nodes agree → primary declared <code style={{color:'#f85149'}}>FAIL</code></div>
-                <div className="step"><span className="step-num">4</span>Shard replica requests votes from other primaries</div>
-                <div className="step"><span className="step-num">5</span>Replica wins majority → promoted to primary</div>
-                <div className="step"><span className="step-num">6</span><code style={{color:'#f0883e'}}>kubeblocks.io/role=primary</code> label updated</div>
-                <div className="step"><span className="step-num">7</span>Cluster slot map updated; clients follow <code style={{color:'#56d4dd'}}>MOVED</code></div>
-              </div>
-            </div>
-
-          </div>{/* /sidebar */}
         </div>{/* /main-area */}
-
-        {/* Separator */}
-        <div style={{display:'flex',alignItems:'center',gap:'12px',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginTop:'4px'}}>
-          <div style={{flex:1,height:'1px',background:'#21262d'}}></div>
-          <span style={{color:'#484f58'}}>Management Plane · KubeBlocks Operator</span>
-          <div style={{flex:1,height:'1px',background:'#21262d'}}></div>
-        </div>
-
-        {/* Operator */}
-        <div style={{display:'flex',gap:'16px',alignItems:'stretch',marginTop:'4px'}}>
-          <div className="operator-block">
-            <div className="card-title" style={{color:'#79c0ff'}}>
-              <span className="dot dot-blue"></span>
-              KubeBlocks Operator
-              <span style={{fontSize:'10px',fontWeight:400,color:'#4a7ab5',letterSpacing:0}}>· manages Sharding resources; each shard is an independent Component</span>
-            </div>
-            <div className="operator-controllers">
-              <div className="ctrl-chip">
-                <span className="ctrl-name">Apps Controller</span>
-                <span className="ctrl-sub">Cluster / Sharding</span>
-              </div>
-              <div className="ctrl-chip">
-                <span className="ctrl-name">Workloads Controller</span>
-                <span className="ctrl-sub">InstanceSet → Pods</span>
-              </div>
-              <div className="ctrl-chip">
-                <span className="ctrl-name">Ops Controller</span>
-                <span className="ctrl-sub">Scale shards / Rebalance</span>
-              </div>
-            </div>
-            <div style={{marginTop:'10px'}}>
-              <div style={{fontSize:'10px',color:'#484f58',marginBottom:'6px',letterSpacing:'1px'}}>CRD RESOURCE HIERARCHY</div>
-              <div className="crd-chain">
-                <div className="crd-chip cluster">Cluster</div>
-                <span className="crd-arrow">→</span>
-                <div className="crd-chip sharding">Sharding</div>
-                <span className="crd-arrow">→</span>
-                <div className="crd-chip shard">Shard × N</div>
-                <span className="crd-arrow">→</span>
-                <div className="crd-chip instanceset">InstanceSet</div>
-                <span className="crd-arrow">→</span>
-                <div className="crd-chip pod">Pod × replicas</div>
-              </div>
-            </div>
-          </div>
-
-          <div style={{width:'220px',flexShrink:0,borderRadius:'12px',border:'1px solid #1f6feb33',background:'#0a1628',padding:'14px 16px',display:'flex',flexDirection:'column',justifyContent:'center',gap:'6px'}}>
-            <div style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.5px',textTransform:'uppercase',color:'#4a7ab5',marginBottom:'2px'}}>Operator Responsibilities</div>
-            <div style={{fontSize:'10px',color:'#4a7ab5',lineHeight:1.9}}>
-              ⚙ Create / reconcile Pods, Services, PVCs<br/>
-              ⚙ Manage Sharding topology changes<br/>
-              ⚙ roleProbe: exec <code style={{color:'#56d4dd'}}>/tools/dbctl redis getrole</code> in redis-cluster container<br/>
-              ⚙ Scale shards in/out (rebalance slots)<br/>
-              ⚙ Manage SystemAccount Secrets
-            </div>
-          </div>
-        </div>
 
         {/* Legend */}
         <div className="legend">
@@ -483,7 +339,6 @@ export default function RedisClusterArchitectureDiagram() {
           <div className="legend-item"><span className="legend-dot" style={{background:'#f0883e'}}></span>Shard Primary</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#8b949e'}}></span>Shard Replica</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#56d4dd'}}></span>Gossip / Cluster Bus</div>
-          <div className="legend-item"><span className="legend-dot" style={{background:'#f85149'}}></span>Failover Path</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#e3b341'}}></span>Hash Slots</div>
         </div>
 

@@ -31,10 +31,6 @@ export default function MysqlMGRArchitectureDiagram() {
         .mysql-mgr-diagram .data-plane {
           flex: 1; display: flex; flex-direction: column; gap: 0;
         }
-        .mysql-mgr-diagram .mgmt-sidebar {
-          width: 260px; flex-shrink: 0;
-          display: flex; flex-direction: column; gap: 12px; padding-top: 4px;
-        }
         .mysql-mgr-diagram .client-mini {
           border-radius: 12px; border: 1px solid #30363d;
           background: #161b22; padding: 12px 16px;
@@ -147,54 +143,6 @@ export default function MysqlMGRArchitectureDiagram() {
         .mysql-mgr-diagram .gr-bar-desc {
           font-size: 10px; color: #7d8590;
         }
-
-        /* Sidebar cards */
-        .mysql-mgr-diagram .sb-card {
-          border-radius: 10px; border: 1px solid #30363d;
-          background: #161b22; padding: 14px;
-        }
-        .mysql-mgr-diagram .sb-title {
-          font-size: 10px; font-weight: 700; letter-spacing: 1px;
-          text-transform: uppercase; margin-bottom: 10px;
-        }
-        .mysql-mgr-diagram .step {
-          display: flex; align-items: flex-start; gap: 8px;
-          font-size: 10px; color: #8b949e; line-height: 1.5; margin-bottom: 6px;
-        }
-        .mysql-mgr-diagram .step-num {
-          display: inline-flex; align-items: center; justify-content: center;
-          width: 16px; height: 16px; border-radius: 50%;
-          background: #21262d; color: #f0f6fc;
-          font-size: 9px; font-weight: 700; flex-shrink: 0; margin-top: 1px;
-        }
-        .mysql-mgr-diagram .info-row {
-          display: flex; align-items: flex-start; gap: 6px;
-          font-size: 10px; color: #8b949e; line-height: 1.5; margin-bottom: 5px;
-        }
-        .mysql-mgr-diagram .info-key {
-          color: #f0f6fc; font-weight: 600; min-width: 72px; flex-shrink: 0;
-        }
-
-        /* CRD chain */
-        .mysql-mgr-diagram .crd-section {
-          border-radius: 10px; border: 1px solid #30363d;
-          background: #161b22; padding: 14px;
-        }
-        .mysql-mgr-diagram .crd-chain {
-          display: flex; flex-direction: column; gap: 6px; margin-top: 8px;
-        }
-        .mysql-mgr-diagram .crd-row {
-          display: flex; align-items: center; gap: 6px;
-        }
-        .mysql-mgr-diagram .crd-chip {
-          font-size: 10px; font-weight: 700; padding: 3px 8px;
-          border-radius: 5px; white-space: nowrap;
-        }
-        .mysql-mgr-diagram .crd-chip.cluster     { background: #1a2a0a; color: #7ee787; border: 1px solid #2ea04344; }
-        .mysql-mgr-diagram .crd-chip.component   { background: #0d1f38; color: #79c0ff; border: 1px solid #1f6feb44; }
-        .mysql-mgr-diagram .crd-chip.instanceset { background: #1a0d2e; color: #c084fc; border: 1px solid #6e40c944; }
-        .mysql-mgr-diagram .crd-chip.pod         { background: #1c1400; color: #e3b341; border: 1px solid #e3b34144; }
-        .mysql-mgr-diagram .crd-arrow { color: #484f58; font-size: 12px; }
 
         /* Legend */
         .mysql-mgr-diagram .legend {
@@ -368,73 +316,6 @@ export default function MysqlMGRArchitectureDiagram() {
             </div>
           </div>
 
-          {/* RIGHT: sidebar */}
-          <div className="mgmt-sidebar">
-            {/* Group Replication card */}
-            <div className="sb-card">
-              <div className="sb-title" style={{color:'#56d4dd'}}>⟳ Group Replication</div>
-              <div className="info-row">
-                <span className="info-key">Mode:</span>
-                <span>Single-primary (default) — one PRIMARY accepts writes, secondaries replicate</span>
-              </div>
-              <div className="info-row">
-                <span className="info-key">Protocol:</span>
-                <span>Paxos-based GCS on port :33061 — ensures at-least-once delivery and consistent ordering</span>
-              </div>
-              <div className="info-row">
-                <span className="info-key">Certification:</span>
-                <span>Each transaction broadcast for conflict detection before commit</span>
-              </div>
-              <div className="info-row">
-                <span className="info-key">Quorum:</span>
-                <span>3-member group tolerates 1 failure; 5-member tolerates 2</span>
-              </div>
-            </div>
-
-            {/* Failover card */}
-            <div className="sb-card">
-              <div className="sb-title" style={{color:'#f85149'}}>⚡ Automatic Failover</div>
-              <div className="step"><span className="step-num">1</span>Primary pod becomes unreachable — group communication times out</div>
-              <div className="step"><span className="step-num">2</span>Remaining members detect expulsion via GCS</div>
-              <div className="step"><span className="step-num">3</span>Group elects a new PRIMARY from certified secondaries</div>
-              <div className="step"><span className="step-num">4</span>syncer exec roleProbe detects new PRIMARY → updates kubeblocks.io/role label</div>
-              <div className="step"><span className="step-num">5</span>ClusterIP service endpoints switch to new primary automatically</div>
-            </div>
-
-            {/* CRD chain */}
-            <div className="crd-section">
-              <div className="sb-title" style={{color:'#8b949e'}}>📦 Resource Hierarchy</div>
-              <div className="crd-chain">
-                <div className="crd-row">
-                  <div className="crd-chip cluster">Cluster</div>
-                </div>
-                <div className="crd-row" style={{paddingLeft:'12px'}}>
-                  <span className="crd-arrow">↓</span>
-                  <div className="crd-chip component">Component (mysql)</div>
-                </div>
-                <div className="crd-row" style={{paddingLeft:'24px'}}>
-                  <span className="crd-arrow">↓</span>
-                  <div className="crd-chip instanceset">InstanceSet</div>
-                </div>
-                <div className="crd-row" style={{paddingLeft:'36px'}}>
-                  <span className="crd-arrow">↓</span>
-                  <div className="crd-chip pod">Pod × 3 (or N)</div>
-                </div>
-              </div>
-              <div style={{fontSize:'10px',color:'#484f58',marginTop:'8px'}}>
-                Same hierarchy as semisync — the difference is the replication protocol inside each pod.
-              </div>
-            </div>
-
-            {/* Port reference */}
-            <div className="sb-card">
-              <div className="sb-title" style={{color:'#8b949e'}}>🔌 Port Reference</div>
-              <div className="info-row"><span className="info-key">:3306</span><span>MySQL client connections</span></div>
-              <div className="info-row"><span className="info-key" style={{color:'#56d4dd'}}>:33061</span><span>Group Replication communication (GCS)</span></div>
-              <div className="info-row"><span className="info-key">syncerctl</span><span>roleProbe — exec inside mysql container</span></div>
-              <div className="info-row"><span className="info-key">:9104</span><span>Prometheus mysqld_exporter</span></div>
-            </div>
-          </div>
         </div>
 
         {/* Legend */}

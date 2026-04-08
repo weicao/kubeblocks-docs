@@ -17,8 +17,6 @@ export default function QdrantArchitectureDiagram() {
         .qdrant-ha-diagram .dot-blue   { background: #388bfd; }
         .qdrant-ha-diagram .dot-green  { background: #3fb950; }
         .qdrant-ha-diagram .dot-purple { background: #a371f7; }
-        .qdrant-ha-diagram .dot-orange { background: #e3b341; }
-        .qdrant-ha-diagram .dot-teal   { background: #56d4dd; }
         .qdrant-ha-diagram .dot-red    { background: #f85149; }
         .qdrant-ha-diagram .card-title {
           font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
@@ -30,10 +28,6 @@ export default function QdrantArchitectureDiagram() {
         }
         .qdrant-ha-diagram .data-plane {
           flex: 1; display: flex; flex-direction: column; gap: 0;
-        }
-        .qdrant-ha-diagram .mgmt-sidebar {
-          width: 260px; flex-shrink: 0;
-          display: flex; flex-direction: column; gap: 12px; padding-top: 4px;
         }
         .qdrant-ha-diagram .client-mini {
           border-radius: 12px; border: 1px solid #30363d;
@@ -128,49 +122,7 @@ export default function QdrantArchitectureDiagram() {
           padding: 7px; border-radius: 8px; background: #0a1a14;
           border: 1px solid #238636; margin-top: 10px; font-size: 11px; color: #3fb950;
         }
-        .qdrant-ha-diagram .sidebar-card { border-radius: 10px; border: 1px solid; padding: 12px 14px; }
-        .qdrant-ha-diagram .dcs-card { border-color: #1b7c83; background: #0a1e20; }
-        .qdrant-ha-diagram .dcs-items { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
-        .qdrant-ha-diagram .dcs-item {
-          padding: 5px 9px; border-radius: 6px; border: 1px solid #1b7c8355;
-          background: #061515; font-size: 10px; color: #56d4dd; line-height: 1.5;
-        }
-        .qdrant-ha-diagram .dcs-item span { color: #7d8590; }
-        .qdrant-ha-diagram .failover-card { border-color: #da3633; background: #1c0a0a; }
-        .qdrant-ha-diagram .failover-steps { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
-        .qdrant-ha-diagram .step { display: flex; align-items: flex-start; gap: 7px; font-size: 10px; color: #cdd9e5; line-height: 1.5; }
-        .qdrant-ha-diagram .step-num {
-          width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0;
-          background: #da363322; border: 1px solid #da363388;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 9px; font-weight: 700; color: #f85149; margin-top: 1px;
-        }
-        .qdrant-ha-diagram .accounts-card { border-color: #d2992244; background: #1a1505; }
-        .qdrant-ha-diagram .accounts-grid { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
-        .qdrant-ha-diagram .acc-chip {
-          padding: 3px 8px; border-radius: 5px;
-          border: 1px solid #d2992233; background: #0d0d00; font-size: 10px; color: #e3b341;
-        }
-        .qdrant-ha-diagram .acc-chip span { color: #484f58; font-size: 9px; display: block; }
-        .qdrant-ha-diagram .operator-block {
-          flex: 1; border-radius: 12px; border: 1px solid #1f6feb;
-          background: #0d1f38; padding: 16px 20px;
-        }
-        .qdrant-ha-diagram .operator-controllers { display: flex; gap: 8px; margin-top: 8px; }
-        .qdrant-ha-diagram .ctrl-chip {
-          flex: 1; padding: 8px 10px; border-radius: 8px; border: 1px solid #1f6feb44;
-          background: #0a1628; font-size: 11px; color: #79c0ff; text-align: center;
-        }
-        .qdrant-ha-diagram .ctrl-chip .ctrl-name { font-weight: 700; font-size: 12px; display: block; margin-bottom: 2px; }
-        .qdrant-ha-diagram .ctrl-chip .ctrl-sub { font-size: 10px; color: #4a7ab5; }
-        .qdrant-ha-diagram .crd-chain { display: flex; align-items: center; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
-        .qdrant-ha-diagram .crd-chip { padding: 4px 10px; border-radius: 20px; border: 1px solid; font-size: 11px; font-weight: 600; white-space: nowrap; }
-        .qdrant-ha-diagram .crd-chip.cluster     { border-color: #a371f7; color: #d2a8ff; background: #2d1f5e; }
-        .qdrant-ha-diagram .crd-chip.component   { border-color: #79c0ff; color: #79c0ff; background: #1a3050; }
-        .qdrant-ha-diagram .crd-chip.instanceset { border-color: #7ee787; color: #7ee787; background: #1a3020; }
-        .qdrant-ha-diagram .crd-chip.pod         { border-color: #e3b341; color: #e3b341; background: #302010; }
-        .qdrant-ha-diagram .crd-arrow { color: #484f58; font-size: 14px; }
-        .qdrant-ha-diagram .legend {
+                .qdrant-ha-diagram .legend {
           display: flex; gap: 18px; flex-wrap: wrap; justify-content: center;
           padding-top: 8px; border-top: 1px solid #21262d; margin-top: 16px;
         }
@@ -310,118 +262,7 @@ export default function QdrantArchitectureDiagram() {
 
           </div>{/* /data-plane */}
 
-          {/* RIGHT SIDEBAR */}
-          <div className="mgmt-sidebar">
-
-            {/* HA Mechanism */}
-            <div className="sidebar-card dcs-card">
-              <div className="card-title" style={{color:'#56d4dd',fontSize:'10px'}}>
-                <span className="dot dot-teal"></span>
-                Raft Shard Consensus
-              </div>
-              <div className="dcs-items">
-                <div className="dcs-item">
-                  <span>ConfigMap</span> {'{scope}'}-config<br/>
-                  cluster peer addresses · consensus config
-                </div>
-                <div className="dcs-item">
-                  <span>Raft consensus</span><br/>
-                  per-shard leader election · peer synchronization
-                </div>
-                <div className="dcs-item">
-                  <span>Secret</span> account-*<br/>
-                  API key credentials
-                </div>
-              </div>
-            </div>
-
-            {/* Failover */}
-            <div className="sidebar-card failover-card">
-              <div className="card-title" style={{color:'#f85149',fontSize:'10px'}}>
-                <span className="dot dot-red"></span>
-                Failover Process
-              </div>
-              <div className="failover-steps">
-                <div className="step"><span className="step-num">1</span>Pod/shard leader crashes</div>
-                <div className="step"><span className="step-num">2</span>Raft election timeout (≈10s)</div>
-                <div className="step"><span className="step-num">3</span>Replica initiates election for affected shard</div>
-                <div className="step"><span className="step-num">4</span>New shard leader elected</div>
-                <div className="step"><span className="step-num">5</span>Readiness probe (curl /cluster + consensus check) confirms node rejoined</div>
-                <div className="step"><span className="step-num">6</span>Traffic redistributed to healthy nodes</div>
-              </div>
-            </div>
-
-            {/* System Accounts */}
-            <div className="sidebar-card accounts-card">
-              <div className="card-title" style={{color:'#e3b341',fontSize:'10px'}}>
-                <span className="dot dot-orange"></span>
-                System Accounts
-              </div>
-              <div className="accounts-grid">
-                <div className="acc-chip">api-key<span>main API key</span></div>
-                <div className="acc-chip">read-only-key<span>read-only access</span></div>
-                <div className="acc-chip">kbdataprotection<span>backup</span></div>
-              </div>
-            </div>
-
-          </div>{/* /sidebar */}
         </div>{/* /main-area */}
-
-        {/* ══ SEPARATOR ══ */}
-        <div style={{display:'flex',alignItems:'center',gap:'12px',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginTop:'4px'}}>
-          <div style={{flex:1,height:'1px',background:'#21262d'}}></div>
-          <span style={{color:'#484f58'}}>Management Plane · KubeBlocks Operator</span>
-          <div style={{flex:1,height:'1px',background:'#21262d'}}></div>
-        </div>
-
-        {/* ══ BOTTOM: Operator ══ */}
-        <div style={{display:'flex',gap:'16px',alignItems:'stretch',marginTop:'4px'}}>
-          <div className="operator-block">
-            <div className="card-title" style={{color:'#79c0ff'}}>
-              <span className="dot dot-blue"></span>
-              KubeBlocks Operator
-              <span style={{fontSize:'10px',fontWeight:400,color:'#4a7ab5',letterSpacing:0}}>· watches &amp; reconciles CRDs, drives creation and reconciliation of all above resources</span>
-            </div>
-            <div className="operator-controllers">
-              <div className="ctrl-chip">
-                <span className="ctrl-name">Apps Controller</span>
-                <span className="ctrl-sub">Cluster / Component</span>
-              </div>
-              <div className="ctrl-chip">
-                <span className="ctrl-name">Workloads Controller</span>
-                <span className="ctrl-sub">InstanceSet → Pods</span>
-              </div>
-              <div className="ctrl-chip">
-                <span className="ctrl-name">Ops Controller</span>
-                <span className="ctrl-sub">Switchover / Scale</span>
-              </div>
-            </div>
-            <div style={{marginTop:'10px'}}>
-              <div style={{fontSize:'10px',color:'#484f58',marginBottom:'6px',letterSpacing:'1px'}}>CRD RESOURCE HIERARCHY</div>
-              <div className="crd-chain">
-                <div className="crd-chip cluster">Cluster</div>
-                <span className="crd-arrow">→</span>
-                <div className="crd-chip component">Component</div>
-                <span className="crd-arrow">→</span>
-                <div className="crd-chip instanceset">InstanceSet</div>
-                <span className="crd-arrow">→</span>
-                <div className="crd-chip pod">Pod × 3</div>
-              </div>
-            </div>
-          </div>
-
-          <div style={{width:'220px',flexShrink:0,borderRadius:'12px',border:'1px solid #1f6feb33',background:'#0a1628',padding:'14px 16px',display:'flex',flexDirection:'column',justifyContent:'center',gap:'6px'}}>
-            <div style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.5px',textTransform:'uppercase',color:'#4a7ab5',marginBottom:'2px'}}>Operator Responsibilities</div>
-            <div style={{fontSize:'10px',color:'#4a7ab5',lineHeight:1.9}}>
-              ⚙ Create / reconcile Pods, Services, PVCs<br/>
-              ⚙ Readiness: curl /cluster · verify Raft consensus<br/>
-              ⚙ Restart failed pods; inject peer FQDN list on startup<br/>
-              ⚙ Execute scale ops (add/remove peer via Raft)<br/>
-              ⚙ Manage SystemAccount Secrets (API key)
-            </div>
-          </div>
-        </div>
-
         {/* Legend */}
         <div className="legend">
           <div className="legend-item"><span className="legend-dot" style={{background:'#388bfd'}}></span>KubeBlocks Operator (control plane)</div>
@@ -429,7 +270,6 @@ export default function QdrantArchitectureDiagram() {
           <div className="legend-item"><span className="legend-dot" style={{background:'#3fb950'}}></span>Leader / RW Traffic</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#79c0ff'}}></span>Replica Pod</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#56d4dd'}}></span>Raft Consensus</div>
-          <div className="legend-item"><span className="legend-dot" style={{background:'#f85149'}}></span>Failover Path</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#e3b341'}}></span>Persistent Storage</div>
         </div>
 

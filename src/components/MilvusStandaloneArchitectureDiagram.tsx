@@ -17,7 +17,6 @@ export default function MilvusStandaloneArchitectureDiagram() {
         .milvus-sa-diagram .dot-blue   { background: #388bfd; }
         .milvus-sa-diagram .dot-purple { background: #a371f7; }
         .milvus-sa-diagram .dot-teal   { background: #56d4dd; }
-        .milvus-sa-diagram .dot-orange { background: #e3b341; }
         .milvus-sa-diagram .card-title {
           font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
           text-transform: uppercase; margin-bottom: 10px;
@@ -25,10 +24,6 @@ export default function MilvusStandaloneArchitectureDiagram() {
         }
         .milvus-sa-diagram .main-area { display: flex; gap: 20px; align-items: flex-start; }
         .milvus-sa-diagram .center-col { flex: 1; display: flex; flex-direction: column; gap: 0; }
-        .milvus-sa-diagram .right-sidebar {
-          width: 240px; flex-shrink: 0;
-          display: flex; flex-direction: column; gap: 12px;
-        }
 
         /* Client */
         .milvus-sa-diagram .client-box {
@@ -127,34 +122,7 @@ export default function MilvusStandaloneArchitectureDiagram() {
           font-size: 9px; color: #7d8590;
         }
 
-        /* Sidebar */
-        .milvus-sa-diagram .sidebar-card { border-radius: 10px; border: 1px solid; padding: 12px 14px; }
-        .milvus-sa-diagram .note-card { border-color: #e3b34144; background: #1a1505; }
-        .milvus-sa-diagram .note-items { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
-        .milvus-sa-diagram .note-item {
-          padding: 5px 8px; border-radius: 5px; border: 1px solid #e3b34133;
-          background: #0d0900; font-size: 10px; color: #e3b341; line-height: 1.5;
-        }
-        .milvus-sa-diagram .note-item span { color: #7d8590; }
-        .milvus-sa-diagram .ha-card { border-color: #da363344; background: #1c0a0a; }
-        .milvus-sa-diagram .ha-items { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
-        .milvus-sa-diagram .ha-item {
-          padding: 5px 8px; border-radius: 5px; border: 1px solid #da363322;
-          background: #0d0505; font-size: 10px; color: #f85149; line-height: 1.5;
-        }
-
         /* Operator */
-        .milvus-sa-diagram .operator-block {
-          flex: 1; border-radius: 12px; border: 1px solid #1f6feb;
-          background: #0d1f38; padding: 14px 18px;
-        }
-        .milvus-sa-diagram .crd-chain { display: flex; align-items: center; gap: 5px; margin-top: 8px; flex-wrap: wrap; }
-        .milvus-sa-diagram .crd-chip { padding: 3px 9px; border-radius: 20px; border: 1px solid; font-size: 10px; font-weight: 600; white-space: nowrap; }
-        .milvus-sa-diagram .crd-chip.cluster     { border-color:#a371f7; color:#d2a8ff; background:#2d1f5e; }
-        .milvus-sa-diagram .crd-chip.component   { border-color:#56d4dd; color:#56d4dd; background:#061515; }
-        .milvus-sa-diagram .crd-chip.instanceset { border-color:#7ee787; color:#7ee787; background:#1a3020; }
-        .milvus-sa-diagram .crd-chip.pod         { border-color:#e3b341; color:#e3b341; background:#302010; }
-        .milvus-sa-diagram .crd-arrow { color: #484f58; font-size: 12px; }
         .milvus-sa-diagram .legend {
           display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
           padding-top: 8px; border-top: 1px solid #21262d; margin-top: 16px;
@@ -283,96 +251,13 @@ export default function MilvusStandaloneArchitectureDiagram() {
 
           </div>{/* /center-col */}
 
-          {/* RIGHT SIDEBAR */}
-          <div className="right-sidebar">
-
-            <div className="sidebar-card note-card">
-              <div className="card-title" style={{color:'#e3b341',fontSize:'10px'}}>
-                <span className="dot dot-orange"></span>
-                Standalone Characteristics
-              </div>
-              <div className="note-items">
-                <div className="note-item">
-                  <span>Deployment:</span><br/>3 Components in 1 Cluster (etcd + minio + milvus)
-                </div>
-                <div className="note-item">
-                  <span>Process model:</span><br/>All Milvus roles run in a single process — no inter-pod RPC
-                </div>
-                <div className="note-item">
-                  <span>Scalability:</span><br/>Not horizontally scalable — scale up by increasing pod resources
-                </div>
-                <div className="note-item">
-                  <span>Use case:</span><br/>Development, testing, demos, small vector datasets
-                </div>
-              </div>
-            </div>
-
-            <div className="sidebar-card ha-card">
-              <div className="card-title" style={{color:'#f85149',fontSize:'10px'}}>
-                <span className="dot" style={{background:'#f85149'}}></span>
-                HA Limitations
-              </div>
-              <div className="ha-items">
-                <div className="ha-item">Single Milvus pod = single point of failure</div>
-                <div className="ha-item">No automatic failover for the milvus process</div>
-                <div className="ha-item">KubeBlocks restarts the pod on crash (pod-level recovery only)</div>
-                <div className="ha-item">etcd and minio are also single replicas by default</div>
-              </div>
-              <div style={{marginTop:'8px',padding:'5px 8px',borderRadius:'5px',background:'#120d2a',border:'1px solid #a371f733',fontSize:'10px',color:'#d2a8ff',lineHeight:1.6}}>
-                For production HA, use the <strong>Distributed</strong> topology instead.
-              </div>
-            </div>
-
-          </div>
         </div>{/* /main-area */}
-
-        {/* Separator */}
-        <div style={{display:'flex',alignItems:'center',gap:'12px',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginTop:'4px'}}>
-          <div style={{flex:1,height:'1px',background:'#21262d'}}></div>
-          <span style={{color:'#484f58'}}>Management Plane · KubeBlocks Operator</span>
-          <div style={{flex:1,height:'1px',background:'#21262d'}}></div>
-        </div>
-
-        {/* Operator */}
-        <div style={{display:'flex',gap:'16px',alignItems:'stretch',marginTop:'4px'}}>
-          <div className="operator-block">
-            <div className="card-title" style={{color:'#79c0ff'}}>
-              <span className="dot dot-blue"></span>
-              KubeBlocks Operator
-              <span style={{fontSize:'10px',fontWeight:400,color:'#4a7ab5',letterSpacing:0}}>· provisions etcd → minio → milvus in order; manages lifecycle of all 3 Components</span>
-            </div>
-            <div style={{marginTop:'8px',fontSize:'10px',color:'#484f58',marginBottom:'4px',letterSpacing:'1px'}}>CRD RESOURCE HIERARCHY (same for all 3 components)</div>
-            <div className="crd-chain">
-              <div className="crd-chip cluster">Cluster</div>
-              <span className="crd-arrow">→</span>
-              <div className="crd-chip component">Component (etcd)</div>
-              <span className="crd-arrow">+</span>
-              <div className="crd-chip component">Component (minio)</div>
-              <span className="crd-arrow">+</span>
-              <div className="crd-chip component">Component (milvus)</div>
-              <span className="crd-arrow">→</span>
-              <div className="crd-chip instanceset">InstanceSet</div>
-              <span className="crd-arrow">→</span>
-              <div className="crd-chip pod">Pod × 1</div>
-            </div>
-          </div>
-          <div style={{width:'200px',flexShrink:0,borderRadius:'12px',border:'1px solid #1f6feb33',background:'#0a1628',padding:'14px 16px',display:'flex',flexDirection:'column',justifyContent:'center',gap:'6px'}}>
-            <div style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.5px',textTransform:'uppercase',color:'#4a7ab5',marginBottom:'2px'}}>Provisioning Order</div>
-            <div style={{fontSize:'10px',color:'#4a7ab5',lineHeight:1.9}}>
-              ① etcd provisions first<br/>
-              ② minio provisions<br/>
-              ③ milvus provisions last<br/>
-              &nbsp;&nbsp;&nbsp;(reads etcd + minio config)
-            </div>
-          </div>
-        </div>
 
         <div className="legend">
           <div className="legend-item"><span className="legend-dot" style={{background:'#388bfd'}}></span>KubeBlocks Operator</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#a371f7'}}></span>Milvus (all-in-one)</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#56d4dd'}}></span>Storage Components (etcd / MinIO)</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#e3b341'}}></span>Persistent Storage</div>
-          <div className="legend-item"><span className="legend-dot" style={{background:'#f85149'}}></span>Single Point of Failure</div>
         </div>
 
       </div>

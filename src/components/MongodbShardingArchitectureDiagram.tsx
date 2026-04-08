@@ -29,10 +29,6 @@ export default function MongodbShardingArchitectureDiagram() {
         /* Layout */
         .mdb-shard-diagram .main-area { display: flex; gap: 16px; align-items: flex-start; }
         .mdb-shard-diagram .data-plane { flex: 1; display: flex; flex-direction: column; gap: 0; }
-        .mdb-shard-diagram .mgmt-sidebar {
-          width: 256px; flex-shrink: 0;
-          display: flex; flex-direction: column; gap: 12px; padding-top: 4px;
-        }
 
         /* Client */
         .mdb-shard-diagram .client-box {
@@ -150,46 +146,6 @@ export default function MongodbShardingArchitectureDiagram() {
         }
         .mdb-shard-diagram .container-name { color: #e6edf3; font-weight: 600; }
         .mdb-shard-diagram .container-port { color: #7d8590; margin-left: auto; }
-
-        /* Sidebar */
-        .mdb-shard-diagram .sidebar-card { border-radius: 10px; border: 1px solid; padding: 12px 14px; }
-        .mdb-shard-diagram .routing-card { border-color: #a371f744; background: #120d2a; }
-        .mdb-shard-diagram .failover-card { border-color: #da363344; background: #1c0a0a; }
-        .mdb-shard-diagram .failover-steps { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
-        .mdb-shard-diagram .step { display: flex; align-items: flex-start; gap: 6px; font-size: 10px; color: #cdd9e5; line-height: 1.5; }
-        .mdb-shard-diagram .step-num {
-          width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0;
-          background: #da363322; border: 1px solid #da363388;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 9px; font-weight: 700; color: #f85149; margin-top: 1px;
-        }
-        .mdb-shard-diagram .routing-items { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
-        .mdb-shard-diagram .routing-item {
-          padding: 5px 8px; border-radius: 6px; border: 1px solid #a371f733;
-          background: #0d0820; font-size: 10px; color: #d2a8ff; line-height: 1.5;
-        }
-        .mdb-shard-diagram .routing-item span { color: #7d8590; }
-
-        /* Operator */
-        .mdb-shard-diagram .operator-block {
-          flex: 1; border-radius: 12px; border: 1px solid #1f6feb;
-          background: #0d1f38; padding: 16px 20px;
-        }
-        .mdb-shard-diagram .operator-controllers { display: flex; gap: 8px; margin-top: 8px; }
-        .mdb-shard-diagram .ctrl-chip {
-          flex: 1; padding: 8px 10px; border-radius: 8px; border: 1px solid #1f6feb44;
-          background: #0a1628; font-size: 11px; color: #79c0ff; text-align: center;
-        }
-        .mdb-shard-diagram .ctrl-chip .ctrl-name { font-weight: 700; font-size: 12px; display: block; margin-bottom: 2px; }
-        .mdb-shard-diagram .ctrl-chip .ctrl-sub { font-size: 10px; color: #4a7ab5; }
-        .mdb-shard-diagram .crd-chain { display: flex; align-items: center; gap: 5px; margin-top: 10px; flex-wrap: wrap; }
-        .mdb-shard-diagram .crd-chip { padding: 3px 9px; border-radius: 20px; border: 1px solid; font-size: 10px; font-weight: 600; white-space: nowrap; }
-        .mdb-shard-diagram .crd-chip.cluster     { border-color:#a371f7; color:#d2a8ff; background:#2d1f5e; }
-        .mdb-shard-diagram .crd-chip.component   { border-color:#56d4dd; color:#56d4dd; background:#061515; }
-        .mdb-shard-diagram .crd-chip.sharding    { border-color:#3fb950; color:#7ee787; background:#1a3020; }
-        .mdb-shard-diagram .crd-chip.shard       { border-color:#e3b341; color:#e3b341; background:#302010; }
-        .mdb-shard-diagram .crd-chip.instanceset { border-color:#79c0ff; color:#79c0ff; background:#0d2035; }
-        .mdb-shard-diagram .crd-arrow { color: #484f58; font-size: 12px; }
 
         /* Legend */
         .mdb-shard-diagram .legend {
@@ -363,115 +319,7 @@ export default function MongodbShardingArchitectureDiagram() {
 
           </div>{/* /data-plane */}
 
-          {/* RIGHT SIDEBAR */}
-          <div className="mgmt-sidebar">
-
-            {/* Routing */}
-            <div className="sidebar-card routing-card">
-              <div className="card-title" style={{color:'#d2a8ff',fontSize:'10px'}}>
-                <span className="dot dot-purple"></span>
-                How Mongos Routes Queries
-              </div>
-              <div className="routing-items">
-                <div className="routing-item">
-                  <span>1. Client sends query</span><br/>to any mongos instance on :27017
-                </div>
-                <div className="routing-item">
-                  <span>2. Mongos reads chunk map</span><br/>from config server CSRS
-                </div>
-                <div className="routing-item">
-                  <span>3. Shard key hashed</span><br/>→ determines target shard
-                </div>
-                <div className="routing-item">
-                  <span>4. Mongos forwards</span><br/>to that shard&apos;s primary
-                </div>
-                <div className="routing-item">
-                  <span>5. Result merged</span><br/>(for scatter-gather queries, all shards queried)
-                </div>
-              </div>
-            </div>
-
-            {/* Failover */}
-            <div className="sidebar-card failover-card">
-              <div className="card-title" style={{color:'#f85149',fontSize:'10px'}}>
-                <span className="dot dot-red"></span>
-                Failover (per shard)
-              </div>
-              <div className="failover-steps">
-                <div className="step"><span className="step-num">1</span>Shard primary pod fails</div>
-                <div className="step"><span className="step-num">2</span>Shard replica set election (≈10 s)</div>
-                <div className="step"><span className="step-num">3</span>Secondary with latest oplog elected</div>
-                <div className="step"><span className="step-num">4</span><code style={{color:'#3fb950'}}>role=primary</code> label updated</div>
-                <div className="step"><span className="step-num">5</span>Mongos retries on new primary</div>
-              </div>
-              <div style={{marginTop:'8px',padding:'5px 8px',borderRadius:'5px',background:'#0d0820',border:'1px solid #a371f733',fontSize:'10px',color:'#7d8590',lineHeight:1.6}}>
-                Config server failover follows the same replica set election process independently.
-              </div>
-            </div>
-
-          </div>
         </div>{/* /main-area */}
-
-        {/* Separator */}
-        <div style={{display:'flex',alignItems:'center',gap:'12px',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginTop:'4px'}}>
-          <div style={{flex:1,height:'1px',background:'#21262d'}}></div>
-          <span style={{color:'#484f58'}}>Management Plane · KubeBlocks Operator</span>
-          <div style={{flex:1,height:'1px',background:'#21262d'}}></div>
-        </div>
-
-        {/* Operator */}
-        <div style={{display:'flex',gap:'16px',alignItems:'stretch',marginTop:'4px'}}>
-          <div className="operator-block">
-            <div className="card-title" style={{color:'#79c0ff'}}>
-              <span className="dot dot-blue"></span>
-              KubeBlocks Operator
-              <span style={{fontSize:'10px',fontWeight:400,color:'#4a7ab5',letterSpacing:0}}>· manages Sharding + Component resources independently; orchestrates provisioning order</span>
-            </div>
-            <div className="operator-controllers">
-              <div className="ctrl-chip">
-                <span className="ctrl-name">Apps Controller</span>
-                <span className="ctrl-sub">Cluster / Component</span>
-              </div>
-              <div className="ctrl-chip">
-                <span className="ctrl-name">Workloads Controller</span>
-                <span className="ctrl-sub">InstanceSet → Pods</span>
-              </div>
-              <div className="ctrl-chip">
-                <span className="ctrl-name">Sharding Controller</span>
-                <span className="ctrl-sub">Shard scale in/out</span>
-              </div>
-            </div>
-            <div style={{marginTop:'10px'}}>
-              <div style={{fontSize:'10px',color:'#484f58',marginBottom:'6px',letterSpacing:'1px'}}>CRD RESOURCE HIERARCHY</div>
-              <div className="crd-chain">
-                <div className="crd-chip cluster">Cluster</div>
-                <span className="crd-arrow">→</span>
-                <div className="crd-chip component">Component (mongos)</div>
-                <span className="crd-arrow">+</span>
-                <div className="crd-chip component">Component (config-server)</div>
-                <span className="crd-arrow">+</span>
-                <div className="crd-chip sharding">Sharding (shard)</div>
-                <span className="crd-arrow">→</span>
-                <div className="crd-chip shard">Shard × N</div>
-                <span className="crd-arrow">→</span>
-                <div className="crd-chip instanceset">InstanceSet</div>
-                <span className="crd-arrow">→</span>
-                <div className="crd-chip pod">Pod × replicas</div>
-              </div>
-            </div>
-          </div>
-          <div style={{width:'220px',flexShrink:0,borderRadius:'12px',border:'1px solid #1f6feb33',background:'#0a1628',padding:'14px 16px',display:'flex',flexDirection:'column',justifyContent:'center',gap:'6px'}}>
-            <div style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.5px',textTransform:'uppercase',color:'#4a7ab5',marginBottom:'2px'}}>Startup Dependencies</div>
-            <div style={{fontSize:'10px',color:'#4a7ab5',lineHeight:1.9}}>
-              ① config-server (CSRS) must be ready<br/>
-              ② shards register with CSRS<br/>
-              ③ mongos requires reachable CSRS<br/>
-              &nbsp;&nbsp;&nbsp;before routing queries<br/>
-              ⚙ Scale shards: add/remove shard,<br/>
-              &nbsp;&nbsp;&nbsp;KubeBlocks migrates chunks
-            </div>
-          </div>
-        </div>
 
         {/* Legend */}
         <div className="legend">
@@ -480,7 +328,6 @@ export default function MongodbShardingArchitectureDiagram() {
           <div className="legend-item"><span className="legend-dot" style={{background:'#56d4dd'}}></span>Config Server (CSRS)</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#3fb950'}}></span>Shard Primary</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#8b949e'}}></span>Shard Secondary</div>
-          <div className="legend-item"><span className="legend-dot" style={{background:'#f85149'}}></span>Failover Path</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#e3b341'}}></span>Persistent Storage</div>
         </div>
 
