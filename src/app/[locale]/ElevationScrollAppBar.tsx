@@ -265,7 +265,7 @@ function MoreSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
         </Typography>
         <Divider />
         <List dense>
-          <ListItemButton component="a" href="https://kubeblocks.io/contact" target="_blank" rel="noopener noreferrer" onClick={onClose} sx={{ py: 1.5 }}>
+          <ListItemButton component="a" href="https://kubeblocks.com/products/kubeblocks-enterprise" target="_blank" rel="noopener noreferrer" onClick={onClose} sx={{ py: 1.5 }}>
             <ListItemText primary="Enterprise" />
             <LaunchOutlined fontSize="small" sx={{ opacity: 0.6 }} />
           </ListItemButton>
