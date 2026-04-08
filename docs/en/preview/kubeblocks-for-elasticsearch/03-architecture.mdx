@@ -41,18 +41,32 @@ Every Elasticsearch pod runs three main containers (plus three init containers o
 
 Each pod mounts its own **PVC** for the Elasticsearch data directory (`/usr/share/elasticsearch/data`), providing independent persistent storage per node.
 
-## Node Roles
+## Node roles (Elasticsearch)
 
-Elasticsearch supports multiple node roles, and KubeBlocks maps each role to a dedicated Component:
+Elasticsearch nodes are configured with **roles** (master-eligible, data, ingest, coordinating, etc.). The sections below describe what each role means for **capacity and HA**.
 
-| Node Role | Responsibility |
+| Node role | Responsibility |
 |-----------|----------------|
 | **Master-eligible** | Participates in leader election; manages cluster state, index mappings, and shard allocation |
 | **Data** | Stores shard data; handles indexing and search requests for its assigned shards |
 | **Ingest** | Pre-processes documents before indexing via ingest pipelines |
 | **Coordinating** (optional) | Routes client requests to the appropriate data nodes and aggregates results |
 
-In smaller deployments, a single node type can hold all roles. For production, dedicated master, data, and ingest components improve stability and resource isolation.
+In smaller deployments, one process can hold several roles. In production, splitting roles across nodes improves stability.
+
+## Topologies and component names (ClusterDefinition)
+
+In the **kubeblocks-addons** Elasticsearch chart, **`spec.topology`** selects a layout. KubeBlocks creates **one Component per entry** in that topology; component **names** are short labels (`master`, `dit`, `mdit`, …), while the **Elasticsearch role set** is defined inside the image/config for each layout.
+
+| Topology (`spec.topology`) | Components created | Notes |
+|---------------------------|-------------------|--------|
+| `single-node` | `mdit` | Single-node layout |
+| `multi-node` (chart default) | `master`, `dit` | Split layout: dedicated `master` Component plus `dit` Component for the remaining node group |
+| `m-dit` | `master`, `dit` | Same component names as `multi-node`; chart distinguishes layouts for ordering/defaults |
+| `mdit` | `mdit` | Combined multi-role naming under one component |
+| `m-d-i-t` | `m`, `d`, `i`, `t` | Dedicated components per role family (master / data / ingest / coordinating) |
+
+Service names look like `{cluster}-{component}-http` — the **`{component}`** segment is the KubeBlocks Component name above (for example `mdit`, `master`, `dit`), not the long English phrase “master-eligible”. Use your Cluster’s `status` or `kubectl get component -n <ns>` to see the exact names for a running cluster.
 
 ## High Availability via Cluster Coordination
 

@@ -114,6 +114,18 @@ Only the `proxy` container exposes port 19530 (gRPC) for client traffic. All com
 | **Segment redundancy** | Sealed segments persist in MinIO; a restarted QueryNode reloads them from object storage without data loss |
 | **MixCoord recovery** | MixCoord is stateless against etcd — it reloads all coordinator state from etcd on restart |
 
+### MixCoord Recovery
+
+MixCoord is the only single-replica component in the Distributed topology. When it crashes, KubeBlocks automatically recovers it without data loss:
+
+1. **MixCoord pod crashes** — coordinator functions (DDL, segment lifecycle, query assignments, index scheduling) are temporarily unavailable
+2. **KubeBlocks InstanceSet detects the pod failure** and schedules a restart
+3. **New MixCoord pod starts** and reloads all coordinator state from etcd — no data is lost because MixCoord is fully stateless against etcd
+4. **Worker nodes reconnect** — QueryNode, DataNode, and IndexNode pods reconnect to the restored MixCoord and resume their assigned work
+5. **Cluster resumes serving requests** through the Proxy
+
+Worker nodes (QueryNode, DataNode, IndexNode) run multiple replicas and tolerate individual pod failures without coordinator involvement — KubeBlocks restarts the failed pod, and MixCoord reassigns its work to healthy replicas.
+
 ### Traffic Routing
 
 | Service | Type | Port | Selector |
@@ -121,3 +133,13 @@ Only the `proxy` container exposes port 19530 (gRPC) for client traffic. All com
 | `{cluster}-proxy` | ClusterIP | 19530 (gRPC), 9091 (metrics/health) | proxy pods |
 
 Client applications (Milvus SDK) connect to the proxy on port 19530 (gRPC). Port 9091 is the metrics/health endpoint — it is not a client-facing REST API. The proxy is the single entry point — it handles authentication, routing, and result aggregation across worker components.
+
+## System Accounts
+
+In the Milvus add-on, only the **in-cluster MinIO object-storage** Component (ComponentDefinition `milvus-minio`) declares KubeBlocks **`systemAccounts`**. Other Milvus stack components in this add-on (for example **etcd**, **milvus**, **proxy**, **mixcoord**, DataNode, QueryNode, IndexNode) do **not** define `systemAccounts` in their ComponentDefinitions. If you use an external object store instead of the bundled MinIO, this managed account does not apply to that store.
+
+For the bundled MinIO component (typically named **`minio`** in `componentSpecs`, for example in standalone topology), KubeBlocks creates one account. Passwords are auto-generated unless overridden at the Cluster level. Credentials are stored in a Secret named **`{cluster}-minio-account-admin`** when the component name is `minio` (substitute your Cluster `metadata.name` and the MinIO component’s `name`).
+
+| Account | Component (typical name) | Role | Purpose |
+|---------|--------------------------|------|---------|
+| `admin` | `minio` | Object store admin | MinIO root credentials; injected into MinIO pods as `MINIO_ACCESS_KEY` and `MINIO_SECRET_KEY` for S3-compatible access to buckets used by Milvus |

@@ -8,19 +8,41 @@ sidebar_label: Architecture
 
 import RedisArchitectureDiagram from '@/components/RedisArchitectureDiagram';
 import RedisClusterArchitectureDiagram from '@/components/RedisClusterArchitectureDiagram';
+import RedisStandaloneArchitectureDiagram from '@/components/RedisStandaloneArchitectureDiagram';
 
 # Redis Architecture in KubeBlocks
 
-KubeBlocks supports two distinct Redis architectures that serve different use cases:
+The Redis **ClusterDefinition** exposes three patterns. They differ by topology name and whether **Redis Sentinel** is deployed:
 
-| Architecture | Topology name | Use Case |
-|---|---|---|
-| **Sentinel** | `replication` (also: `standalone`, `replication-twemproxy`) | Single-shard HA; simple client compatibility; datasets that fit on one node |
-| **Redis Cluster** | `cluster` | Horizontal write/read scaling; datasets too large for a single node; high-throughput workloads |
+| Pattern | Topology name | Components | HA / failover |
+|---|---|---|---|
+| **Standalone** | `standalone` | `redis` only | No Sentinel; **no** automatic primary failover |
+| **Sentinel (primary + replicas)** | `replication`, `replication-twemproxy` | `redis` + `redis-sentinel` | Sentinel quorum monitors the primary and drives failover |
+| **Redis Cluster (sharded)** | `cluster` | Sharding (`shard`) | Gossip on the cluster bus; **no** Sentinel processes |
 
 ---
 
-## Sentinel Architecture
+## Standalone architecture
+
+Use **`topology: standalone`** when you want a **single Redis Component** and do **not** provision Sentinel.
+
+<RedisStandaloneArchitectureDiagram />
+
+```
+Cluster  →  Component (redis)  →  InstanceSet  →  Pod × N
+```
+
+- There is **no** `redis-sentinel` Component and **no** Sentinel quorum — the monitoring and failover flow in the [Sentinel architecture](#sentinel-architecture) section does **not** apply.
+- Pod layout (Redis server + metrics sidecar, PVC per data pod) matches the **Redis data pods** description under Sentinel below.
+- For HA with automatic failover on a single shard, use **`replication`** (or **`replication-twemproxy`** with Twemproxy), not `standalone`.
+
+---
+
+## Sentinel architecture
+
+:::note
+Everything in this section applies to **`replication`** and **`replication-twemproxy`** only. It does **not** apply to **`standalone`** (no Sentinel) or **`cluster`** (Redis Cluster / gossip, no Sentinel).
+:::
 
 Redis Sentinel uses a dedicated set of Sentinel processes to monitor the Redis primary, detect failures, and coordinate automatic failover. All data lives on a single primary; replicas serve as hot standbys and optional read targets.
 
@@ -188,7 +210,7 @@ For external access, per-pod NodePort or LoadBalancer services (`redis-advertise
 
 ## System Accounts
 
-KubeBlocks manages the following Redis account for both architectures. The password is auto-generated and stored in a Secret named `{cluster}-{component}-account-default`.
+KubeBlocks manages the following Redis account for all topology patterns on this page (`standalone`, Sentinel, and Redis Cluster). The password is auto-generated and stored in a Secret named `{cluster}-{component}-account-default`.
 
 | Account | Role | Purpose |
 |---------|------|---------|
