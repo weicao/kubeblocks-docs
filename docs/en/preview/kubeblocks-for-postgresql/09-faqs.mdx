@@ -1,7 +1,7 @@
 ---
 title: FAQs
-description: FAQs of PostgreSQL
-keywords: [KubeBlocks, PostgreSQL, Kubernetes Operator]
+description: Frequently asked questions about running PostgreSQL with KubeBlocks, covering HA, replication, connection pooling, and common operational issues.
+keywords: [KubeBlocks, PostgreSQL, FAQ, Patroni, pgbouncer, replication, failover]
 sidebar_position: 9
 sidebar_label: FAQs
 ---
@@ -30,9 +30,10 @@ spec:
     - name: postgresql
       serviceVersion: "16.4.0"
       env:
-      - name: DCS_ENABLE_KUBERNETES_API  # unset this env if you use zookeeper or etcd, default to empty
+      - name: DCS_ENABLE_KUBERNETES_API
+        value: "" # disable Kubernetes API DCS; required when using etcd or ZooKeeper with Patroni/Spilo
       - name: ETCD3_HOST
-        value: 'etcd-cluster-etcd-headless.demo.svc.cluster.local:2379' # where is your etcd?
+        value: 'etcd-cluster-etcd-headless.demo.svc.cluster.local:2379' # Spilo/Patroni etcd v3 endpoint(s); adjust to your etcd Service
       # - name: ZOOKEEPER_HOSTS
       #   value: 'myzk-zookeeper-0.myzk-zookeeper-headless.demo.svc.cluster.local:2181' # where is your zookeeper?
       replicas: 2
@@ -55,10 +56,12 @@ spec:
 ```
 
 The key fields are:
-- `DCS_ENABLE_KUBERNETES_API`: Unset this env to use ETCD or ZooKeeper as DCS
-- `ETCD3_HOST`: The host of ETCD cluster
+- `DCS_ENABLE_KUBERNETES_API`: Set to `""` (empty string) so Patroni does **not** use the Kubernetes API as DCS
+- `ETCD3_HOST` or `ETCD3_HOSTS`: Etcd endpoint(s) for Spilo/Patroni when using etcd as DCS
 
-You can also use ZooKeeper as DCS by unsetting `DCS_ENABLE_KUBERNETES_API` and  setting `ZOOKEEPER_HOSTS` to the host of ZooKeeper cluster.
+**Preferred on KubeBlocks:** declare a **`serviceRefs`** entry named **`etcd`** on the `postgresql` component that points at your etcd Cluster. The PostgreSQL `ComponentDefinition` maps that to **`PATRONI_DCS_ETCD_SERVICE_ENDPOINT`**, which the startup script uses to switch off Kubernetes DCS and configure etcd (see the `postgresql` addon `cmpd.yaml`). The env-only snippet above is the same pattern as `examples/postgresql/cluster-with-etcd.yaml` in `kubeblocks-addons`.
+
+You can also use ZooKeeper as DCS by setting `DCS_ENABLE_KUBERNETES_API` to `""` and setting `ZOOKEEPER_HOSTS` to your ZooKeeper endpoints (per Spilo [environment variables](https://github.com/zalando/spilo/blob/master/ENVIRONMENT.rst)).
 
 KubeBlocks has ETCD and ZooKeeper Addons in the `kubeblocks-addons` repository. You can refer to the following links for more details.
 - https://github.com/apecloud/kubeblocks-addons/tree/main/examples/etcd
@@ -86,7 +89,9 @@ kubectl exec -it <pod-name> -n <namespace> -- df -h /home/postgres/pgdata/pgroot
 
 You can adjust PostgreSQL's built-in log filename pattern and log verbosity settings by modifying the cluster configuration.
 
-For example, you can set the log filename pattern to `postgresql-%u.log` to limit the number of log files to 7 days:
+The addon's shipped `postgresql.conf` templates (`addons/postgresql/config/pg*-config.tpl`) set **`log_directory = 'log'`** (relative to PGDATA under `/home/postgres/pgdata/pgroot/data`) and **`log_filename = 'postgresql-%u.log'`** by default. The `%` sequences follow PostgreSQL's **strftime(3)-style** rules; **`%u`** is the ISO-8601 weekday (1–7, Monday = 1), so filenames cycle within a week—not the same as “keep 7 calendar days” of daily-dated files.
+
+For example, to switch to **one log file per calendar day**:
 
 ```yaml
 apiVersion: operations.kubeblocks.io/v1alpha1
@@ -100,13 +105,13 @@ spec:
   - componentName: postgresql
     parameters:
       - key: log_filename
-        value: "'postgresql-%u.log'" # supports strftime specification, default value is 'postgresql-%Y-%m-%d.log'
+        value: "'postgresql-%Y-%m-%d.log'"
       - key: log_statement
         value: "'none'" # none, ddl, mod, all
   type: Reconfiguring
 ```
 
-- `log_filename`: Pattern for log filenames (supports `strftime` specification, default value is 'postgresql-%Y-%m-%d.log')
+- `log_filename`: Filename pattern; see the [PostgreSQL documentation](https://www.postgresql.org/docs/current/runtime-config-logging.html#GUC-LOG-FILENAME) for allowed `%` escapes.
 - `log_statement`: Controls which SQL statements are logged (none, ddl, mod, all)
 
 :::caution 
@@ -118,7 +123,7 @@ syntax error in file "/home/postgres/conf/postgresql.conf" line 113, near token 
 :::
 
 :::note
-Changes to `log_filename` may require a server restart to take effect.
+In this addon, `log_filename` is a **static** parameter (see `addons/postgresql/config/pg*-config-effect-scope.yaml`), so changing it requires an **instance restart**, not only a configuration reload.
 :::
 
 ### Option 2. Clean up old logs manually
@@ -188,3 +193,81 @@ spec:
             symbolCharacters: '!' # set the allowed symbols when generating password
 # other fields in the Cluster manifest are omitted for brevity
 ```
+
+## 4. How to check replication lag on standby replicas
+
+Pick the correct pods: the **standby** runs `pg_last_xact_replay_timestamp()`; **`pg_stat_replication`** exists only on the **primary**. Patroni may place the primary on any ordinal (e.g. `postgresql-0` or `postgresql-1`)—use `kubectl get pods -n <namespace> -l app.kubernetes.io/instance=<cluster> --show-labels` and the `kubeblocks.io/role` (or Patroni role) labels instead of assuming pod indexes.
+
+Connect to a standby pod and query the replication status:
+
+```bash
+kubectl exec -it pg-cluster-postgresql-1 -n demo -- \
+  env PGUSER=kbadmin PGPASSWORD=<password> PGDATABASE=postgres \
+  psql -c "SELECT now() - pg_last_xact_replay_timestamp() AS replication_lag;"
+```
+
+From the primary, check all connected standbys:
+
+```bash
+kubectl exec -it pg-cluster-postgresql-0 -n demo -- \
+  env PGUSER=kbadmin PGPASSWORD=<password> PGDATABASE=postgres \
+  psql -c "SELECT client_addr, state, sent_lsn, write_lsn, flush_lsn, replay_lsn,
+                  (sent_lsn - replay_lsn) AS lag_bytes
+           FROM pg_stat_replication;"
+```
+
+A `NULL` result for `pg_last_xact_replay_timestamp()` means no WAL has been replayed yet — the replica may still be catching up from a base backup.
+
+## 5. How to connect to a read replica directly
+
+The default ClusterIP service (`{cluster}-postgresql-postgresql`) always routes to the **primary** pod via `roleSelector`. To send queries to a specific replica, connect through the headless service using the pod's stable DNS name:
+
+```
+{pod-name}.{cluster}-postgresql-headless.{namespace}.svc.cluster.local:5432
+```
+
+For example, to connect to `pg-cluster-postgresql-1` in namespace `demo`:
+
+```bash
+kubectl exec -it pg-cluster-postgresql-0 -n demo -- \
+  env PGUSER=kbadmin PGPASSWORD=<password> PGDATABASE=postgres \
+  psql -h pg-cluster-postgresql-1.pg-cluster-postgresql-headless.demo.svc.cluster.local
+```
+
+:::note
+Hot standbys accept only read-only transactions; writes fail with `ERROR: cannot execute ... in a read-only transaction`. Behavior matches standard PostgreSQL recovery / `hot_standby` semantics.
+:::
+
+## 6. What triggers automatic failover, and does it require manual intervention?
+
+Failover is fully automatic and requires no manual intervention. The sequence is:
+
+1. The primary pod stops sending Patroni heartbeats (process crash, OOM kill, node failure, or network partition).
+2. Patroni's leader lease in DCS expires — **duration depends on Patroni / `bootstrap.dcs` settings** (often tens of seconds; verify in your config).
+3. A replica acquires leadership through Patroni (with the Kubernetes API DCS, coordination uses the Patroni **scope** resources).
+4. KubeBlocks detects the role change via the **`roleProbe`** on the **`dbctl`** sidecar (HTTP `GET /v1.0/getrole` on port **5001**, see the PostgreSQL addon `cmpd.yaml`) and updates the `kubeblocks.io/role` pod label.
+5. The ClusterIP service's `Endpoints` automatically switch to the new primary.
+
+Total failover time is typically **on the order of one to two TTL/probe cycles**, depending on Patroni and your environment.
+
+For a **planned switchover** (e.g., before maintenance), use the [Switchover](./04-operations/08-switchover) operation, which performs a graceful demotion with zero data loss.
+
+## 7. pgbouncer connection pooling
+
+Each pod runs a per-pod `pgbouncer` instance on port **6432**. The addon template sets **`pool_mode = session`** by default (see `addons/postgresql/config/pgbouncer-ini.tpl`); it proxies connections to the local pod's PostgreSQL instance (not to the primary).
+
+**You cannot change pgbouncer with a `Reconfiguring` OpsRequest.** `Reconfiguring` only applies to PostgreSQL parameters in `postgresql.conf`. `pgbouncer.ini` is supplied from a separate config template in the addon and is not part of that mechanism.
+
+That is a **real gap today**: pool sizing and other pgbouncer knobs are **not** first-class tunables on the Cluster after deployment. The shipped `pgbouncer-ini.tpl` does not set **`default_pool_size`**, so PgBouncer's built-in default (**20** connections per database/user pair) applies unless you **customize the addon** (template / chart) or manage the generated config through your own operational process.
+
+Built-in template defaults (reference):
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `pool_mode` | **session** | Pooling granularity in the shipped template (`session`, `transaction`, or `statement` if you change the template). |
+| `max_client_conn` | Template-derived | In `pgbouncer-ini.tpl`: if PostgreSQL container memory is visible, `min(memory_bytes / 9531392, 5000)` (integer division, cap **5000**); otherwise **10000**. |
+| `default_pool_size` | **20** (PgBouncer default) | Not set in the addon template; not adjustable via `Reconfiguring`. |
+
+:::note
+`pgbouncer` is bundled on each PostgreSQL pod in this addon and cannot be disabled via a single flag. Because it proxies to the **local pod**, steering read/write traffic to the **current primary** is handled by the ClusterIP service's `roleSelector`, not by pgbouncer.
+:::
