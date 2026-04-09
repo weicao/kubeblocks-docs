@@ -254,7 +254,6 @@ export default function MilvusStandaloneArchitectureDiagram() {
         </div>{/* /main-area */}
 
         <div className="legend">
-          <div className="legend-item"><span className="legend-dot" style={{background:'#388bfd'}}></span>KubeBlocks Operator</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#a371f7'}}></span>Milvus (all-in-one)</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#56d4dd'}}></span>Storage Components (etcd / MinIO)</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#e3b341'}}></span>Persistent Storage</div>

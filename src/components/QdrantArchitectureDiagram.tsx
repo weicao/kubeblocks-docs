@@ -94,14 +94,12 @@ export default function QdrantArchitectureDiagram() {
           padding: 9px 12px; display: flex; align-items: center; justify-content: space-between;
           border-bottom: 1px solid #21262d;
         }
-        .qdrant-ha-diagram .pod-leader .pod-header { background: linear-gradient(135deg,#0d2510,#1a3820); border-bottom-color: #238636; }
         .qdrant-ha-diagram .pod-replica .pod-header { background: linear-gradient(135deg,#0d1f38,#162840); border-bottom-color: #1f6feb; }
         .qdrant-ha-diagram .pod-name { font-size: 11px; font-weight: 700; color: #f0f6fc; }
         .qdrant-ha-diagram .pod-badge {
           font-size: 9px; font-weight: 700; letter-spacing: 1px;
           text-transform: uppercase; padding: 2px 7px; border-radius: 10px;
         }
-        .qdrant-ha-diagram .badge-leader  { background: #1a4a1a; color: #3fb950; border: 1px solid #238636; }
         .qdrant-ha-diagram .badge-replica { background: #0d2035; color: #79c0ff; border: 1px solid #1f6feb; }
         .qdrant-ha-diagram .containers { padding: 8px; display: flex; flex-direction: column; gap: 4px; }
         .qdrant-ha-diagram .container-row {
@@ -191,16 +189,20 @@ export default function QdrantArchitectureDiagram() {
             {/* Pods */}
             <div className="pods-section">
               <div className="section-label">Pods · Worker Nodes</div>
+              <div style={{ fontSize: '9px', color: '#7d8590', marginBottom: '10px', lineHeight: 1.65 }}>
+                <strong style={{ color: '#8b949e' }}>Per-shard Raft, not one cluster leader.</strong> Each collection shard elects its own
+                replica leader; a node may host many shards. Badges mark symmetric peers (illustrative pod names only).
+              </div>
               <div className="pods-grid">
 
-                {/* qdrant-0 LEADER */}
-                <div className="pod-card pod-leader">
+                {/* qdrant-0 */}
+                <div className="pod-card pod-replica">
                   <div className="pod-header">
                     <span className="pod-name">qdrant-0</span>
-                    <span className="pod-badge badge-leader">LEADER</span>
+                    <span className="pod-badge badge-replica">PEER</span>
                   </div>
                   <div className="containers">
-                    <div className="container-row" style={{borderColor:'#23863644',background:'#081208'}}>
+                    <div className="container-row" style={{borderColor:'#1f6feb44',background:'#080d18'}}>
                       <span className="container-icon">🎯</span>
                       <div className="container-info">
                         <div className="container-name">qdrant</div>
@@ -211,11 +213,11 @@ export default function QdrantArchitectureDiagram() {
                   <div className="pvc-row">💾 PVC <strong style={{color:'#e3b341'}}>data-0</strong> · 20Gi</div>
                 </div>
 
-                {/* qdrant-1 REPLICA */}
+                {/* qdrant-1 */}
                 <div className="pod-card pod-replica">
                   <div className="pod-header">
                     <span className="pod-name">qdrant-1</span>
-                    <span className="pod-badge badge-replica">REPLICA</span>
+                    <span className="pod-badge badge-replica">PEER</span>
                   </div>
                   <div className="containers">
                     <div className="container-row" style={{borderColor:'#1f6feb44',background:'#080d18'}}>
@@ -229,11 +231,11 @@ export default function QdrantArchitectureDiagram() {
                   <div className="pvc-row">💾 PVC <strong style={{color:'#e3b341'}}>data-1</strong> · 20Gi</div>
                 </div>
 
-                {/* qdrant-2 REPLICA */}
+                {/* qdrant-2 */}
                 <div className="pod-card pod-replica">
                   <div className="pod-header">
                     <span className="pod-name">qdrant-2</span>
-                    <span className="pod-badge badge-replica">REPLICA</span>
+                    <span className="pod-badge badge-replica">PEER</span>
                   </div>
                   <div className="containers">
                     <div className="container-row" style={{borderColor:'#1f6feb44',background:'#080d18'}}>
@@ -265,11 +267,8 @@ export default function QdrantArchitectureDiagram() {
         </div>{/* /main-area */}
         {/* Legend */}
         <div className="legend">
-          <div className="legend-item"><span className="legend-dot" style={{background:'#388bfd'}}></span>KubeBlocks Operator (control plane)</div>
-          <div className="legend-item"><span className="legend-dot" style={{background:'#a371f7'}}></span>CRD Resource</div>
-          <div className="legend-item"><span className="legend-dot" style={{background:'#3fb950'}}></span>Leader / RW Traffic</div>
-          <div className="legend-item"><span className="legend-dot" style={{background:'#79c0ff'}}></span>Replica Pod</div>
-          <div className="legend-item"><span className="legend-dot" style={{background:'#56d4dd'}}></span>Raft Consensus</div>
+          <div className="legend-item"><span className="legend-dot" style={{background:'#79c0ff'}}></span>Peer node</div>
+          <div className="legend-item"><span className="legend-dot" style={{background:'#56d4dd'}}></span>Raft (per shard)</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#e3b341'}}></span>Persistent Storage</div>
         </div>
 

@@ -334,8 +334,6 @@ export default function RedisClusterArchitectureDiagram() {
 
         {/* Legend */}
         <div className="legend">
-          <div className="legend-item"><span className="legend-dot" style={{background:'#388bfd'}}></span>KubeBlocks Operator (control plane)</div>
-          <div className="legend-item"><span className="legend-dot" style={{background:'#a371f7'}}></span>CRD Resource</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#f0883e'}}></span>Shard Primary</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#8b949e'}}></span>Shard Replica</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#56d4dd'}}></span>Gossip / Cluster Bus</div>

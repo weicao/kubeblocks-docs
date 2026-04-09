@@ -295,8 +295,6 @@ export default function ZookeeperArchitectureDiagram() {
         </div>{/* /main-area */}
         {/* Legend */}
         <div className="legend">
-          <div className="legend-item"><span className="legend-dot" style={{background:'#388bfd'}}></span>KubeBlocks Operator (control plane)</div>
-          <div className="legend-item"><span className="legend-dot" style={{background:'#a371f7'}}></span>CRD Resource</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#3fb950'}}></span>Leader / Client Traffic</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#79c0ff'}}></span>Follower Pod</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#e3b341'}}></span>Persistent Storage</div>
