@@ -155,21 +155,12 @@ FROM metrics
 GROUP BY bucket, device
 ORDER BY bucket DESC;
 
--- Create a continuous aggregate for real-time rollups
-CREATE MATERIALIZED VIEW metrics_hourly
-WITH (timescaledb.continuous) AS
-SELECT time_bucket('1 hour', time) AS bucket,
-       device,
-       avg(value) AS avg_value
-FROM metrics
-GROUP BY bucket, device;
-
--- Set a data retention policy (keep last 30 days)
-SELECT add_retention_policy('metrics', INTERVAL '30 days');
 ```
 
 :::note
 Available on PG12–PG18. TimescaleDB appears in `shared_preload_libraries` in this addon’s templates, but you still run **`CREATE EXTENSION timescaledb`** once per database so TimescaleDB’s SQL objects are installed there.
+
+The bundled TimescaleDB runs under the **Apache license** (`timescaledb.license = ‘apache’`). Continuous aggregates (`CREATE MATERIALIZED VIEW ... WITH (timescaledb.continuous)`) and data retention policies (`add_retention_policy`) require the Timescale license and are **not available** in the bundled version.
 :::
 
 ## pg_duckdb — Analytics
@@ -217,11 +208,11 @@ CREATE TABLE user_segments (
   user_ids     roaringbitmap
 );
 
--- Build segments from a users table
-INSERT INTO user_segments (segment_name, user_ids)
-SELECT 'active', rb_build_agg(user_id)
-FROM users
-WHERE last_login > NOW() - INTERVAL '30 days';
+-- Build segment bitmaps directly from integer user IDs
+INSERT INTO user_segments VALUES
+  ('active',  rb_build(ARRAY[1, 3, 5, 7, 9])),
+  ('female',  rb_build(ARRAY[1, 3, 5])),
+  ('beijing', rb_build(ARRAY[1, 3, 7]));
 
 -- Audience intersection: active female users in Beijing
 SELECT rb_cardinality(
@@ -232,7 +223,7 @@ SELECT rb_cardinality(
       (SELECT user_ids FROM user_segments WHERE segment_name = 'beijing')
     )
   )
-) AS audience_size;
+) AS audience_size;  -- result: 2 (user IDs 1 and 3)
 ```
 
 :::note
@@ -393,7 +384,17 @@ Available on PG12–PG18. pg_partman works with both time-based and integer-base
 **pglogical** implements logical replication at the table level, independent of PostgreSQL's built-in streaming replication. Key uses: selective table replication, cross-major-version migration (e.g., PG14 → PG17), and bidirectional replication topologies.
 
 :::caution Prerequisite: add pglogical to shared_preload_libraries
-`pglogical` is **not** preloaded by default. You must add it to `shared_preload_libraries` via a `Reconfiguring` OpsRequest and restart before `CREATE EXTENSION` will succeed:
+`pglogical` is **not** preloaded by default. You must add it to `shared_preload_libraries` via a `Reconfiguring` OpsRequest and restart before `CREATE EXTENSION` will succeed.
+
+`shared_preload_libraries` is a **full-replacement** parameter — you must include all existing values or they will be lost. First check the current value:
+
+```bash
+kubectl exec -it <pod-name> -n <namespace> -- \
+  env PGUSER=kbadmin PGPASSWORD=<password> PGDATABASE=postgres \
+  psql -c "SHOW shared_preload_libraries;"
+```
+
+Then submit a `Reconfiguring` OpsRequest with the full list appended with `pglogical`:
 
 ```yaml
 apiVersion: operations.kubeblocks.io/v1alpha1
@@ -407,11 +408,12 @@ spec:
   - componentName: postgresql
     parameters:
       - key: shared_preload_libraries
-        value: "'pg_stat_statements,pg_cron,timescaledb,pgaudit,pglogical'"
+        # Paste the full current value from SHOW above, then append ,pglogical
+        value: "'pg_stat_statements,auto_explain,bg_mon,pgextwlist,pg_auth_mon,set_user,pg_cron,pg_stat_kcache,timescaledb,pgaudit,pg_duckdb,pglogical'"
   type: Reconfiguring
 ```
 
-`shared_preload_libraries` is a static parameter; the cluster will restart automatically.
+The cluster will restart automatically after the OpsRequest is applied.
 :::
 
 ```sql
