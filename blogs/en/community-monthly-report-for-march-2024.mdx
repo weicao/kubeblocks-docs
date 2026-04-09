@@ -11,7 +11,7 @@ image: /img/blogs/thumbnails/blog-2024-03-monthly-report.png
 
 ## Overview
 
-In March, KubeBlocks officially released v0.8.2. This update notably included the support for Redis Cluster, camellia-redis-proxy, and compatibility with Pulsar v3.0.2. Furthermore, the development team has been actively working on the upcoming v0.9.0.
+In March, KubeBlocks officially released v0.8.2. This update notably included the support for [Redis](/docs/preview/kubeblocks-for-redis) Cluster, camellia-redis-proxy, and compatibility with Pulsar v3.0.2. Furthermore, the development team has been actively working on the upcoming v0.9.0.
 
 Over the past month, the community has merged 91 PRs and resolved 92 issues. A total of 19 community members participated in these contributions, including 6 new contributors.
 
@@ -22,7 +22,7 @@ So far, a total of 1607 GitHub users have starred KubeBlocks. We do appreciate y
 - Supported Redis Cluster.
 - Supported Sharding topology for Cluster APIs, so that users could define shard numbers and component specs with ShardingSpec.
 - Supported camellia-redis-proxy. It is currently running on K8s v1.14, and allows configuring external Redis instances, including those outside the K8s cluster.
-- Supported high-availability access from an external K8s cluster for MongoDB Replicaset addresses.
+- Supported high-availability access from an external K8s cluster for [MongoDB](/docs/preview/kubeblocks-for-mongodb) Replicaset addresses.
 - Supported Pulsar v3.0.2.
 - Supported exposing nodeport addresses for each Pulsar broker.
 - Supported IPv4/IPv6 dual stack for StarRocks. Both private and public addresses could use IPv4 and IPv6. However, IPv6 support in the StarRocks kernel was still required.
@@ -57,3 +57,10 @@ Related links:
 Feel free to join the GitHub Discussion or the [KubeBlocks Slack group](https://join.slack.com/t/kubeblocks/shared_invite/zt-29tx52d8n-vli24S6gtD5ODJlNUqLqbQ)!
 
 ![2024-03-overview](/img/blogs/2024-03-overview.jpg)
+
+## Related
+
+- [KubeBlocks for MySQL — Operations Guide](/docs/preview/kubeblocks-for-mysql)
+- [KubeBlocks for PostgreSQL — Operations Guide](/docs/preview/kubeblocks-for-postgresql)
+- [KubeBlocks for Redis — Operations Guide](/docs/preview/kubeblocks-for-redis)
+- [KubeBlocks User Documentation](/docs/preview/user_docs)

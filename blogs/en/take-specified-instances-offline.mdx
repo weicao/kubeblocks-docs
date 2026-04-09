@@ -22,7 +22,7 @@ Before v0.9.0, KubeBlocks generated workloads as ***StatefulSets***, which was a
 
 One of these limitations is evident in horizontal scaling scenarios, where ***StatefulSets*** offload Pods sequentially based on the *Ordinal* order, potentially impacting the availability of databases running within.
 
-For example, managing a PostgreSQL database with one primary and two secondary replicas using a ***StatefulSet*** named `foo-bar`. And Pod `foo-bar-2` is selected as the primary node. Now, if we decide to scale in this database cluster due to low read load, according to ***StatefulSet*** rules, we can only offload Pod `foo-bar-2`, which is currently the primary node. In this way, we can either directly offload `foo-bar-2`, triggering a failover mechanism to elect a new primary pod from `foo-bar-0` and `foo-bar-1`, or use a switchover mechanism to convert `foo-bar-2` into a secondary pod before offloading it. Either way, there will be a period where write is not applicable.
+For example, managing a [PostgreSQL](/docs/preview/kubeblocks-for-postgresql) database with one primary and two secondary replicas using a ***StatefulSet*** named `foo-bar`. And Pod `foo-bar-2` is selected as the primary node. Now, if we decide to scale in this database cluster due to low read load, according to ***StatefulSet*** rules, we can only offload Pod `foo-bar-2`, which is currently the primary node. In this way, we can either directly offload `foo-bar-2`, triggering a failover mechanism to elect a new primary pod from `foo-bar-0` and `foo-bar-1`, or use a switchover mechanism to convert `foo-bar-2` into a secondary pod before offloading it. Either way, there will be a period where write is not applicable.
 
 Another issue arises in the same scenario: if the node hosting `foo-bar-1` experiences a hardware failure, causing disk damage and rendering data read-write inaccessible, according to best operation practices, we need to offload `foo-bar-1` and rebuild replicas on healthy nodes. However, performing such operation tasks based on ***StatefulSets*** isn't easy.
 
@@ -101,3 +101,10 @@ In the Cluster API, both `OfflineInstances` and `Replicas` need to be modified s
 
 - [Discussions on Pod in the K8s community](https://github.com/kubernetes/kubernetes/issues/83224)
 - [The horizontal scale feature of KubeBlocks](https://kubeblocks.io/docs/release-0.9/api_docs/maintenance/scale/horizontal-scale)
+
+## Related
+
+- [InstanceSet: A New Approach to Stateful Workload Management in KubeBlocks](/blog/instanceset-introduction)
+- [Gaining Granular Pod Control in KubeBlocks with Instance Templates](/blog/configure-instance-template)
+- [KubeBlocks for PostgreSQL — Operations Guide](/docs/preview/kubeblocks-for-postgresql)
+- [KubeBlocks for Redis — Operations Guide](/docs/preview/kubeblocks-for-redis)

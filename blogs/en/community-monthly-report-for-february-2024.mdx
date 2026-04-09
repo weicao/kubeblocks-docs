@@ -18,11 +18,11 @@ In the past month, the community has merged 76 PRs and resolved 57 issues. A tot
 ## Highlights
 
 - Supported ShardingSpec API to define database clusters with sharding topology (to be released in v0.8.2).
-- Supported creating and deleting official Redis Clusters based on KubeBlocks Sharding API (to be released in v0.8.2).
+- Supported creating and deleting official [Redis](/docs/preview/kubeblocks-for-redis) Clusters based on KubeBlocks Sharding API (to be released in v0.8.2).
 - Supported Camellia Redis Proxy for one-click deployment, configuration management, horizontal scaling, restarts, and other operations (to be released in v0.8.2).
 - Supported declaring host network capabilities (#6705).
 - Supported specifying namespaces that operators should manage (#6641).
-- MongoDB supported connections from outside of K8s using host network (#6689).
+- [MongoDB](/docs/preview/kubeblocks-for-mongodb) supported connections from outside of K8s using host network (#6689).
 - Lorry supported action commands(#6474).
 - Compatible with CronJob v1beta1 to resolve backup failures when using K8s v1.20 (#6687).
 - 【External Contribution】Added version validation for Addon spec. Addon CRD supported provider and version fields, and the controller could add provider information to labels for quick querying (#6603).
@@ -33,7 +33,7 @@ In the past month, the community has merged 76 PRs and resolved 57 issues. A tot
 - Adjusted the OceanBase switchover feature to accommodate Oracle tenant mode (#6710).
 - Resolved backup and restore failures when using the host network (#6715).
 - Fixed the issue of parameter reconfiguration failures(#6664 #6665).
-- Fixed the issue of inoperative dynamic parameters. In Patroni PostgreSQL, if dynamic parameters and static parameters were modified simultaneously, the dynamic parameters did not take effect (#6648).
+- Fixed the issue of inoperative dynamic parameters. In Patroni [PostgreSQL](/docs/preview/kubeblocks-for-postgresql), if dynamic parameters and static parameters were modified simultaneously, the dynamic parameters did not take effect (#6648).
 - Removed duplicate ports generated when exposing SVC (#6631).
 - Fixed bugs related to ServiceAccount. If RestoreCR specifies a ServiceAccount, the backup and restore pods will use the specified SA (#6605).
 
@@ -57,3 +57,10 @@ Related links:
 Feel free to join the GitHub Discussion or the [KubeBlocks Slack group](https://join.slack.com/t/kubeblocks/shared_invite/zt-29tx52d8n-vli24S6gtD5ODJlNUqLqbQ)!
 
 ![2024-02-overview](/img/blogs/2024-02-overview.png)
+
+## Related
+
+- [KubeBlocks for MySQL — Operations Guide](/docs/preview/kubeblocks-for-mysql)
+- [KubeBlocks for PostgreSQL — Operations Guide](/docs/preview/kubeblocks-for-postgresql)
+- [KubeBlocks for Redis — Operations Guide](/docs/preview/kubeblocks-for-redis)
+- [KubeBlocks User Documentation](/docs/preview/user_docs)

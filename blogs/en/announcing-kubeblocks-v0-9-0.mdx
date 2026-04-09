@@ -13,7 +13,7 @@ We are thrilled to announce the release of KubeBlocks v0.9.0, which brings us on
 
 ## API Highlights
 
-- In KubeBlocks v0.9, with the introduction of topology support in KubeBlocks, the cluster building experience has become much more flexible and intuitive, akin to assembling a cluster using building blocks. The ClusterDefinition API has added the `topologies` field, allowing developers to provide various deployment patterns with different topologies. Database users can choose a topology when creating a Cluster through the `topology` field. For instance, the Redis Addon offers three topologies: Standalone, Replication, and Proxy. The Standalone topology only includes one Component - RedisServer, the Replication topology includes both RedisServer and Sentinel Components, and the Proxy topology adds a third Component, such as Twemproxy.
+- In KubeBlocks v0.9, with the introduction of topology support in KubeBlocks, the cluster building experience has become much more flexible and intuitive, akin to assembling a cluster using building blocks. The ClusterDefinition API has added the `topologies` field, allowing developers to provide various deployment patterns with different topologies. Database users can choose a topology when creating a Cluster through the `topology` field. For instance, the [Redis](/docs/preview/kubeblocks-for-redis) Addon offers three topologies: Standalone, Replication, and Proxy. The Standalone topology only includes one Component - RedisServer, the Replication topology includes both RedisServer and Sentinel Components, and the Proxy topology adds a third Component, such as Twemproxy.
 - KubeBlocks now supports managing horizontal scaling (Reshard) of distributed databases. You can represent a horizontal shard with a Component, and scale up or down this horizontal shard by adding or removing Components. This scaling capability will also be used in the distributed deployment of Redis and Pika.
 - KubeBlocks now uses InstanceSet instead of StatefulSet to manage Pods. InstanceSet supports taking a specified Pod offline and Pod in-place update, and also the primary and secondary databases can adopt different Pod specs in a database Replication architecture (StatefulSet doesn't support these features).
 - Developers can add more custom event handlers for Components! The ComponentDefinition API, introduced in v0.8, includes the `lifeCycleActions` field, allowing you to define various custom event handlers. Building on this, KubeBlocks v0.9 provides more handlers for custom addon implementation, including roleprobe (node role probing), memberLeave (node offline), preTerminate (Component offline), and postProvision (Component online). The expansion of event handlers enhances KubeBlocks' expression capabilities. For example, preTerminate and postProvision can be used to execute cross-shard data redistribution (Rebalance) in distributed databases or initiate registration to third-party HA managers like Sentinel and Orchestrator.
@@ -24,7 +24,7 @@ We are thrilled to announce the release of KubeBlocks v0.9.0, which brings us on
   
   Redis Cluster is designed to provide horizontal write scalability and intelligent client high-availability strategies, in addition to its excellent failover capability. Redis Cluster distributes data across multiple Redis nodes, significantly enhancing system capacity, performance, and availability.
 
-- KubeBlocks introduces MySQL Replication mode
+- KubeBlocks introduces [MySQL](/docs/preview/kubeblocks-for-mysql) Replication mode
   
   Compared to MGR clusters, the MySQL Replication topology requires fewer resources (only two database replicas) and incurs less overhead for data replication. When there is no extreme demands for service availability and data reliability, the Replication topology is a more cost-effective choice. You can actively switch MySQL replica roles using `kbcli` or trigger a passive failover by deleting specified Kubernetes pods via `kubectl`. If there are no long transactions and large table DDLs, the failover generally can be completed within 30 seconds.
 
@@ -64,7 +64,7 @@ We are thrilled to announce the release of KubeBlocks v0.9.0, which brings us on
 
 #### kbcli
 
-- Supports PostgreSQL point-in-time recovery.
+- Supports [PostgreSQL](/docs/preview/kubeblocks-for-postgresql) point-in-time recovery.
 - `cluster` supports the `rebuild-instance` subcommand to rebuild instances.
 - `cluster create` subcommand supports `elasticsearch`.
 - Supports specifying the path prefix when creating a backup repository.
@@ -144,3 +144,11 @@ KubeBlocks Release 0.9 still maintains the compatibility with API marked as depr
 ## Upgrade to v0.9
 
 Refer to [Upgrade to KubeBlocks v0.9](https://kubeblocks.io/docs/release-0.9/user_docs/installation/upgrade/upgrade-kubeblocks-to-0.9).
+
+## Related
+
+- [KubeBlocks for MySQL — Operations Guide](/docs/preview/kubeblocks-for-mysql)
+- [KubeBlocks for PostgreSQL — Operations Guide](/docs/preview/kubeblocks-for-postgresql)
+- [KubeBlocks for Redis — Operations Guide](/docs/preview/kubeblocks-for-redis)
+- [KubeBlocks for Kafka — Operations Guide](/docs/preview/kubeblocks-for-kafka)
+- [KubeBlocks User Documentation](/docs/preview/user_docs)

@@ -30,18 +30,18 @@ We are delighted to announce the release of KubeBlocks v1.0.2. This release incl
 ## KubeBlocks Addons
 
 
-### MySQL
+### [MySQL](/docs/preview/kubeblocks-for-mysql)
 - Support MySQL minor versions 8.0.41, 8.0.44 ([#2295](https://github.com/apecloud/kubeblocks-addons/pull/2295))
 - Fix MySQL `log_output` parameter constraint ([#2408](https://github.com/apecloud/kubeblocks-addons/pull/2408))
 - Disable jemalloc for ARM ([#2381](https://github.com/apecloud/kubeblocks-addons/pull/2381)))
 
-### PostgreSQL
+### [PostgreSQL](/docs/preview/kubeblocks-for-postgresql)
 - Support PostgreSQL 18.1 ([#2409](https://github.com/apecloud/kubeblocks-addons/pull/2409))
 - Improve PostgreSQL config constraint comment ([#2376](https://github.com/apecloud/kubeblocks-addons/pull/2376))
 - Unset `archive_timeout` immutable for PostgreSQL ([#2380](https://github.com/apecloud/kubeblocks-addons/pull/2380))
 - Set `wal_keep_size` by data disk size ([#2372](https://github.com/apecloud/kubeblocks-addons/pull/2372))
 
-### Redis
+### [Redis](/docs/preview/kubeblocks-for-redis)
 - Support 7.2.11/7.4.6/8.0.4/8.2.2 for redis CVE-2025-49844 issue ([#2123](https://github.com/apecloud/kubeblocks-addons/pull/2123))
 - Support more minor versions of Redis 7.2.12/7.4.7/8.0.5/8.2.3/8.4.0 ([#2347](https://github.com/apecloud/kubeblocks-addons/pull/2347))
 - Improve Redis `maxmemory` parameter ([#2392](https://github.com/apecloud/kubeblocks-addons/pull/2392))
@@ -51,12 +51,12 @@ We are delighted to announce the release of KubeBlocks v1.0.2. This release incl
 - Fix redis cluster restore failed ([#2404](https://github.com/apecloud/kubeblocks-addons/pull/2404))
 - Fix redis pitr no time range ([#2204](https://github.com/apecloud/kubeblocks-addons/pull/2204))
 
-### MongoDB
+### [MongoDB](/docs/preview/kubeblocks-for-mongodb)
 - Support MongoDB minor versions 8.0.17/7.0.28/6.0.27 ([#2382](https://github.com/apecloud/kubeblocks-addons/pull/2382))
 - Support MongoDB audit log ([#2111](https://github.com/apecloud/kubeblocks-addons/pull/2111))
 - Fix MongoDB backup hang ([#2387](https://github.com/apecloud/kubeblocks-addons/pull/2387))
 
-### ClickHouse
+### [ClickHouse](/docs/preview/kubeblocks-for-clickhouse)
 - Improve ClickHouse `memberjoin` ([#2431](https://github.com/apecloud/kubeblocks-addons/pull/2431))
 - Improve ClickHouse sharding restore ([#2357](https://github.com/apecloud/kubeblocks-addons/pull/2357))
 - Fix ClickHouse restore failed when specified the init cluster name ([#2429](https://github.com/apecloud/kubeblocks-addons/pull/2429))
@@ -68,7 +68,7 @@ We are delighted to announce the release of KubeBlocks v1.0.2. This release incl
 - Fix single node backup failed ([#2290](https://github.com/apecloud/kubeblocks-addons/pull/2290))
 - Fix ES render tpl compatibility ([#2411](https://github.com/apecloud/kubeblocks-addons/pull/2411))
 
-### Kafka
+### [Kafka](/docs/preview/kubeblocks-for-kafka)
 - Support Kafka 3.7/3.8/3.9 ([#2174](https://github.com/apecloud/kubeblocks-addons/pull/2174))
 - Support custom SASL ([#2259](https://github.com/apecloud/kubeblocks-addons/pull/2259))
 - Support Kafka backup topics ([#2260](https://github.com/apecloud/kubeblocks-addons/pull/2260))
@@ -154,3 +154,11 @@ Refer to [Upgrade to KubeBlocks v1.0.x](https://kubeblocks.io/docs/preview/user_
 
 ## Full Changelog
 You can check the [full changelog](https://github.com/apecloud/kubeblocks/compare/v1.0.1...v1.0.2) for additional changes and [kubeblocks-addons](https://github.com/apecloud/kubeblocks-addons/compare/v1.0.1...v1.0.2) for addons changes.
+
+## Related
+
+- [KubeBlocks for MySQL — Operations Guide](/docs/preview/kubeblocks-for-mysql)
+- [KubeBlocks for PostgreSQL — Operations Guide](/docs/preview/kubeblocks-for-postgresql)
+- [KubeBlocks for Redis — Operations Guide](/docs/preview/kubeblocks-for-redis)
+- [KubeBlocks for Kafka — Operations Guide](/docs/preview/kubeblocks-for-kafka)
+- [KubeBlocks User Documentation](/docs/preview/user_docs)

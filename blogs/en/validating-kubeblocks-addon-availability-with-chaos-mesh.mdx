@@ -73,7 +73,7 @@ Through declarative experiments, KubeBlocks' core high availability capabilities
 
 Taking the primary node Pod forced deletion scenario as an example:
 
-1.  **Environment Deployment:** KubeBlocks deploys the target database cluster (e.g., MySQL Cluster).
+1.  **Environment Deployment:** KubeBlocks deploys the target database cluster (e.g., [MySQL](/docs/preview/kubeblocks-for-mysql) Cluster).
 
 ![](/img/blogs/chaos-mesh/FL9lbzO1doRbSqxPAnkcs5BynKb.png)
 
@@ -145,7 +145,7 @@ kubectl logs -n kubeblocks-cloud-ns mysql-875777cc4-mysql-1 lorry
 
 ### Test Results
 
-Based on Chaos Mesh fault injection tests on various database engines managed by KubeBlocks (including MySQL, PostgreSQL, Redis, MongoDB, and SQLServer, etc.), the test results validated KubeBlocks' effectiveness in ensuring database high availability.
+Based on Chaos Mesh fault injection tests on various database engines managed by KubeBlocks (including MySQL, [PostgreSQL](/docs/preview/kubeblocks-for-postgresql), [Redis](/docs/preview/kubeblocks-for-redis), [MongoDB](/docs/preview/kubeblocks-for-mongodb), and SQLServer, etc.), the test results validated KubeBlocks' effectiveness in ensuring database high availability.
 
 | **Test Scenario** | **Test Metric** | **Test Result** |
 |---|---|---|
@@ -191,3 +191,11 @@ Through deep integration and practice of Chaos Mesh, KubeBlocks has initially es
 - [1] Introduction to Chaos Mesh: https://chaos-mesh.org/docs/
 - [2] Introduction to KubeBlocks: https://kubeblocks.io/docs/preview/user_docs/overview/introduction
 - [3] KubeBlocks v1.0.0 High Availability Test Report: https://kubeblocks.io/reports/kubeblocks/v1-0-0/TEST_REPORT_CHAOS
+
+## Related
+
+- [KubeBlocks for MySQL — Operations Guide](/docs/preview/kubeblocks-for-mysql)
+- [KubeBlocks for PostgreSQL — Operations Guide](/docs/preview/kubeblocks-for-postgresql)
+- [KubeBlocks for Redis — Operations Guide](/docs/preview/kubeblocks-for-redis)
+- [Managing Over 6,000 Self-Hosted Databases Without a DBA](/blog/manage-6k-db-instance-with-kubeblocks)
+- [Run Databases on K8s: Insights from Leading Chinese Internet Companies](/blog/run-databases-on-k8s-insights-from-leading-chinese-internet-companies)
