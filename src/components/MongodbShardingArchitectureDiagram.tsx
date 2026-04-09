@@ -323,7 +323,6 @@ export default function MongodbShardingArchitectureDiagram() {
 
         {/* Legend */}
         <div className="legend">
-          <div className="legend-item"><span className="legend-dot" style={{background:'#388bfd'}}></span>KubeBlocks Operator</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#a371f7'}}></span>Mongos (query router)</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#56d4dd'}}></span>Config Server (CSRS)</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#3fb950'}}></span>Shard Primary</div>

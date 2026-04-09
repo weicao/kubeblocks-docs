@@ -277,8 +277,6 @@ export default function MinioArchitectureDiagram() {
 
         {/* Legend */}
         <div className="legend">
-          <div className="legend-item"><span className="legend-dot" style={{background:'#388bfd'}}></span>KubeBlocks Operator (control plane)</div>
-          <div className="legend-item"><span className="legend-dot" style={{background:'#a371f7'}}></span>CRD Resource</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#3fb950'}}></span>S3 API Traffic</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#56d4dd'}}></span>Distributed Node (symmetric)</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#e3b341'}}></span>Persistent Storage</div>

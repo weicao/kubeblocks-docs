@@ -208,7 +208,6 @@ export default function KafkaCombinedArchitectureDiagram() {
         </div>{/* /main-area */}
 
         <div className="legend">
-          <div className="legend-item"><span className="legend-dot" style={{background:'#388bfd'}}></span>KubeBlocks Operator</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#3fb950'}}></span>Client Traffic (:9092)</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#c084fc'}}></span>KRaft Controller Quorum (:9093)</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#79c0ff'}}></span>Internal Replication (:9094)</div>

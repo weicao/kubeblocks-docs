@@ -299,17 +299,17 @@ export default function RedisArchitectureDiagram() {
                 <div className="sentinel-pod">
                   <div className="sentinel-pod-name">sentinel-0</div>
                   :26379 sentinel · monitors master<br/>
-                  <span style={{color:'#484f58'}}>emptyDir · conf rebuilt on restart</span>
+                  <span style={{color:'#484f58'}}>PVC <strong style={{color:'#e3b341'}}>data</strong> · Sentinel state (volume <code style={{fontSize:'9px'}}>needSnapshot: true</code>)</span>
                 </div>
                 <div className="sentinel-pod">
                   <div className="sentinel-pod-name">sentinel-1</div>
                   :26379 sentinel · monitors master<br/>
-                  <span style={{color:'#484f58'}}>emptyDir · conf rebuilt on restart</span>
+                  <span style={{color:'#484f58'}}>PVC <strong style={{color:'#e3b341'}}>data</strong> · Sentinel state (volume <code style={{fontSize:'9px'}}>needSnapshot: true</code>)</span>
                 </div>
                 <div className="sentinel-pod">
                   <div className="sentinel-pod-name">sentinel-2</div>
                   :26379 sentinel · monitors master<br/>
-                  <span style={{color:'#484f58'}}>emptyDir · conf rebuilt on restart</span>
+                  <span style={{color:'#484f58'}}>PVC <strong style={{color:'#e3b341'}}>data</strong> · Sentinel state (volume <code style={{fontSize:'9px'}}>needSnapshot: true</code>)</span>
                 </div>
               </div>
 
@@ -320,8 +320,6 @@ export default function RedisArchitectureDiagram() {
         </div>{/* /main-area */}
         {/* Legend */}
         <div className="legend">
-          <div className="legend-item"><span className="legend-dot" style={{background:'#388bfd'}}></span>KubeBlocks Operator (control plane)</div>
-          <div className="legend-item"><span className="legend-dot" style={{background:'#a371f7'}}></span>CRD Resource</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#3fb950'}}></span>Primary / RW Traffic</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#79c0ff'}}></span>Replica Pod</div>
           <div className="legend-item"><span className="legend-dot" style={{background:'#e3b341'}}></span>Persistent Storage</div>
