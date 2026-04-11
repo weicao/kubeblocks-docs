@@ -82,7 +82,7 @@ export const Evaluate = () => {
                   fontStyle: 'italic', position: 'relative', zIndex: 1, flex: 1,
                 }}
               >
-                &ldquo;Whether or not to run a database on Kubernetes is a topic that is often discussed. From my perspective, if you&apos;re already using containers and don&apos;t want to use a fully managed database service, the answer is yes… KubeBlocks is a very unique project that focuses on running multiple databases in Kubernetes. It doesn&apos;t necessarily seek to be the best solution for a particular database, but rather to be the best solution for a wide range of databases. It can be a great fit for Kubernetes users who want to migrate their databases to run on Kubernetes without wanting to lose control.&rdquo;
+                &ldquo;KubeBlocks is a very unique project that focuses on running multiple databases in Kubernetes — the best solution for a wide range of databases. It can be a great fit for Kubernetes users who want to migrate their databases to run on Kubernetes without wanting to lose control.&rdquo;
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px', mt: '24px' }}>
                 <Image
@@ -157,7 +157,7 @@ export const Evaluate = () => {
                   fontStyle: 'italic', position: 'relative', zIndex: 1, flex: 1,
                 }}
               >
-                &ldquo;The minor version of KubeBlocks has a very short release cycle and is very actively developed. I strongly believe that KubeBlocks&apos; Addon concept and documentation on how to create Addon is what makes KubeBlocks have the most contributors. KubeBlocks also provides support for AI, such as Xinference and MilvusDB, which are part of a modern large model technology stack.&rdquo;
+                &ldquo;KubeBlocks has a very short release cycle and is very actively developed. The Addon concept is what makes KubeBlocks have the most contributors — KubeBlocks also provides support for AI, such as MilvusDB, which is part of a modern large model technology stack.&rdquo;
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px', mt: '24px' }}>
                 <Image

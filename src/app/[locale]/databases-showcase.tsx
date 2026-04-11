@@ -16,7 +16,7 @@ const categories: Category[] = [
     label: 'Relational',
     items: [
       { name: 'MySQL',      href: '/mysql-operator' },
-      { name: 'PostgreSQL', href: '/docs/preview/kubeblocks-for-postgresql' },
+      { name: 'PostgreSQL', href: '/pg-operator' },
       { name: 'MariaDB',    preview: true },
       { name: 'TiDB',       preview: true },
       { name: 'OceanBase',  preview: true },

@@ -42,7 +42,7 @@ export default function DatabasesNav() {
     {
       title: 'PostgreSQL',
       icon: <PostgreSQLIcon {...iconProps} />,
-      href: '/docs/preview/kubeblocks-for-postgresql',
+      href: '/pg-operator',
     },
     {
       title: 'Redis',

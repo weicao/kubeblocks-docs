@@ -162,8 +162,8 @@ function AddonsSheet({ open, onClose }: { open: boolean; onClose: () => void }) 
     {
       name: 'Relational',
       items: [
-        { title: 'MySQL', icon: <MySQLIcon {...iconProps} />, href: '/docs/preview/kubeblocks-for-mysql' },
-        { title: 'PostgreSQL', icon: <PostgreSQLIcon {...iconProps} />, href: '/docs/preview/kubeblocks-for-postgresql' },
+        { title: 'MySQL', icon: <MySQLIcon {...iconProps} />, href: '/mysql-operator' },
+        { title: 'PostgreSQL', icon: <PostgreSQLIcon {...iconProps} />, href: '/pg-operator' },
       ],
     },
     {
@@ -314,8 +314,8 @@ function MobileBottomNav({ onOpenSearch }: { onOpenSearch: () => void }) {
         }}
       >
         <BottomNavigation value={active} onChange={handleChange} showLabels sx={{ height: BOTTOM_NAV_HEIGHT }}>
-          <BottomNavigationAction label={t('navigation.documentation')} value="docs" icon={<ArticleIcon />} />
           <BottomNavigationAction label="Add-ons" value="addons" icon={<ExtensionIcon />} />
+          <BottomNavigationAction label={t('navigation.documentation')} value="docs" icon={<ArticleIcon />} />
           <BottomNavigationAction
             label={t('navigation.blogs')}
             value="blog"

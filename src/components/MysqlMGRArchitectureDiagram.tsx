@@ -351,7 +351,7 @@ export default function MysqlMGRArchitectureDiagram() {
                       <span className="ct-port">:9104</span>
                     </div>
                     <div className="pvc-row">
-                      <span>💾</span><span>PVC: /data/mysql</span>
+                      <span>PVC: /data/mysql</span>
                     </div>
                   </div>
                 </div>
@@ -380,7 +380,7 @@ export default function MysqlMGRArchitectureDiagram() {
                       <span className="ct-port">:9104</span>
                     </div>
                     <div className="pvc-row">
-                      <span>💾</span><span>PVC: /data/mysql</span>
+                      <span>PVC: /data/mysql</span>
                     </div>
                   </div>
                 </div>
@@ -409,7 +409,7 @@ export default function MysqlMGRArchitectureDiagram() {
                       <span className="ct-port">:9104</span>
                     </div>
                     <div className="pvc-row">
-                      <span>💾</span><span>PVC: /data/mysql</span>
+                      <span>PVC: /data/mysql</span>
                     </div>
                   </div>
                 </div>

@@ -1,14 +1,35 @@
+'use client';
+
 import React from 'react';
+import { useTheme } from '@mui/material';
 
 export default function PgHaArchitectureDiagram() {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+
+  const diagVars = {
+    '--diag-bg':        isDark ? '#0d1117'  : '#ffffff',
+    '--diag-card':      isDark ? '#161b22'  : '#f6f8fa',
+    '--diag-border':    isDark ? '#30363d'  : '#d0d7de',
+    '--diag-separator': isDark ? '#21262d'  : '#e6eaef',
+    '--diag-muted':     isDark ? '#7d8590'  : '#656d76',
+    '--diag-hint':      isDark ? '#484f58'  : '#8c959f',
+    '--diag-label':     isDark ? '#f0f6fc'  : '#24292f',
+    '--diag-text':      isDark ? '#e6edf3'  : '#24292f',
+    '--diag-svc-bg':    isDark ? '#0a1a0a'  : '#f0faf2',
+    '--diag-dcs-bg':    isDark ? '#061515'  : '#ecfeff',
+    '--diag-ph-primary': isDark ? 'linear-gradient(135deg,#0d2510,#1a3820)' : 'linear-gradient(135deg,#dcfce7,#bbf7d0)',
+    '--diag-ph-replica': isDark ? 'linear-gradient(135deg,#0d1f38,#162840)' : 'linear-gradient(135deg,#dbeafe,#bfdbfe)',
+  } as React.CSSProperties;
+
   return (
     <>
       <style>{`
         .pg-ha-diagram * { box-sizing: border-box; }
         .pg-ha-diagram {
-          background: #0d1117;
+          background: var(--diag-bg, #0d1117);
           font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-          color: #e6edf3;
+          color: var(--diag-text, #e6edf3);
           padding: 28px;
           border-radius: 16px;
           margin-bottom: 32px;
@@ -26,12 +47,12 @@ export default function PgHaArchitectureDiagram() {
           display: flex; flex-direction: column; gap: 0;
         }
         .pg-ha-diagram .client-mini {
-          border-radius: 12px; border: 1px solid #30363d;
-          background: #161b22; padding: 12px 16px;
+          border-radius: 12px; border: 1px solid var(--diag-border, #30363d);
+          background: var(--diag-card, #161b22); padding: 12px 16px;
           display: flex; align-items: center; gap: 14px;
         }
-        .pg-ha-diagram .client-label { font-size: 13px; font-weight: 600; color: #f0f6fc; }
-        .pg-ha-diagram .client-routes { font-size: 10px; color: #7d8590; margin-top: 3px; line-height: 1.8; }
+        .pg-ha-diagram .client-label { font-size: 13px; font-weight: 600; color: var(--diag-label, #f0f6fc); }
+        .pg-ha-diagram .client-routes { font-size: 10px; color: var(--diag-muted, #7d8590); margin-top: 3px; line-height: 1.8; }
         .pg-ha-diagram .v-arrow {
           display: flex; align-items: center; justify-content: center; gap: 8px;
           height: 36px;
@@ -45,18 +66,18 @@ export default function PgHaArchitectureDiagram() {
           border-left: 5px solid transparent; border-right: 5px solid transparent;
           border-top: 7px solid #3fb950;
         }
-        .pg-ha-diagram .v-arrow-label { font-size: 9px; color: #484f58; letter-spacing: 1px; white-space: nowrap; }
+        .pg-ha-diagram .v-arrow-label { font-size: 9px; color: var(--diag-hint, #484f58); letter-spacing: 1px; white-space: nowrap; }
         .pg-ha-diagram .services-block {
           border-radius: 12px; border: 1px solid #238636;
-          background: #0a1a0a; padding: 14px 16px;
+          background: var(--diag-svc-bg, #0a1a0a); padding: 14px 16px;
         }
         .pg-ha-diagram .services-grid {
           display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 8px;
         }
         .pg-ha-diagram .svc-card { border-radius: 8px; border: 1px solid; padding: 10px 12px; }
-        .pg-ha-diagram .svc-rw { border-color: #3fb950; background: #0a1a0a; }
+        .pg-ha-diagram .svc-rw { border-color: #3fb950; background: var(--diag-svc-bg, #0a1a0a); }
         .pg-ha-diagram .svc-name { font-size: 12px; font-weight: 700; margin-bottom: 4px; color: #3fb950; }
-        .pg-ha-diagram .svc-detail { font-size: 10px; color: #7d8590; line-height: 1.6; }
+        .pg-ha-diagram .svc-detail { font-size: 10px; color: var(--diag-muted, #7d8590); line-height: 1.6; }
         .pg-ha-diagram .svc-tag {
           display: inline-block; font-size: 9px; font-weight: 700;
           letter-spacing: 1px; padding: 2px 6px; border-radius: 4px;
@@ -65,7 +86,7 @@ export default function PgHaArchitectureDiagram() {
         }
         .pg-ha-diagram .section-label {
           font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
-          text-transform: uppercase; color: #7d8590; margin-bottom: 12px;
+          text-transform: uppercase; color: var(--diag-muted, #7d8590); margin-bottom: 12px;
         }
         .pg-ha-diagram .section-label-teal { color: #56d4dd; }
 
@@ -81,40 +102,40 @@ export default function PgHaArchitectureDiagram() {
         /* DCS bottom block */
         .pg-ha-diagram .dcs-block {
           border-radius: 12px; border: 1px solid #1b7c83;
-          background: #061515; padding: 14px;
+          background: var(--diag-dcs-bg, #061515); padding: 14px;
         }
         .pg-ha-diagram .dcs-resources {
           display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;
         }
         .pg-ha-diagram .dcs-resource {
-          background: #0d1117; border-radius: 8px; padding: 8px 12px;
+          background: var(--diag-bg, #0d1117); border-radius: 8px; padding: 8px 12px;
           border: 1px solid #1b7c8344; font-size: 10px; flex: 1; min-width: 130px;
         }
         .pg-ha-diagram .dcs-res-name { font-weight: 600; color: #56d4dd; display: block; margin-bottom: 2px; }
-        .pg-ha-diagram .dcs-res-note { color: #7d8590; font-size: 9px; }
+        .pg-ha-diagram .dcs-res-note { color: var(--diag-muted, #7d8590); font-size: 9px; }
         .pg-ha-diagram .dcs-feature {
-          font-size: 9px; color: #7d8590;
-          padding: 6px 10px; background: #0d1117;
-          border-radius: 6px; border: 1px solid #21262d;
+          font-size: 9px; color: var(--diag-muted, #7d8590);
+          padding: 6px 10px; background: var(--diag-bg, #0d1117);
+          border-radius: 6px; border: 1px solid var(--diag-separator, #21262d);
           white-space: nowrap;
         }
 
         /* Pods section */
         .pg-ha-diagram .pods-section {
-          border-radius: 12px; border: 1px solid #30363d;
-          background: #0d1117; padding: 14px;
+          border-radius: 12px; border: 1px solid var(--diag-border, #30363d);
+          background: var(--diag-bg, #0d1117); padding: 14px;
         }
         .pg-ha-diagram .pods-grid {
           display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 10px;
         }
-        .pg-ha-diagram .pod-card { border-radius: 10px; border: 1px solid #30363d; background: #161b22; overflow: hidden; }
+        .pg-ha-diagram .pod-card { border-radius: 10px; border: 1px solid var(--diag-border, #30363d); background: var(--diag-card, #161b22); overflow: hidden; }
         .pg-ha-diagram .pod-header {
           padding: 9px 12px; display: flex; align-items: center; justify-content: space-between;
-          border-bottom: 1px solid #21262d;
+          border-bottom: 1px solid var(--diag-separator, #21262d);
         }
-        .pg-ha-diagram .pod-primary .pod-header { background: linear-gradient(135deg,#0d2510,#1a3820); border-bottom-color: #238636; }
-        .pg-ha-diagram .pod-replica .pod-header { background: linear-gradient(135deg,#0d1f38,#162840); border-bottom-color: #1f6feb; }
-        .pg-ha-diagram .pod-name { font-size: 11px; font-weight: 700; color: #f0f6fc; }
+        .pg-ha-diagram .pod-primary .pod-header { background: var(--diag-ph-primary, linear-gradient(135deg,#0d2510,#1a3820)); border-bottom-color: #238636; }
+        .pg-ha-diagram .pod-replica .pod-header { background: var(--diag-ph-replica, linear-gradient(135deg,#0d1f38,#162840)); border-bottom-color: #1f6feb; }
+        .pg-ha-diagram .pod-name { font-size: 11px; font-weight: 700; color: var(--diag-label, #f0f6fc); }
         .pg-ha-diagram .pod-badge {
           font-size: 9px; font-weight: 700; letter-spacing: 1px;
           text-transform: uppercase; padding: 2px 7px; border-radius: 10px;
@@ -124,31 +145,31 @@ export default function PgHaArchitectureDiagram() {
         .pg-ha-diagram .containers { padding: 8px; display: flex; flex-direction: column; gap: 4px; }
         .pg-ha-diagram .container-row {
           display: flex; align-items: center; gap: 7px; padding: 5px 8px;
-          border-radius: 6px; border: 1px solid #21262d; background: #0d1117;
+          border-radius: 6px; border: 1px solid var(--diag-separator, #21262d); background: var(--diag-bg, #0d1117);
         }
         .pg-ha-diagram .container-icon { font-size: 13px; }
         .pg-ha-diagram .container-info { flex: 1; }
-        .pg-ha-diagram .container-name { font-size: 11px; font-weight: 600; color: #e6edf3; }
-        .pg-ha-diagram .container-port { font-size: 10px; color: #7d8590; }
+        .pg-ha-diagram .container-name { font-size: 11px; font-weight: 600; color: var(--diag-text, #e6edf3); }
+        .pg-ha-diagram .container-port { font-size: 10px; color: var(--diag-muted, #7d8590); }
         .pg-ha-diagram .pvc-row {
           margin: 0 8px 8px; padding: 5px 8px; border-radius: 6px;
-          border: 1px dashed #30363d; background: #0d1117;
-          display: flex; align-items: center; gap: 6px; font-size: 10px; color: #7d8590;
+          border: 1px dashed var(--diag-border, #30363d); background: var(--diag-bg, #0d1117);
+          display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--diag-muted, #7d8590);
         }
         .pg-ha-diagram .replication-bar {
           display: flex; align-items: center; justify-content: center; gap: 8px;
-          padding: 7px; border-radius: 8px; background: #0a1a14;
+          padding: 7px; border-radius: 8px; background: var(--diag-svc-bg, #0a1a14);
           border: 1px solid #238636; margin-top: 10px; font-size: 11px; color: #3fb950;
         }
         .pg-ha-diagram .legend {
           display: flex; gap: 18px; flex-wrap: wrap; justify-content: center;
-          padding-top: 8px; border-top: 1px solid #21262d; margin-top: 16px;
+          padding-top: 8px; border-top: 1px solid var(--diag-separator, #21262d); margin-top: 16px;
         }
-        .pg-ha-diagram .legend-item { display: flex; align-items: center; gap: 5px; font-size: 10px; color: #7d8590; }
+        .pg-ha-diagram .legend-item { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--diag-muted, #7d8590); }
         .pg-ha-diagram .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
       `}</style>
 
-      <div className="pg-ha-diagram">
+      <div className="pg-ha-diagram" style={diagVars}>
 
         <div className="data-plane">
 
@@ -214,37 +235,33 @@ export default function PgHaArchitectureDiagram() {
                     <span className="pod-badge badge-primary">PRIMARY</span>
                   </div>
                   <div className="containers">
-                    <div className="container-row" style={{borderColor:'#23863644',background:'#081208'}}>
-                      <span className="container-icon">🐘</span>
+                    <div className="container-row" style={{borderColor:'#23863644',background: isDark ? '#081208' : '#f0faf2'}}>
                       <div className="container-info">
-                        <div className="container-name">postgresql <span style={{color:'#484f58',fontWeight:400,fontSize:'10px'}}>(Patroni)</span></div>
+                        <div className="container-name">postgresql <span style={{color: isDark ? '#484f58' : '#8c959f',fontWeight:400,fontSize:'10px'}}>(Patroni)</span></div>
                         <div className="container-port">:5432 pg · :8008 patroni API</div>
                       </div>
                       <div style={{color:'#3fb950',fontSize:'10px'}}>leader</div>
                     </div>
                     <div className="container-row">
-                      <span className="container-icon">🔀</span>
                       <div className="container-info">
                         <div className="container-name">pgbouncer</div>
                         <div className="container-port">:6432 conn pool</div>
                       </div>
                     </div>
                     <div className="container-row">
-                      <span className="container-icon">🔍</span>
                       <div className="container-info">
-                        <div className="container-name">dbctl <span style={{color:'#484f58',fontWeight:400,fontSize:'10px'}}>(role probe)</span></div>
+                        <div className="container-name">dbctl <span style={{color: isDark ? '#484f58' : '#8c959f',fontWeight:400,fontSize:'10px'}}>(role probe)</span></div>
                         <div className="container-port">:5001 /v1.0/getrole</div>
                       </div>
                     </div>
                     <div className="container-row">
-                      <span className="container-icon">📊</span>
                       <div className="container-info">
                         <div className="container-name">pg-exporter</div>
                         <div className="container-port">:9187 metrics</div>
                       </div>
                     </div>
                   </div>
-                  <div className="pvc-row">💾 PVC <strong style={{color:'#e3b341'}}>data-0</strong> · 20Gi</div>
+                  <div className="pvc-row">PVC<strong style={{color:'#e3b341'}}>data-0</strong> · 20Gi</div>
                 </div>
 
                 {/* Replica-1 */}
@@ -254,37 +271,33 @@ export default function PgHaArchitectureDiagram() {
                     <span className="pod-badge badge-replica">REPLICA</span>
                   </div>
                   <div className="containers">
-                    <div className="container-row" style={{borderColor:'#1f6feb44',background:'#080d18'}}>
-                      <span className="container-icon">🐘</span>
+                    <div className="container-row" style={{borderColor:'#1f6feb44',background: isDark ? '#080d18' : '#eff6ff'}}>
                       <div className="container-info">
-                        <div className="container-name">postgresql <span style={{color:'#484f58',fontWeight:400,fontSize:'10px'}}>(Patroni)</span></div>
+                        <div className="container-name">postgresql <span style={{color: isDark ? '#484f58' : '#8c959f',fontWeight:400,fontSize:'10px'}}>(Patroni)</span></div>
                         <div className="container-port">:5432 pg · :8008 patroni API</div>
                       </div>
                       <div style={{color:'#79c0ff',fontSize:'10px'}}>replica</div>
                     </div>
                     <div className="container-row">
-                      <span className="container-icon">🔀</span>
                       <div className="container-info">
                         <div className="container-name">pgbouncer</div>
                         <div className="container-port">:6432 conn pool</div>
                       </div>
                     </div>
                     <div className="container-row">
-                      <span className="container-icon">🔍</span>
                       <div className="container-info">
-                        <div className="container-name">dbctl <span style={{color:'#484f58',fontWeight:400,fontSize:'10px'}}>(role probe)</span></div>
+                        <div className="container-name">dbctl <span style={{color: isDark ? '#484f58' : '#8c959f',fontWeight:400,fontSize:'10px'}}>(role probe)</span></div>
                         <div className="container-port">:5001 /v1.0/getrole</div>
                       </div>
                     </div>
                     <div className="container-row">
-                      <span className="container-icon">📊</span>
                       <div className="container-info">
                         <div className="container-name">pg-exporter</div>
                         <div className="container-port">:9187 metrics</div>
                       </div>
                     </div>
                   </div>
-                  <div className="pvc-row">💾 PVC <strong style={{color:'#e3b341'}}>data-1</strong> · 20Gi</div>
+                  <div className="pvc-row">PVC<strong style={{color:'#e3b341'}}>data-1</strong> · 20Gi</div>
                 </div>
 
                 {/* Replica-2 */}
@@ -294,37 +307,33 @@ export default function PgHaArchitectureDiagram() {
                     <span className="pod-badge badge-replica">REPLICA</span>
                   </div>
                   <div className="containers">
-                    <div className="container-row" style={{borderColor:'#1f6feb44',background:'#080d18'}}>
-                      <span className="container-icon">🐘</span>
+                    <div className="container-row" style={{borderColor:'#1f6feb44',background: isDark ? '#080d18' : '#eff6ff'}}>
                       <div className="container-info">
-                        <div className="container-name">postgresql <span style={{color:'#484f58',fontWeight:400,fontSize:'10px'}}>(Patroni)</span></div>
+                        <div className="container-name">postgresql <span style={{color: isDark ? '#484f58' : '#8c959f',fontWeight:400,fontSize:'10px'}}>(Patroni)</span></div>
                         <div className="container-port">:5432 pg · :8008 patroni API</div>
                       </div>
                       <div style={{color:'#79c0ff',fontSize:'10px'}}>replica</div>
                     </div>
                     <div className="container-row">
-                      <span className="container-icon">🔀</span>
                       <div className="container-info">
                         <div className="container-name">pgbouncer</div>
                         <div className="container-port">:6432 conn pool</div>
                       </div>
                     </div>
                     <div className="container-row">
-                      <span className="container-icon">🔍</span>
                       <div className="container-info">
-                        <div className="container-name">dbctl <span style={{color:'#484f58',fontWeight:400,fontSize:'10px'}}>(role probe)</span></div>
+                        <div className="container-name">dbctl <span style={{color: isDark ? '#484f58' : '#8c959f',fontWeight:400,fontSize:'10px'}}>(role probe)</span></div>
                         <div className="container-port">:5001 /v1.0/getrole</div>
                       </div>
                     </div>
                     <div className="container-row">
-                      <span className="container-icon">📊</span>
                       <div className="container-info">
                         <div className="container-name">pg-exporter</div>
                         <div className="container-port">:9187 metrics</div>
                       </div>
                     </div>
                   </div>
-                  <div className="pvc-row">💾 PVC <strong style={{color:'#e3b341'}}>data-2</strong> · 20Gi</div>
+                  <div className="pvc-row">PVC<strong style={{color:'#e3b341'}}>data-2</strong> · 20Gi</div>
                 </div>
 
               </div>
@@ -332,11 +341,10 @@ export default function PgHaArchitectureDiagram() {
               <div className="replication-bar">
                 <span>↔</span>
                 <strong>Streaming Replication (WAL)</strong>
-                <span style={{color:'#7d8590'}}>primary-0 → replica-1 · replica-2 &nbsp;|&nbsp; sync / async configurable</span>
+                <span style={{color: isDark ? '#7d8590' : '#656d76'}}>primary-0 → replica-1 · replica-2 &nbsp;|&nbsp; sync / async configurable</span>
               </div>
-              <div style={{marginTop:'8px',padding:'5px 10px',borderRadius:'6px',border:'1px dashed #30363d',fontSize:'10px',color:'#484f58',display:'flex',alignItems:'center',gap:'6px'}}>
-                <span>🔗</span>
-                <span><strong style={{color:'#6e7681'}}>Headless service</strong> — stable pod DNS for internal use (replication, HA heartbeat, operator probes); not a client endpoint</span>
+              <div style={{marginTop:'8px',padding:'5px 10px',borderRadius:'6px',border:`1px dashed var(--diag-border, #30363d)`,fontSize:'10px',color: isDark ? '#484f58' : '#8c959f',display:'flex',alignItems:'center',gap:'6px'}}>
+                <span><strong style={{color: isDark ? '#6e7681' : '#57606a'}}>Headless service</strong> — stable pod DNS for internal use (replication, HA heartbeat, operator probes); not a client endpoint</span>
               </div>
           </div>
 

@@ -344,21 +344,21 @@ export default function MysqlArchitectureDiagram() {
                       <div style={{color:'#3fb950',fontSize:'10px'}}>rw</div>
                     </div>
                     <div className="container-row">
-                      <span className="container-icon">🔍</span>
+                      
                       <div className="container-info">
                         <div className="container-name">syncer</div>
                         <div className="container-port">role probe via syncerctl</div>
                       </div>
                     </div>
                     <div className="container-row">
-                      <span className="container-icon">📊</span>
+                      
                       <div className="container-info">
                         <div className="container-name">mysql-exporter</div>
                         <div className="container-port">:9104 metrics</div>
                       </div>
                     </div>
                   </div>
-                  <div className="pvc-row">💾 PVC <strong style={{color:'#e3b341'}}>data-0</strong> · 20Gi</div>
+                  <div className="pvc-row">PVC <strong style={{color:'#e3b341'}}>data-0</strong> · 20Gi</div>
                 </div>
 
                 {/* Replica-1 */}
@@ -377,21 +377,21 @@ export default function MysqlArchitectureDiagram() {
                       <div style={{color:'#79c0ff',fontSize:'10px'}}>ro</div>
                     </div>
                     <div className="container-row">
-                      <span className="container-icon">🔍</span>
+                      
                       <div className="container-info">
                         <div className="container-name">syncer</div>
                         <div className="container-port">role probe via syncerctl</div>
                       </div>
                     </div>
                     <div className="container-row">
-                      <span className="container-icon">📊</span>
+                      
                       <div className="container-info">
                         <div className="container-name">mysql-exporter</div>
                         <div className="container-port">:9104 metrics</div>
                       </div>
                     </div>
                   </div>
-                  <div className="pvc-row">💾 PVC <strong style={{color:'#e3b341'}}>data-1</strong> · 20Gi</div>
+                  <div className="pvc-row">PVC <strong style={{color:'#e3b341'}}>data-1</strong> · 20Gi</div>
                 </div>
 
                 {/* Replica-2 */}
@@ -410,21 +410,21 @@ export default function MysqlArchitectureDiagram() {
                       <div style={{color:'#79c0ff',fontSize:'10px'}}>ro</div>
                     </div>
                     <div className="container-row">
-                      <span className="container-icon">🔍</span>
+                      
                       <div className="container-info">
                         <div className="container-name">syncer</div>
                         <div className="container-port">role probe via syncerctl</div>
                       </div>
                     </div>
                     <div className="container-row">
-                      <span className="container-icon">📊</span>
+                      
                       <div className="container-info">
                         <div className="container-name">mysql-exporter</div>
                         <div className="container-port">:9104 metrics</div>
                       </div>
                     </div>
                   </div>
-                  <div className="pvc-row">💾 PVC <strong style={{color:'#e3b341'}}>data-2</strong> · 20Gi</div>
+                  <div className="pvc-row">PVC <strong style={{color:'#e3b341'}}>data-2</strong> · 20Gi</div>
                 </div>
 
               </div>

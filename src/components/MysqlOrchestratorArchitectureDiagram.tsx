@@ -394,7 +394,7 @@ export default function MysqlOrchestratorArchitectureDiagram() {
                         <span className="ct-name">exporter</span>
                         <span className="ct-port">:9104</span>
                       </div>
-                      <div className="pvc-row">💾 PVC</div>
+                      <div className="pvc-row">PVC</div>
                     </div>
                   </div>
                   {/* mysql-1 REPLICA */}
@@ -416,7 +416,7 @@ export default function MysqlOrchestratorArchitectureDiagram() {
                         <span className="ct-name">exporter</span>
                         <span className="ct-port">:9104</span>
                       </div>
-                      <div className="pvc-row">💾 PVC</div>
+                      <div className="pvc-row">PVC</div>
                     </div>
                   </div>
                   {/* mysql-2 REPLICA */}
@@ -438,7 +438,7 @@ export default function MysqlOrchestratorArchitectureDiagram() {
                         <span className="ct-name">exporter</span>
                         <span className="ct-port">:9104</span>
                       </div>
-                      <div className="pvc-row">💾 PVC</div>
+                      <div className="pvc-row">PVC</div>
                     </div>
                   </div>
                 </div>
