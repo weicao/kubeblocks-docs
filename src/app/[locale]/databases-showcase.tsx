@@ -52,7 +52,7 @@ const categories: Category[] = [
   {
     label: 'AI / Vector / Graph',
     items: [
-      { name: 'Milvus',       href: '/docs/preview/kubeblocks-for-milvus' },
+      { name: 'Milvus',       href: '/milvus-operator' },
       { name: 'Qdrant',       href: '/docs/preview/kubeblocks-for-qdrant' },
       { name: 'ElasticSearch', href: '/docs/preview/kubeblocks-for-elasticsearch' },
       { name: 'OpenSearch',   preview: true },

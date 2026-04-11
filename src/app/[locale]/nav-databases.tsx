@@ -62,7 +62,7 @@ export default function DatabasesNav() {
     {
       title: 'Milvus',
       icon: <MilvusIcon {...iconProps} />,
-      href: '/docs/preview/kubeblocks-for-milvus',
+      href: '/milvus-operator',
     },
     {
       title: 'Qdrant',

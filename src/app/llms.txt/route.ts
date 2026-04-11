@@ -49,6 +49,7 @@ export async function GET() {
     `- Redis Operator for Kubernetes: ${toAbsoluteUrl('/redis-operator')}`,
     `- Kafka Operator for Kubernetes: ${toAbsoluteUrl('/kafka-operator')}`,
     `- ZooKeeper Operator for Kubernetes: ${toAbsoluteUrl('/zookeeper-operator')}`,
+    `- Milvus Operator for Kubernetes: ${toAbsoluteUrl('/milvus-operator')}`,
     '',
     '## Supported database engines',
     '| Engine | Category | Docs |',

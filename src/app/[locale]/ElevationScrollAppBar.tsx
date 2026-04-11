@@ -192,7 +192,7 @@ function AddonsSheet({ open, onClose }: { open: boolean; onClose: () => void }) 
     {
       name: 'Vector / Search',
       items: [
-        { title: 'Milvus', icon: <MilvusIcon {...iconProps} />, href: '/docs/preview/kubeblocks-for-milvus' },
+        { title: 'Milvus', icon: <MilvusIcon {...iconProps} />, href: '/milvus-operator' },
         { title: 'Qdrant', icon: <QdrantIcon {...iconProps} />, href: '/docs/preview/kubeblocks-for-qdrant' },
         { title: 'ElasticSearch', icon: <ElasticSearchIcon {...iconProps} />, href: '/docs/preview/kubeblocks-for-elasticsearch' },
       ],
