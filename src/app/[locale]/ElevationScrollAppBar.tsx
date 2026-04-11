@@ -169,7 +169,7 @@ function AddonsSheet({ open, onClose }: { open: boolean; onClose: () => void }) 
     {
       name: 'NoSQL',
       items: [
-        { title: 'Redis', icon: <RedisIcon {...iconProps} />, href: '/docs/preview/kubeblocks-for-redis' },
+        { title: 'Redis', icon: <RedisIcon {...iconProps} />, href: '/redis-operator' },
         { title: 'MongoDB', icon: <MongodbIcon {...iconProps} />, href: '/docs/preview/kubeblocks-for-mongodb' },
         { title: 'etcd', icon: <AccountTree {...iconProps} />, href: '/docs/preview/kubeblocks-for-etcd' },
         { title: 'ZooKeeper', icon: <ViewInAr {...iconProps} />, href: '/docs/preview/kubeblocks-for-zookeeper' },

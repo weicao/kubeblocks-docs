@@ -27,7 +27,7 @@ const categories: Category[] = [
   {
     label: 'NoSQL',
     items: [
-      { name: 'Redis',     href: '/docs/preview/kubeblocks-for-redis' },
+      { name: 'Redis',     href: '/redis-operator' },
       { name: 'MongoDB',   href: '/docs/preview/kubeblocks-for-mongodb' },
       { name: 'etcd',      href: '/docs/preview/kubeblocks-for-etcd' },
       { name: 'ZooKeeper', href: '/docs/preview/kubeblocks-for-zookeeper' },

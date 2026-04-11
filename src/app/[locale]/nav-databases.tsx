@@ -47,7 +47,7 @@ export default function DatabasesNav() {
     {
       title: 'Redis',
       icon: <RedisIcon {...iconProps} />,
-      href: '/docs/preview/kubeblocks-for-redis',
+      href: '/redis-operator',
     },
     {
       title: 'MongoDB',

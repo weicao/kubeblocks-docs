@@ -5,11 +5,15 @@ import {
   alpha,
   Box,
   Button,
+  Card,
+  CardActionArea,
+  CardContent,
   Container,
   Stack,
   Typography,
   useTheme,
 } from '@mui/material';
+import Image from 'next/image';
 import PgHaArchitectureDiagram from '@/components/PgHaArchitectureDiagram';
 import TrustedBy from '@/app/[locale]/trusted-by';
 
@@ -1228,7 +1232,65 @@ function LifecycleFeatures() {
   );
 }
 
-// ── 7. CTA ────────────────────────────────────────────────────────────────────
+// ── 7. Blog ───────────────────────────────────────────────────────────────────
+
+const pgPosts = [
+  {
+    title: 'PostgreSQL Performance Tuning on Kubernetes: A KubeBlocks Deep Dive',
+    description: 'Benchmark and fix TPS drops, CPU fluctuations, and checkpoint issues by tuning WAL settings, IO bandwidth, and full_page_write.',
+    image: '/img/blogs/thumbnails/blog-pg.png',
+    href: '/blog/A-testing-report-for-optimizing-PG-performance-on-Kubernetes',
+  },
+  {
+    title: 'Managing Over 6,000 Self-Hosted Databases Without a DBA',
+    description: 'How Sealos used KubeBlocks to manage 6,000+ self-hosted databases across four availability zones — architecture, HA, backup, and operations.',
+    image: '/img/blogs/thumbnails/blog-manage-6k-db-instance-with-kb.png',
+    href: '/blog/manage-6k-db-instance-with-kubeblocks',
+  },
+  {
+    title: 'How Containerization Affects Database Performance: runC, Kata, and gVisor',
+    description: 'CPU, memory, and I/O benchmarks across container runtimes — and how to avoid common pitfalls like I/O hangs and OOM errors in Kubernetes.',
+    image: '/img/blogs/thumbnails/blog-containerization.png',
+    href: '/blog/Does-containerization-affect-the-performance-of-databases',
+  },
+];
+
+function PgBlogPosts() {
+  return (
+    <Box sx={{ py: { xs: 6, md: 10 }, borderTop: '1px solid', borderColor: 'divider' }}>
+      <Container maxWidth="lg">
+        <Box textAlign="center" mb={6}>
+          <SectionEyebrow label="From the Blog" />
+          <Typography variant="h4" fontWeight={700} sx={{ letterSpacing: '-0.03em', lineHeight: 1.15 }}>
+            Go Deeper on{' '}
+            <Box component="span" color="primary.main">PostgreSQL on Kubernetes</Box>
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(3, 1fr)' }, gap: 3 }}>
+          {pgPosts.map((post) => (
+            <Card key={post.href} sx={{ boxShadow: 'none', border: 1, borderColor: 'divider' }}>
+              <CardActionArea component="a" href={post.href}>
+                <Box sx={{ height: 160, width: '100%', position: 'relative' }}>
+                  <Image fill src={post.image} alt={post.title} style={{ objectFit: 'cover' }} />
+                </Box>
+                <CardContent>
+                  <Typography gutterBottom fontWeight={600} sx={{ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                    {post.title}
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary" sx={{ height: 40, overflow: 'hidden' }}>
+                    {post.description}
+                  </Typography>
+                </CardContent>
+              </CardActionArea>
+            </Card>
+          ))}
+        </Box>
+      </Container>
+    </Box>
+  );
+}
+
+// ── 8. CTA ────────────────────────────────────────────────────────────────────
 
 function CTA() {
   const checks = ['Open Source', 'PostgreSQL & 30+ other engines', 'Production-grade HA', 'No vendor lock-in'];
@@ -1298,6 +1360,7 @@ export default function PgOperatorPage() {
       <CapabilitiesDiagrams />
       <PerformanceBenchmark />
       <LifecycleFeatures />
+      <PgBlogPosts />
       <CTA />
     </Box>
   );
