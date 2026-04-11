@@ -52,7 +52,7 @@ export default function DatabasesNav() {
     {
       title: 'MongoDB',
       icon: <MongodbIcon {...iconProps} />,
-      href: '/docs/preview/kubeblocks-for-mongodb',
+      href: '/mongodb-operator',
     },
     {
       title: 'Kafka',

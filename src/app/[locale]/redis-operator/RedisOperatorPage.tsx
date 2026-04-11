@@ -200,7 +200,7 @@ function Hero() {
               {/* Step 2 */}
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 1.25 }}>
                 <Box sx={{ width: 22, height: 22, borderRadius: '50%', bgcolor: 'rgba(108,182,255,0.12)', border: '1px solid #6CB6FF', color: '#6CB6FF', fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>2</Box>
-                <Typography sx={{ fontSize: '13px', fontWeight: 600, color: '#8b949e' }}>Create a Redis Cluster</Typography>
+                <Typography sx={{ fontSize: '13px', fontWeight: 600, color: '#8b949e' }}>Create a Replication Cluster</Typography>
               </Box>
               <Box component="pre" sx={{ m: 0, mb: 2.5, p: 2, borderRadius: '8px', bgcolor: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.06)', fontFamily: '"JetBrains Mono","Fira Code",monospace', fontSize: { xs: '0.68rem', md: '0.72rem' }, lineHeight: 1.7, color: '#c9d1d9', overflowX: 'auto' }}>
                 <span style={{ color: '#ff7b72' }}>apiVersion</span>{': apps.kubeblocks.io/v1\n'}
@@ -439,6 +439,8 @@ function ComparisonTable() {
     { feature: 'Volume expansion',             kb: YES,  spotahome: NO,   opstree: YES,  enterprise: YES  },
     { feature: 'Dynamic config',               kb: YES,  spotahome: PART, opstree: PART, enterprise: YES  },
     { feature: 'Planned switchover',           kb: YES,  spotahome: NO,   opstree: NO,   enterprise: PART },
+    { feature: 'Minor Upgrade',               kb: YES,  spotahome: PART, opstree: YES,  enterprise: YES  },
+    { feature: 'Major Upgrade',               kb: YES,  spotahome: NO,   opstree: PART, enterprise: YES  },
     { feature: 'Standby cluster (cross-k8s DR)', kb: ENT, spotahome: NO,  opstree: NO,   enterprise: YES  },
     { feature: 'Bootstrap from external Redis', kb: ENT,  spotahome: YES, opstree: NO,   enterprise: PART },
     { feature: 'Prometheus metrics',           kb: YES,  spotahome: YES,  opstree: YES,  enterprise: YES  },

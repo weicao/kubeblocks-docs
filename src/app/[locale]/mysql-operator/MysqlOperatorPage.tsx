@@ -547,9 +547,9 @@ function CapabilitiesDiagrams() {
   const [activeTab, setActiveTab] = useState(0);
   const theme = useTheme();
   const tabs = [
-    { icon: '🗄️', label: 'Backup & PITR' },
-    { icon: '⬆️', label: 'Zero-Downtime Upgrade' },
-    { icon: '⚡', label: 'Auto Failover' },
+    { label: 'Backup & PITR' },
+    { label: 'Zero-Downtime Upgrade' },
+    { label: 'Auto Failover' },
   ];
 
   return (
@@ -859,7 +859,7 @@ function CapabilitiesDiagrams() {
               color: activeTab === i ? 'primary.main' : 'text.secondary',
               '&:hover': { borderColor: 'primary.main', color: 'primary.main' },
             }}>
-              <span>{tab.icon}</span>{tab.label}
+              {tab.label}
             </Box>
           ))}
         </Box>
@@ -868,7 +868,7 @@ function CapabilitiesDiagrams() {
         {activeTab === 0 && (
           <div className="cd-card">
             <div className="cd-header">
-              <div className="cd-icon cd-icon-orange">🗄️</div>
+              <div className="cd-icon cd-icon-orange"></div>
               <div className="cd-title-group">
                 <div className="cd-title">Point-in-Time Recovery (PITR)</div>
                 <div className="cd-desc">Continuous binlog streaming + scheduled full backups. Restore to any second in history.</div>
@@ -910,7 +910,7 @@ function CapabilitiesDiagrams() {
                 </div>
                 <div className="cd-tl-event" style={{ left: '88%' }}>
                   <div className="cd-tl-dot target"></div>
-                  <div className="cd-tl-tag target">🎯 Restore Target</div>
+                  <div className="cd-tl-tag target">Restore Target</div>
                   <div className="cd-tl-time">21:37:42</div>
                 </div>
               </div>
@@ -918,7 +918,7 @@ function CapabilitiesDiagrams() {
 
             <div className="cd-restore">
               <div className="cd-restore-step">
-                <div className="cd-restore-icon orange">📦</div>
+                <div className="cd-restore-icon orange"></div>
                 <div className="cd-restore-text">
                   <strong>1. Load Base Backup</strong>
                   <span>Restore nearest full snapshot before target time</span>
@@ -926,7 +926,7 @@ function CapabilitiesDiagrams() {
               </div>
               <div className="cd-restore-arrow">→</div>
               <div className="cd-restore-step">
-                <div className="cd-restore-icon blue">📜</div>
+                <div className="cd-restore-icon blue"></div>
                 <div className="cd-restore-text">
                   <strong>2. Replay Binlogs</strong>
                   <span>Apply all transactions up to 21:37:42</span>
@@ -934,7 +934,7 @@ function CapabilitiesDiagrams() {
               </div>
               <div className="cd-restore-arrow">→</div>
               <div className="cd-restore-step">
-                <div className="cd-restore-icon green">✅</div>
+                <div className="cd-restore-icon green"></div>
                 <div className="cd-restore-text">
                   <strong>3. Cluster Ready</strong>
                   <span>New MySQL cluster restored to exact point in time</span>
@@ -949,7 +949,7 @@ function CapabilitiesDiagrams() {
         {activeTab === 1 && (
           <div className="cd-card">
             <div className="cd-header">
-              <div className="cd-icon cd-icon-blue">⬆️</div>
+              <div className="cd-icon cd-icon-blue"></div>
               <div className="cd-title-group">
                 <div className="cd-title">Zero-Downtime Rolling Upgrade</div>
                 <div className="cd-desc">Replicas are upgraded one by one. Traffic is always served. Primary is switched last.</div>
@@ -1007,7 +1007,7 @@ function CapabilitiesDiagrams() {
         {activeTab === 2 && (
           <div className="cd-card">
             <div className="cd-header">
-              <div className="cd-icon cd-icon-green">⚡</div>
+              <div className="cd-icon cd-icon-green"></div>
               <div className="cd-title-group">
                 <div className="cd-title">Automatic Failover</div>
                 <div className="cd-desc">KubeBlocks detects failure, elects a new primary, and redirects traffic — all within 30 seconds.</div>
@@ -1030,7 +1030,7 @@ function CapabilitiesDiagrams() {
               <div className="cd-fo-phase">
                 <div className="cd-fo-time"><div className="cd-fo-time-dot red"></div>T+1s — Failure</div>
                 <div className="cd-fo-card phase-1">
-                  <div className="cd-fo-card-title red">💥 Node Down</div>
+                  <div className="cd-fo-card-title red">Node Down</div>
                   <div className="cd-fo-nodes">
                     <div className="cd-fo-node failed"><div className="cd-fo-node-dot"></div>mysql-0<div className="cd-fo-node-role role-primary">Failed</div></div>
                     <div className="cd-fo-node healthy"><div className="cd-fo-node-dot"></div>mysql-1<div className="cd-fo-node-role role-replica">Replica</div></div>
@@ -1041,7 +1041,7 @@ function CapabilitiesDiagrams() {
               <div className="cd-fo-phase">
                 <div className="cd-fo-time"><div className="cd-fo-time-dot yellow"></div>T+5s — Detect</div>
                 <div className="cd-fo-card phase-2">
-                  <div className="cd-fo-card-title yellow">🔍 Detecting</div>
+                  <div className="cd-fo-card-title yellow">Detecting</div>
                   <div className="cd-fo-nodes">
                     <div className="cd-fo-node detecting"><div className="cd-fo-node-dot"></div>mysql-0<div className="cd-fo-node-role role-primary">Unreachable</div></div>
                     <div className="cd-fo-node detecting"><div className="cd-fo-node-dot"></div>mysql-1<div className="cd-fo-node-role role-elect">Candidate</div></div>
@@ -1052,7 +1052,7 @@ function CapabilitiesDiagrams() {
               <div className="cd-fo-phase">
                 <div className="cd-fo-time"><div className="cd-fo-time-dot blue"></div>T+15s — Promote</div>
                 <div className="cd-fo-card phase-3">
-                  <div className="cd-fo-card-title blue">⬆️ Promoting</div>
+                  <div className="cd-fo-card-title blue">Promoting</div>
                   <div className="cd-fo-nodes">
                     <div className="cd-fo-node offline"><div className="cd-fo-node-dot"></div>mysql-0<div className="cd-fo-node-role role-replica">Offline</div></div>
                     <div className="cd-fo-node promoting"><div className="cd-fo-node-dot"></div>mysql-1<div className="cd-fo-node-role role-elect">Promoting…</div></div>
@@ -1063,7 +1063,7 @@ function CapabilitiesDiagrams() {
               <div className="cd-fo-phase">
                 <div className="cd-fo-time"><div className="cd-fo-time-dot green"></div>T+28s — Recovered</div>
                 <div className="cd-fo-card phase-4">
-                  <div className="cd-fo-card-title green">✅ Healthy</div>
+                  <div className="cd-fo-card-title green">Healthy</div>
                   <div className="cd-fo-nodes">
                     <div className="cd-fo-node offline"><div className="cd-fo-node-dot"></div>mysql-0<div className="cd-fo-node-role role-replica">Rebuilding</div></div>
                     <div className="cd-fo-node new-primary"><div className="cd-fo-node-dot"></div>mysql-1<div className="cd-fo-node-role role-new">Primary ★</div></div>
@@ -1228,7 +1228,8 @@ function ComparisonTable() {
     { feature: 'PITR (binlog streaming)',        kb: YES,  oracle: PART, percona: YES,  bitpoke: PART },
     { feature: 'Bootstrap from external MySQL', kb: ENT,  oracle: NO,   percona: NO,   bitpoke: NO   },
     { feature: 'Horizontal scaling', kb: YES,  oracle: PART, percona: PART, bitpoke: PART },
-    { feature: 'Major version upgrade',
+    { feature: 'Minor Upgrade',               kb: YES,  oracle: YES,  percona: YES,  bitpoke: PART },
+    { feature: 'Major Upgrade',
       kb: <Box>{ENT}<Typography sx={{ fontSize: '0.68rem', color: 'text.secondary', mt: 0.5, lineHeight: 1.4 }}>Via blue-green deployment</Typography></Box>,
       oracle: PART, percona: PART, bitpoke: NO  },
     { feature: 'Dynamic config (no restart)',   kb: YES,  oracle: PART, percona: PART, bitpoke: PART },
