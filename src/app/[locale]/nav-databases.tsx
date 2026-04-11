@@ -57,7 +57,7 @@ export default function DatabasesNav() {
     {
       title: 'Kafka',
       icon: <KafkaIcon {...iconProps} />,
-      href: '/docs/preview/kubeblocks-for-kafka',
+      href: '/kafka-operator',
     },
     {
       title: 'Milvus',

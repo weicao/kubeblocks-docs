@@ -8,6 +8,7 @@ sidebar_label: Architecture
 
 import KafkaCombinedArchitectureDiagram from '@/components/KafkaCombinedArchitectureDiagram';
 import KafkaArchitectureDiagram from '@/components/KafkaArchitectureDiagram';
+import KafkaZookeeperArchitectureDiagram from '@/components/KafkaZookeeperArchitectureDiagram';
 
 # Kafka Architecture in KubeBlocks
 
@@ -190,6 +191,8 @@ The `separated` topology provisions only `kafka-controller` and `kafka-broker`. 
 ---
 
 ## Kafka 2.x Architecture (kafka2-external-zk)
+
+<KafkaZookeeperArchitectureDiagram />
 
 The `kafka2-external-zk` topology deploys Kafka 2.7 in the traditional ZooKeeper-based mode. Instead of the KRaft metadata quorum, an external ZooKeeper ensemble (deployed as a separate KubeBlocks cluster or external service) provides cluster coordination, controller election, and topic metadata storage.
 

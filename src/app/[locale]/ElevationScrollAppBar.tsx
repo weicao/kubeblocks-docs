@@ -184,7 +184,7 @@ function AddonsSheet({ open, onClose }: { open: boolean; onClose: () => void }) 
     {
       name: 'Message Queue',
       items: [
-        { title: 'Kafka', icon: <KafkaIcon {...iconProps} />, href: '/docs/preview/kubeblocks-for-kafka' },
+        { title: 'Kafka', icon: <KafkaIcon {...iconProps} />, href: '/kafka-operator' },
         { title: 'RabbitMQ', icon: <RabbitMQIcon {...iconProps} />, href: '/docs/preview/kubeblocks-for-rabbitmq' },
         { title: 'RocketMQ', icon: <Rocket {...iconProps} />, href: '/docs/preview/kubeblocks-for-rocketmq' },
       ],

@@ -43,7 +43,7 @@ const categories: Category[] = [
   {
     label: 'Message Queue',
     items: [
-      { name: 'Kafka',    href: '/docs/preview/kubeblocks-for-kafka' },
+      { name: 'Kafka',    href: '/kafka-operator' },
       { name: 'RabbitMQ', href: '/docs/preview/kubeblocks-for-rabbitmq' },
       { name: 'RocketMQ', href: '/docs/preview/kubeblocks-for-rocketmq' },
       { name: 'Pulsar',   preview: true },

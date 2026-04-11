@@ -1,127 +1,163 @@
+'use client';
+
+import { useTheme } from '@mui/material';
 import React from 'react';
 
+function getStyles(dark: boolean) {
+  const bg       = dark ? '#0d1117' : '#f6f8fa';
+  const card     = dark ? '#161b22' : '#ffffff';
+  const cardGreen= dark ? '#0a1a0a' : '#f0faf2';
+  const border   = dark ? '#30363d' : '#d0d7de';
+  const borderIn = dark ? '#21262d' : '#e0e5eb';
+  const text     = dark ? '#e6edf3' : '#1f2328';
+  const textBrt  = dark ? '#f0f6fc' : '#1f2328';
+  const textSec  = dark ? '#7d8590' : '#656d76';
+  const textDim  = dark ? '#484f58' : '#8c959f';
+  const innerBg  = dark ? '#0d1117' : '#f6f8fa';
+  const kraftBg  = dark ? '#120d2a' : '#f5f0ff';
+  const tagGreen = dark ? '#1a4a1a' : '#dafbe1';
+  const podHdrBg = dark ? 'linear-gradient(135deg,#0d2510,#0a1810)' : 'linear-gradient(135deg,#e8faf0,#f0fdf4)';
+  const podHdrBd = dark ? '#23863655' : '#2da44e55';
+  const badgeBg  = dark ? 'linear-gradient(135deg,#1e0d40,#0d2035)' : '#f5e8ff';
+  const badgeCol = dark ? '#c084fc' : '#7c3aed';
+  const badgeBd  = dark ? '#6e40c977' : '#9333ea77';
+  const rtagBkBg = dark ? '#0d2035' : '#e8f4ff';
+  const rtagBkCl = dark ? '#79c0ff' : '#1f6feb';
+  const rtagBkBd = dark ? '#1f6feb44' : '#1f6feb55';
+  const rtagCtBg = dark ? '#1e0d40' : '#f5e8ff';
+  const rtagCtCl = dark ? '#c084fc' : '#7c3aed';
+  const rtagCtBd = dark ? '#6e40c944' : '#6e40c955';
+  const kafkaRow = dark ? '#081208' : '#f0faf2';
+  const kafkaBd  = dark ? '#23863644' : '#23863666';
+  const headlessBd = dark ? `1px dashed ${border}` : `1px dashed ${border}`;
+
+  return `
+    .kafka-combined-diagram * { box-sizing: border-box; }
+    .kafka-combined-diagram {
+      background: ${bg};
+      font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: ${text};
+      padding: 28px;
+      border-radius: 16px;
+      margin-bottom: 32px;
+    }
+    .kafka-combined-diagram .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .kafka-combined-diagram .dot-blue   { background: #388bfd; }
+    .kafka-combined-diagram .dot-green  { background: #3fb950; }
+    .kafka-combined-diagram .dot-orange { background: #e3b341; }
+    .kafka-combined-diagram .dot-teal   { background: #56d4dd; }
+    .kafka-combined-diagram .dot-red    { background: #f85149; }
+    .kafka-combined-diagram .card-title {
+      font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+      text-transform: uppercase; margin-bottom: 10px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .kafka-combined-diagram .main-area { display: flex; align-items: flex-start; }
+    .kafka-combined-diagram .data-plane { flex: 1; display: flex; flex-direction: column; gap: 0; }
+    .kafka-combined-diagram .client-mini {
+      border-radius: 12px; border: 1px solid ${border};
+      background: ${card}; padding: 12px 16px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .kafka-combined-diagram .client-label { font-size: 13px; font-weight: 600; color: ${textBrt}; }
+    .kafka-combined-diagram .client-routes { font-size: 10px; color: ${textSec}; margin-top: 3px; line-height: 1.8; }
+    .kafka-combined-diagram .v-arrow {
+      display: flex; align-items: center; justify-content: center; gap: 8px; height: 32px;
+    }
+    .kafka-combined-diagram .v-arrow-line { display: flex; flex-direction: column; align-items: center; }
+    .kafka-combined-diagram .v-line { width: 2px; height: 18px; position: relative; }
+    .kafka-combined-diagram .v-line-green { background: linear-gradient(to bottom, #23863688, #3fb950); }
+    .kafka-combined-diagram .v-line-green::after {
+      content:''; position:absolute; bottom:0; left:50%; transform:translateX(-50%);
+      border-left:5px solid transparent; border-right:5px solid transparent; border-top:7px solid #3fb950;
+    }
+    .kafka-combined-diagram .v-arrow-label { font-size: 9px; color: ${textDim}; letter-spacing: 1px; white-space: nowrap; }
+    .kafka-combined-diagram .services-block {
+      border-radius: 12px; border: 1px solid #238636; background: ${cardGreen}; padding: 12px 14px;
+    }
+    .kafka-combined-diagram .svc-card {
+      border-radius: 7px; border: 1px solid #3fb95066; background: ${cardGreen};
+      padding: 8px 10px; margin-top: 6px;
+    }
+    .kafka-combined-diagram .svc-name { font-size: 11px; font-weight: 700; color: #3fb950; margin-bottom: 3px; }
+    .kafka-combined-diagram .svc-detail { font-size: 10px; color: ${textSec}; line-height: 1.6; }
+    .kafka-combined-diagram .svc-tag { display:inline-block; font-size:9px; font-weight:700; letter-spacing:1px; padding:2px 6px; border-radius:4px; text-transform:uppercase; margin-top:3px; background:${tagGreen}; color:#3fb950; }
+    .kafka-combined-diagram .pods-section {
+      border-radius: 12px; border: 1px solid ${border}; background: ${bg}; padding: 14px;
+    }
+    .kafka-combined-diagram .section-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 2px;
+      text-transform: uppercase; color: ${textSec}; margin-bottom: 10px;
+    }
+    .kafka-combined-diagram .pods-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+    }
+    .kafka-combined-diagram .pod-card {
+      border-radius: 10px; border: 1px solid #3fb95055; background: ${card}; overflow: hidden;
+    }
+    .kafka-combined-diagram .pod-header {
+      padding: 8px 10px; display: flex; align-items: center; justify-content: space-between;
+      background: ${podHdrBg}; border-bottom: 1px solid ${podHdrBd};
+    }
+    .kafka-combined-diagram .pod-name { font-size: 11px; font-weight: 700; color: ${textBrt}; }
+    .kafka-combined-diagram .badge-combined {
+      font-size: 8px; font-weight: 700; padding: 2px 6px; border-radius: 8px;
+      background: ${badgeBg};
+      color: ${badgeCol}; border: 1px solid ${badgeBd};
+      text-transform: uppercase; letter-spacing: 0.8px;
+    }
+    .kafka-combined-diagram .containers { padding: 7px; display: flex; flex-direction: column; gap: 3px; }
+    .kafka-combined-diagram .container-row {
+      display: flex; align-items: center; gap: 6px; padding: 4px 7px;
+      border-radius: 5px; border: 1px solid ${borderIn}; background: ${innerBg}; font-size: 10px;
+    }
+    .kafka-combined-diagram .container-name { color: ${text}; font-weight: 600; }
+    .kafka-combined-diagram .container-port { color: ${textSec}; font-size: 9px; margin-left: auto; }
+    .kafka-combined-diagram .role-tags { display: flex; gap: 4px; padding: 4px 7px 0; flex-wrap: wrap; }
+    .kafka-combined-diagram .role-tag {
+      font-size: 9px; padding: 1px 5px; border-radius: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .kafka-combined-diagram .role-tag-broker     { background: ${rtagBkBg}; color: ${rtagBkCl}; border: 1px solid ${rtagBkBd}; }
+    .kafka-combined-diagram .role-tag-controller { background: ${rtagCtBg}; color: ${rtagCtCl}; border: 1px solid ${rtagCtBd}; }
+    .kafka-combined-diagram .pvc-row {
+      margin: 4px 7px 7px; padding: 4px 7px; border-radius: 5px;
+      border: 1px dashed ${border}; background: ${innerBg};
+      display: flex; align-items: center; gap: 5px; font-size: 9px; color: ${textSec};
+    }
+    .kafka-combined-diagram .kraft-bar {
+      margin-top: 10px; padding: 6px 10px; border-radius: 8px;
+      background: ${kraftBg}; border: 1px solid #6e40c9;
+      font-size: 10px; color: #c084fc;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .kafka-combined-diagram .legend {
+      display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
+      padding-top: 8px; border-top: 1px solid ${borderIn}; margin-top: 16px;
+    }
+    .kafka-combined-diagram .legend-item { display: flex; align-items: center; gap: 5px; font-size: 10px; color: ${textSec}; }
+    .kafka-combined-diagram .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .kafka-combined-diagram .kafka-container-row {
+      border-color: ${kafkaBd}; background: ${kafkaRow};
+    }
+    .kafka-combined-diagram .headless-note {
+      margin-top: 8px; padding: 5px 10px; border-radius: 6px;
+      border: ${headlessBd}; font-size: 10px; color: ${textDim};
+      display: flex; align-items: center; gap: 6px;
+    }
+    .kafka-combined-diagram .headless-note strong { color: ${textSec}; }
+  `.replace(/\s+/g, ' ');
+}
+
 export default function KafkaCombinedArchitectureDiagram() {
+  const theme = useTheme();
+  const dark = theme.palette.mode === 'dark';
+
   return (
     <>
-      <style>{`
-        .kafka-combined-diagram * { box-sizing: border-box; }
-        .kafka-combined-diagram {
-          background: #0d1117;
-          font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-          color: #e6edf3;
-          padding: 28px;
-          border-radius: 16px;
-          margin-bottom: 32px;
-        }
-        .kafka-combined-diagram .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-        .kafka-combined-diagram .dot-blue   { background: #388bfd; }
-        .kafka-combined-diagram .dot-green  { background: #3fb950; }
-        .kafka-combined-diagram .dot-orange { background: #e3b341; }
-        .kafka-combined-diagram .dot-teal   { background: #56d4dd; }
-        .kafka-combined-diagram .dot-red    { background: #f85149; }
-        .kafka-combined-diagram .card-title {
-          font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
-          text-transform: uppercase; margin-bottom: 10px;
-          display: flex; align-items: center; gap: 6px;
-        }
-        .kafka-combined-diagram .main-area { display: flex; align-items: flex-start; }
-        .kafka-combined-diagram .data-plane { flex: 1; display: flex; flex-direction: column; gap: 0; }
-
-        /* Client */
-        .kafka-combined-diagram .client-mini {
-          border-radius: 12px; border: 1px solid #30363d;
-          background: #161b22; padding: 12px 16px;
-          display: flex; align-items: center; gap: 14px;
-        }
-        .kafka-combined-diagram .client-label { font-size: 13px; font-weight: 600; color: #f0f6fc; }
-        .kafka-combined-diagram .client-routes { font-size: 10px; color: #7d8590; margin-top: 3px; line-height: 1.8; }
-
-        /* Arrow */
-        .kafka-combined-diagram .v-arrow {
-          display: flex; align-items: center; justify-content: center; gap: 8px; height: 32px;
-        }
-        .kafka-combined-diagram .v-arrow-line { display: flex; flex-direction: column; align-items: center; }
-        .kafka-combined-diagram .v-line { width: 2px; height: 18px; position: relative; }
-        .kafka-combined-diagram .v-line-green { background: linear-gradient(to bottom, #23863688, #3fb950); }
-        .kafka-combined-diagram .v-line-green::after {
-          content:''; position:absolute; bottom:0; left:50%; transform:translateX(-50%);
-          border-left:5px solid transparent; border-right:5px solid transparent; border-top:7px solid #3fb950;
-        }
-        .kafka-combined-diagram .v-arrow-label { font-size: 9px; color: #484f58; letter-spacing: 1px; white-space: nowrap; }
-
-        /* Service */
-        .kafka-combined-diagram .services-block {
-          border-radius: 12px; border: 1px solid #238636; background: #0a1a0a; padding: 12px 14px;
-        }
-        .kafka-combined-diagram .svc-card {
-          border-radius: 7px; border: 1px solid #3fb95066; background: #0a1a0a;
-          padding: 8px 10px; margin-top: 6px;
-        }
-        .kafka-combined-diagram .svc-name { font-size: 11px; font-weight: 700; color: #3fb950; margin-bottom: 3px; }
-        .kafka-combined-diagram .svc-detail { font-size: 10px; color: #7d8590; line-height: 1.6; }
-        .kafka-combined-diagram .svc-tag { display:inline-block; font-size:9px; font-weight:700; letter-spacing:1px; padding:2px 6px; border-radius:4px; text-transform:uppercase; margin-top:3px; background:#1a4a1a; color:#3fb950; }
-
-        /* Pods */
-        .kafka-combined-diagram .pods-section {
-          border-radius: 12px; border: 1px solid #30363d; background: #0d1117; padding: 14px;
-        }
-        .kafka-combined-diagram .section-label {
-          font-size: 10px; font-weight: 700; letter-spacing: 2px;
-          text-transform: uppercase; color: #7d8590; margin-bottom: 10px;
-        }
-        .kafka-combined-diagram .pods-grid {
-          display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
-        }
-        .kafka-combined-diagram .pod-card {
-          border-radius: 10px; border: 1px solid #3fb95055; background: #161b22; overflow: hidden;
-        }
-        .kafka-combined-diagram .pod-header {
-          padding: 8px 10px; display: flex; align-items: center; justify-content: space-between;
-          background: linear-gradient(135deg,#0d2510,#0a1810); border-bottom: 1px solid #23863655;
-        }
-        .kafka-combined-diagram .pod-name { font-size: 11px; font-weight: 700; color: #f0f6fc; }
-        .kafka-combined-diagram .badge-combined {
-          font-size: 8px; font-weight: 700; padding: 2px 6px; border-radius: 8px;
-          background: linear-gradient(135deg,#1e0d40,#0d2035);
-          color: #c084fc; border: 1px solid #6e40c977;
-          text-transform: uppercase; letter-spacing: 0.8px;
-        }
-        .kafka-combined-diagram .containers { padding: 7px; display: flex; flex-direction: column; gap: 3px; }
-        .kafka-combined-diagram .container-row {
-          display: flex; align-items: center; gap: 6px; padding: 4px 7px;
-          border-radius: 5px; border: 1px solid #21262d; background: #0d1117; font-size: 10px;
-        }
-        .kafka-combined-diagram .container-name { color: #e6edf3; font-weight: 600; }
-        .kafka-combined-diagram .container-port { color: #7d8590; font-size: 9px; margin-left: auto; }
-        .kafka-combined-diagram .role-tags { display: flex; gap: 4px; padding: 4px 7px 0; flex-wrap: wrap; }
-        .kafka-combined-diagram .role-tag {
-          font-size: 9px; padding: 1px 5px; border-radius: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
-        }
-        .kafka-combined-diagram .role-tag-broker     { background: #0d2035; color: #79c0ff; border: 1px solid #1f6feb44; }
-        .kafka-combined-diagram .role-tag-controller { background: #1e0d40; color: #c084fc; border: 1px solid #6e40c944; }
-        .kafka-combined-diagram .pvc-row {
-          margin: 4px 7px 7px; padding: 4px 7px; border-radius: 5px;
-          border: 1px dashed #30363d; background: #0d1117;
-          display: flex; align-items: center; gap: 5px; font-size: 9px; color: #7d8590;
-        }
-        .kafka-combined-diagram .kraft-bar {
-          margin-top: 10px; padding: 6px 10px; border-radius: 8px;
-          background: #120d2a; border: 1px solid #6e40c9;
-          font-size: 10px; color: #c084fc;
-          display: flex; align-items: center; gap: 8px;
-        }
-
-        .kafka-combined-diagram .legend {
-          display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
-          padding-top: 8px; border-top: 1px solid #21262d; margin-top: 16px;
-        }
-        .kafka-combined-diagram .legend-item { display: flex; align-items: center; gap: 5px; font-size: 10px; color: #7d8590; }
-        .kafka-combined-diagram .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
-      `}</style>
+      <style>{getStyles(dark)}</style>
 
       <div className="kafka-combined-diagram">
         <div className="main-area">
-
           <div className="data-plane">
 
             {/* Client */}
@@ -133,7 +169,7 @@ export default function KafkaCombinedArchitectureDiagram() {
                 <div className="client-label">Producer / Consumer</div>
                 <div className="client-routes">
                   Bootstrap seed list&nbsp; <code style={{color:'#3fb950'}}>kafka-cluster-kafka-combine-advertised-listener-0:9092,...</code><br/>
-                  Per-pod (direct)&nbsp; <code style={{color:'#7d8590'}}>kafka-{'{n}'}.kafka-cluster-kafka-combine-headless:9092</code>
+                  Per-pod (direct)&nbsp; <code style={{color: dark ? '#7d8590' : '#656d76'}}>kafka-{'{n}'}.kafka-cluster-kafka-combine-headless:9092</code>
                 </div>
               </div>
             </div>
@@ -175,37 +211,33 @@ export default function KafkaCombinedArchitectureDiagram() {
                       <span className="role-tag role-tag-controller">Controller</span>
                     </div>
                     <div className="containers">
-                      <div className="container-row" style={{borderColor:'#23863644',background:'#081208'}}>
-                        <span>⚡</span>
+                      <div className="container-row kafka-container-row">
                         <span className="container-name">kafka</span>
                         <span className="container-port">:9092 · :9093 · :9094</span>
                       </div>
                       <div className="container-row">
-                        <span>📊</span>
                         <span className="container-name">jmx-exporter</span>
                         <span className="container-port">:5556 metrics</span>
                       </div>
                     </div>
-                    <div className="pvc-row">💾 PVC <strong style={{color:'#e3b341'}}>data-{i}</strong> · log dir</div>
+                    <div className="pvc-row">PVC <strong style={{color:'#e3b341'}}>data-{i}</strong> · log dir</div>
                   </div>
                 ))}
               </div>
 
               <div className="kraft-bar">
-                <span>↔</span>
                 <strong>KRaft Quorum (port :9093)</strong>
-                <span style={{ color: '#6e40c9' }}>
+                <span style={{ color: dark ? '#6e40c9' : '#7c3aed' }}>
                   same <code style={{ color: '#c084fc', fontSize: '10px' }}>kafka</code> container on each node — not a separate metadata deployment · Raft consensus for cluster metadata · one active controller at a time
                 </span>
               </div>
-              <div style={{marginTop:'8px',padding:'5px 10px',borderRadius:'6px',border:'1px dashed #30363d',fontSize:'10px',color:'#484f58',display:'flex',alignItems:'center',gap:'6px'}}>
-                <span>🔗</span>
-                <span><strong style={{color:'#6e7681'}}>Headless service</strong> — per-pod DNS for advertised listener addresses; Kafka clients connect to partition leaders directly</span>
+              <div className="headless-note">
+                <strong>Headless service</strong> — per-pod DNS for advertised listener addresses; Kafka clients connect to partition leaders directly
               </div>
             </div>
 
-          </div>{/* /data-plane */}
-        </div>{/* /main-area */}
+          </div>
+        </div>
 
         <div className="legend">
           <div className="legend-item"><span className="legend-dot" style={{background:'#3fb950'}}></span>Client Traffic (:9092)</div>
