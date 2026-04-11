@@ -172,7 +172,7 @@ function AddonsSheet({ open, onClose }: { open: boolean; onClose: () => void }) 
         { title: 'Redis', icon: <RedisIcon {...iconProps} />, href: '/redis-operator' },
         { title: 'MongoDB', icon: <MongodbIcon {...iconProps} />, href: '/mongodb-operator' },
         { title: 'etcd', icon: <AccountTree {...iconProps} />, href: '/docs/preview/kubeblocks-for-etcd' },
-        { title: 'ZooKeeper', icon: <ViewInAr {...iconProps} />, href: '/docs/preview/kubeblocks-for-zookeeper' },
+        { title: 'ZooKeeper', icon: <ViewInAr {...iconProps} />, href: '/zookeeper-operator' },
       ],
     },
     {

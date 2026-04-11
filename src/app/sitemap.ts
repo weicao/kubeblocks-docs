@@ -64,7 +64,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
   addStaticRoute('/pg-operator',      'en', 0.9, 'monthly');
   addStaticRoute('/redis-operator',   'en', 0.9, 'monthly');
   addStaticRoute('/mongodb-operator', 'en', 0.9, 'monthly');
-  addStaticRoute('/kafka-operator',   'en', 0.9, 'monthly');
+  addStaticRoute('/kafka-operator',      'en', 0.9, 'monthly');
+  addStaticRoute('/zookeeper-operator',  'en', 0.9, 'monthly');
 
   getStaticParams().forEach((item) => {
     const localeDir = path.join(DOCS_DIR, item.locale);

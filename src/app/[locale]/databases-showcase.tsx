@@ -30,7 +30,7 @@ const categories: Category[] = [
       { name: 'Redis',     href: '/redis-operator' },
       { name: 'MongoDB',   href: '/mongodb-operator' },
       { name: 'etcd',      href: '/docs/preview/kubeblocks-for-etcd' },
-      { name: 'ZooKeeper', href: '/docs/preview/kubeblocks-for-zookeeper' },
+      { name: 'ZooKeeper', href: '/zookeeper-operator' },
     ],
   },
   {

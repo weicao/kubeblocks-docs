@@ -97,7 +97,7 @@ export default function DatabasesNav() {
     {
       title: 'ZooKeeper',
       icon: <ViewInAr {...iconProps} />,
-      href: '/docs/preview/kubeblocks-for-zookeeper',
+      href: '/zookeeper-operator',
     },
     {
       title: 'MinIO',
