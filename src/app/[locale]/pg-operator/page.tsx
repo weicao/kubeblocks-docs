@@ -31,9 +31,101 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'SoftwareApplication',
+      name: 'KubeBlocks PostgreSQL Operator',
+      applicationCategory: 'DeveloperApplication',
+      applicationSubCategory: 'Database Management',
+      operatingSystem: 'Kubernetes',
+      description: DESCRIPTION,
+      url: 'https://kubeblocks.io/pg-operator',
+      downloadUrl: 'https://github.com/apecloud/kubeblocks',
+      license: 'https://opensource.org/licenses/Apache-2.0',
+      author: { '@type': 'Organization', name: 'ApeCloud', url: 'https://kubeblocks.io' },
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD', description: 'Open source, free to use' },
+      featureList: [
+        'Patroni-based HA with automatic failover',
+        'WAL-based PITR to any point in time',
+        'Built-in pgbouncer for connection pooling',
+        'pgvector extension for AI/vector workloads',
+        'PostGIS extension for geospatial data',
+        '11 pre-installed PostgreSQL extensions',
+        'TLS encryption and certificate rotation',
+        'Horizontal and vertical scaling',
+        'Volume expansion without downtime',
+        'Minor version rolling upgrades',
+        'Dynamic parameter configuration',
+        'Prometheus metrics via postgres-exporter',
+        'Declarative cluster management via Kubernetes CRDs',
+      ],
+      softwareRequirements: 'Kubernetes 1.21+',
+    },
+    {
+      '@type': 'FAQPage',
+      mainEntity: [
+        {
+          '@type': 'Question',
+          name: 'How does PostgreSQL HA work with KubeBlocks?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'KubeBlocks uses Patroni for PostgreSQL high availability. Patroni monitors the primary and standby nodes using distributed consensus (etcd). When the primary fails, Patroni automatically elects the most up-to-date standby as the new primary, typically within 30 seconds.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'Does KubeBlocks PostgreSQL Operator support PITR?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Yes. KubeBlocks supports WAL-based Point-in-Time Recovery (PITR) for PostgreSQL. Base backups are taken periodically and WAL segments are archived continuously to object storage. You can restore to any second within the retention window.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'Does KubeBlocks support pgvector for AI workloads?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Yes. KubeBlocks PostgreSQL includes pgvector pre-installed, enabling vector similarity search for AI and machine learning workloads. PostGIS for geospatial data and 9 other extensions are also pre-installed.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'Is the KubeBlocks PostgreSQL Operator open source?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Yes. KubeBlocks is fully open source under the Apache 2.0 license at https://github.com/apecloud/kubeblocks. An Enterprise edition adds major version upgrades via blue-green deployment, cross-cluster standby, and a web management UI.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'What PostgreSQL versions does KubeBlocks support?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'KubeBlocks supports PostgreSQL 14, 15, and 16.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'Does KubeBlocks include connection pooling for PostgreSQL?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Yes. KubeBlocks includes pgbouncer as a built-in connection pooler in the PostgreSQL topology. It handles connection pooling in transaction mode, reducing the overhead of short-lived connections in high-concurrency workloads.',
+          },
+        },
+      ],
+    },
+  ],
+};
+
 export default function Page() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
+      />
       <PgOperatorPage />
       <Footer />
     </>

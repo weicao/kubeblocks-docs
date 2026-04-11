@@ -8,7 +8,7 @@ export async function generateStaticParams() {
 }
 
 const DESCRIPTION =
-  'KubeBlocks MongoDB Operator for Kubernetes — deploy production-grade MongoDB with ReplicaSet HA, sharding, backup & restore, TLS, and full Day-2 operations via a single open-source operator.';
+  'KubeBlocks MongoDB Operator for Kubernetes — deploy production-grade MongoDB with ReplicaSet HA, sharding, PITR via oplog streaming, TLS, and full Day-2 operations via a single open-source operator.';
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -31,9 +31,99 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'SoftwareApplication',
+      name: 'KubeBlocks MongoDB Operator',
+      applicationCategory: 'DeveloperApplication',
+      applicationSubCategory: 'Database Management',
+      operatingSystem: 'Kubernetes',
+      description: DESCRIPTION,
+      url: 'https://kubeblocks.io/mongodb-operator',
+      downloadUrl: 'https://github.com/apecloud/kubeblocks',
+      license: 'https://opensource.org/licenses/Apache-2.0',
+      author: { '@type': 'Organization', name: 'ApeCloud', url: 'https://kubeblocks.io' },
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD', description: 'Open source, free to use' },
+      featureList: [
+        'ReplicaSet HA with automatic majority-vote failover under 30 seconds',
+        'Sharded cluster topology with mongos routing',
+        'Physical backup on secondary with no primary impact',
+        'PITR via continuous oplog streaming to object storage',
+        'TLS encryption and certificate rotation',
+        'Horizontal and vertical scaling',
+        'Volume expansion without downtime',
+        'Minor version rolling upgrades',
+        'Dynamic mongod configuration',
+        'Prometheus metrics via mongodb-exporter',
+        'Declarative cluster management via Kubernetes CRDs',
+      ],
+      softwareRequirements: 'Kubernetes 1.21+',
+    },
+    {
+      '@type': 'FAQPage',
+      mainEntity: [
+        {
+          '@type': 'Question',
+          name: 'What MongoDB topologies does KubeBlocks support?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'KubeBlocks supports two MongoDB topologies: ReplicaSet (3-node replica set with automatic majority-vote failover in under 30 seconds) and Sharding (distributed shard replica sets with mongos routers and a Config Server Replica Set for horizontal write scalability).',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'Does KubeBlocks MongoDB Operator support PITR?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Yes. KubeBlocks supports Point-in-Time Recovery (PITR) for MongoDB via continuous oplog archiving. Scheduled full backups are taken on a secondary and the oplog is streamed continuously to S3-compatible object storage, allowing restore to any second within the retention window — not just snapshot points.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'How does MongoDB failover work with KubeBlocks?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: "KubeBlocks relies on MongoDB's native majority-vote election. When the primary becomes unreachable, the replica set automatically elects the most up-to-date secondary as the new primary — typically within 30 seconds, with no manual intervention. KubeBlocks then updates the Kubernetes Service selector to route writes to the new primary without client-side changes.",
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'Is the KubeBlocks MongoDB Operator open source?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Yes. KubeBlocks is fully open source under the Apache 2.0 license. The source code is available at https://github.com/apecloud/kubeblocks. An Enterprise edition with additional features such as major version blue-green upgrades, cross-cluster DR, and a web management UI is also available.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'What MongoDB versions does KubeBlocks support?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'KubeBlocks supports MongoDB 6.0, 7.0, and 8.0.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'How do I deploy a MongoDB cluster on Kubernetes with KubeBlocks?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Install KubeBlocks via Helm, then apply a Cluster manifest with clusterDef: mongodb and topology: replicaset. A 3-node ReplicaSet cluster is ready in minutes. Sharded clusters use topology: sharding. All Day-2 operations (scaling, backup, upgrade, TLS) are managed via OpsRequest CRDs.',
+          },
+        },
+      ],
+    },
+  ],
+};
+
 export default function Page() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
+      />
       <MongoDBOperatorPage />
       <Footer />
     </>

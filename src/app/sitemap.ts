@@ -59,6 +59,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
   addStaticRoute('/docs', 'en', 0.8, 'weekly');
   addStaticRoute('/reports', 'en', 0.7, 'monthly');
 
+  // Operator landing pages
+  addStaticRoute('/mysql-operator',   'en', 0.9, 'monthly');
+  addStaticRoute('/pg-operator',      'en', 0.9, 'monthly');
+  addStaticRoute('/redis-operator',   'en', 0.9, 'monthly');
+  addStaticRoute('/mongodb-operator', 'en', 0.9, 'monthly');
+
   getStaticParams().forEach((item) => {
     const localeDir = path.join(DOCS_DIR, item.locale);
 
