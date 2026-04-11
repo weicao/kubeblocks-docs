@@ -393,9 +393,45 @@ export default function Features() {
             Everything Your Team Needs{' '}
             <Box component="span" color="primary.main">to Run Databases in Production</Box>
           </Typography>
-          <Typography color="text.secondary" sx={{ maxWidth: 520, mx: 'auto' }}>
-            From provisioning to failover, from backup to scaling—KubeBlocks handles the operational complexity so your team can focus on building.
+          <Typography color="text.secondary" sx={{ maxWidth: 560, mx: 'auto' }}>
+            Helm charts deploy databases — they don&apos;t operate them. Backup, failover, scaling, and upgrades require manual scripts or custom tooling. KubeBlocks provides these as first-class declarative APIs, out of the box.
           </Typography>
+
+          {/* Helm vs KubeBlocks contrast */}
+          <Box
+            sx={{
+              mt: 3,
+              display: 'inline-flex',
+              alignItems: 'stretch',
+              gap: 0,
+              borderRadius: '10px',
+              border: '1px solid',
+              borderColor: 'divider',
+              overflow: 'hidden',
+              fontSize: '0.78rem',
+            }}
+          >
+            {/* Helm column */}
+            <Box sx={{ px: 2.5, py: 1.75, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', borderRight: '1px solid', borderColor: 'divider', textAlign: 'left' }}>
+              <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'text.disabled', mb: 1 }}>Helm / Bitnami</Typography>
+              {['Install database', 'Backup & restore', 'Failover automation', 'Scaling operations', 'Version upgrades'].map((f, i) => (
+                <Box key={f} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: i === 0 ? 0.5 : 0.25 }}>
+                  <Box sx={{ fontSize: '0.7rem', color: i === 0 ? 'success.main' : 'text.disabled', opacity: i === 0 ? 1 : 0.5 }}>{i === 0 ? '✓' : '✗'}</Box>
+                  <Typography sx={{ fontSize: '0.75rem', color: i === 0 ? 'text.secondary' : 'text.disabled', opacity: i === 0 ? 1 : 0.5 }}>{f}</Typography>
+                </Box>
+              ))}
+            </Box>
+            {/* KubeBlocks column */}
+            <Box sx={{ px: 2.5, py: 1.75, bgcolor: isDark ? 'rgba(59,130,246,0.04)' : 'rgba(59,130,246,0.03)', textAlign: 'left' }}>
+              <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'primary.main', mb: 1 }}>KubeBlocks</Typography>
+              {['Install database', 'Backup & restore', 'Failover automation', 'Scaling operations', 'Version upgrades'].map((f) => (
+                <Box key={f} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.25 }}>
+                  <Box sx={{ fontSize: '0.7rem', color: 'success.main' }}>✓</Box>
+                  <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>{f}</Typography>
+                </Box>
+              ))}
+            </Box>
+          </Box>
         </Box>
 
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: '1px', bgcolor: 'divider', border: '1px solid', borderColor: 'divider', borderRadius: '14px', overflow: 'hidden' }}>

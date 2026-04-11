@@ -111,7 +111,7 @@ export default function Banner({ version, stars }: { version?: string; stars?: s
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)',
+              gridTemplateColumns: { xs: 'repeat(3, 1fr)', md: 'repeat(5, 1fr)' },
               gap: { xs: 3, md: 0 },
               maxWidth: { xs: 560, md: 'none' },
               mx: 'auto',
@@ -121,6 +121,7 @@ export default function Banner({ version, stars }: { version?: string; stars?: s
               { value: '35+',          label: 'DB Engines' },
               { value: '20K+',         label: 'Managed Instances' },
               { value: '50+',          label: 'Enterprise Customers' },
+              { value: '100+',         label: 'Contributors' },
               { value: stars || '3k+', label: 'GitHub Stars' },
             ].map((s) => (
               <Box key={s.label} sx={{ textAlign: 'center' }}>
