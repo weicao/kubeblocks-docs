@@ -16,7 +16,7 @@ image: /img/blogs/thumbnails/milvus_kubeblocks_thumbnail.png
 
 ## Background
 
-[Milvus](/docs/preview/kubeblocks-for-milvus) is a distributed vector database developed by Zilliz and is one of the mainstream vector databases in the industry. It is primarily used for **similarity search and large-scale vector retrieval**, commonly found in AI scenarios such as image recognition, recommendation systems, natural language processing, and audio recognition. The name "Milvus" means "kite," which is a bird of prey.
+[Milvus](/milvus-operator) is a distributed vector database developed by Zilliz and is one of the mainstream vector databases in the industry. It is primarily used for **similarity search and large-scale vector retrieval**, commonly found in AI scenarios such as image recognition, recommendation systems, natural language processing, and audio recognition. The name "Milvus" means "kite," which is a bird of prey.
 
 Milvus can support storing tens of billions of vectors, which is made possible by its cloud-native architecture:
 
@@ -37,7 +37,7 @@ laure-fc4d79455/meta/session/datanode-5
 
 This contains information such as the node's ID, hostname, and connection address.
 
-- **Message queue**: Used as Milvus's Write-Ahead Log (WAL). In version 2.5, Milvus supports two types of message queues: [Kafka](/docs/preview/kubeblocks-for-kafka) and Pulsar.
+- **Message queue**: Used as Milvus's Write-Ahead Log (WAL). In version 2.5, Milvus supports two types of message queues: [Kafka](/kafka-operator) and Pulsar.
 - **Object storage**: Used as Milvus's primary storage. Data from WAL logs is periodically written to object storage for persistence.
 
 Milvus provides excellent support for Kubernetes, and the official Milvus Operator is available for deploying and managing Milvus on Kubernetes. However, the Milvus Operator is still limited in managing external components like etcd and [MinIO](/docs/preview/kubeblocks-for-minio), only providing functionality to spin up corresponding Pods without supporting comprehensive Day-2 operations.
@@ -220,6 +220,6 @@ This article introduces the Milvus vector database and its deployment implementa
 
 - [KubeBlocks Documentation](/docs/preview/user_docs)
 - [Quick Start with KubeBlocks](/docs/preview/user_docs)
-- [KubeBlocks for Milvus](/docs/preview/kubeblocks-for-milvus)
+- [KubeBlocks for Milvus](/milvus-operator)
 - [KubeBlocks for Qdrant](/docs/preview/kubeblocks-for-qdrant)
-- [KubeBlocks for Kafka](/docs/preview/kubeblocks-for-kafka)
+- [KubeBlocks for Kafka](/kafka-operator)

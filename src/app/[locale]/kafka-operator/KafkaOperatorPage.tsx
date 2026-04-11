@@ -820,7 +820,44 @@ function ComparisonTable() {
   );
 }
 
-// ── 6. CTA ────────────────────────────────────────────────────────────────────
+// ── 6. Related Operators ──────────────────────────────────────────────────────
+
+function RelatedOperators() {
+  return (
+    <Box sx={{ borderTop: '1px solid', borderColor: 'divider', py: { xs: 5, md: 7 } }}>
+      <Container maxWidth="lg">
+        <Typography
+          variant="body2"
+          fontWeight={700}
+          color="text.secondary"
+          mb={3}
+          sx={{ textTransform: 'uppercase', letterSpacing: 1.5, fontSize: '0.7rem' }}
+        >
+          Also on KubeBlocks
+        </Typography>
+        <Box display="flex" flexWrap="wrap" gap={3}>
+          <Box maxWidth={360}>
+            <Button
+              variant="outlined"
+              href="/zookeeper-operator"
+              size="small"
+              sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 2, mb: 1 }}
+            >
+              Apache ZooKeeper Operator for Kubernetes →
+            </Button>
+            <Typography variant="body2" color="text.secondary" lineHeight={1.6}>
+              Running Kafka 2.x with an external ZooKeeper ensemble? KubeBlocks ZooKeeper Operator
+              manages production-grade ZooKeeper clusters with ZAB consensus, quorum-safe scaling,
+              and snapshot backup — on the same platform as Kafka.
+            </Typography>
+          </Box>
+        </Box>
+      </Container>
+    </Box>
+  );
+}
+
+// ── 7. CTA ────────────────────────────────────────────────────────────────────
 
 function CTA() {
   const checks = ['Open Source', 'Kafka & 35+ other engines', 'KRaft — no ZooKeeper', 'No vendor lock-in'];
@@ -875,6 +912,7 @@ export default function KafkaOperatorPage() {
       <ComparisonTable />
       <CapabilitiesDiagrams />
       <LifecycleFeatures />
+      <RelatedOperators />
       <CTA />
     </Box>
   );

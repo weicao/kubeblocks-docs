@@ -58,6 +58,7 @@ const jsonLd = {
       operatingSystem: 'Kubernetes',
       description: DESCRIPTION,
       url: 'https://kubeblocks.io/milvus-operator',
+      sameAs: ['https://github.com/apecloud/kubeblocks-addons/tree/main/addons/milvus'],
       downloadUrl: 'https://github.com/apecloud/kubeblocks',
       license: 'https://github.com/apecloud/kubeblocks/blob/main/LICENSE',
       author: { '@type': 'Organization', name: 'ApeCloud', url: 'https://kubeblocks.io' },

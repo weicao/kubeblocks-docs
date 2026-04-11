@@ -44,6 +44,7 @@ type Engine = {
   name: string;
   category: string;
   description: string;
+  operatorHref?: string;
   docsHref?: string;
   addonsHref?: string;
 };
@@ -54,6 +55,7 @@ const ENGINES: Engine[] = [
     name: 'MySQL',
     category: 'Relational',
     description: 'ApeCloud MySQL is a branch of MySQL with optimized Raft-based high availability, supporting multi-primary and read replicas topologies.',
+    operatorHref: '/mysql-operator',
     docsHref: '/docs/preview/kubeblocks-for-mysql',
     addonsHref: 'https://github.com/apecloud/kubeblocks-addons/tree/main/addons/apecloud-mysql',
   },
@@ -61,6 +63,7 @@ const ENGINES: Engine[] = [
     name: 'PostgreSQL',
     category: 'Relational',
     description: 'Run PostgreSQL clusters with streaming replication, automatic failover, connection pooling, and point-in-time recovery on Kubernetes.',
+    operatorHref: '/pg-operator',
     docsHref: '/docs/preview/kubeblocks-for-postgresql',
     addonsHref: 'https://github.com/apecloud/kubeblocks-addons/tree/main/addons/postgresql',
   },
@@ -111,6 +114,7 @@ const ENGINES: Engine[] = [
     name: 'MongoDB',
     category: 'Document',
     description: 'Deploy and manage MongoDB replica sets and sharded clusters with automated failover, backups, and horizontal scaling.',
+    operatorHref: '/mongodb-operator',
     docsHref: '/docs/preview/kubeblocks-for-mongodb',
     addonsHref: 'https://github.com/apecloud/kubeblocks-addons/tree/main/addons/mongodb',
   },
@@ -119,6 +123,7 @@ const ENGINES: Engine[] = [
     name: 'Redis',
     category: 'Cache / KV',
     description: 'Manage Redis standalone, replication, and cluster topologies with Sentinel-based HA, ACL management, and TLS support.',
+    operatorHref: '/redis-operator',
     docsHref: '/docs/preview/kubeblocks-for-redis',
     addonsHref: 'https://github.com/apecloud/kubeblocks-addons/tree/main/addons/redis',
   },
@@ -140,6 +145,7 @@ const ENGINES: Engine[] = [
     name: 'Kafka',
     category: 'Message Queue',
     description: 'Deploy Apache Kafka clusters with KRaft mode, multi-broker topologies, and automated partition rebalancing on Kubernetes.',
+    operatorHref: '/kafka-operator',
     docsHref: '/docs/preview/kubeblocks-for-kafka',
     addonsHref: 'https://github.com/apecloud/kubeblocks-addons/tree/main/addons/kafka',
   },
@@ -226,6 +232,7 @@ const ENGINES: Engine[] = [
     name: 'Milvus',
     category: 'Vector DB',
     description: 'Deploy Milvus vector databases for AI-native similarity search, supporting standalone and distributed topologies.',
+    operatorHref: '/milvus-operator',
     docsHref: '/docs/preview/kubeblocks-for-milvus',
     addonsHref: 'https://github.com/apecloud/kubeblocks-addons/tree/main/addons/milvus',
   },
@@ -273,6 +280,7 @@ const ENGINES: Engine[] = [
     name: 'ZooKeeper',
     category: 'Coordination',
     description: 'Operate ZooKeeper ensembles for distributed coordination, often used alongside Kafka and ClickHouse.',
+    operatorHref: '/zookeeper-operator',
     docsHref: '/docs/preview/kubeblocks-for-zookeeper',
     addonsHref: 'https://github.com/apecloud/kubeblocks-addons/tree/main/addons/zookeeper',
   },
@@ -312,12 +320,16 @@ export default function DatabasesPage() {
     description: PAGE_DESCRIPTION,
     url: toAbsoluteUrl('/databases'),
     numberOfItems: ENGINES.length,
-    itemListElement: ENGINES.filter((e) => e.docsHref || e.addonsHref).map((engine, i) => ({
+    itemListElement: ENGINES.filter((e) => e.operatorHref || e.docsHref || e.addonsHref).map((engine, i) => ({
       '@type': 'ListItem',
       position: i + 1,
       name: engine.name,
       description: engine.description,
-      url: engine.docsHref ? toAbsoluteUrl(engine.docsHref) : engine.addonsHref,
+      url: engine.operatorHref
+        ? toAbsoluteUrl(engine.operatorHref)
+        : engine.docsHref
+          ? toAbsoluteUrl(engine.docsHref)
+          : engine.addonsHref,
       item: {
         '@type': 'SoftwareApplication',
         name: engine.name,
@@ -355,11 +367,11 @@ export default function DatabasesPage() {
                     variant="outlined"
                     sx={{ height: '100%', boxShadow: 'none' }}
                   >
-                    {(engine.docsHref || engine.addonsHref) ? (
+                    {(engine.operatorHref || engine.docsHref || engine.addonsHref) ? (
                       <CardActionArea
                         component={Link}
-                        href={engine.docsHref ?? engine.addonsHref!}
-                        {...(!engine.docsHref ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                        href={engine.operatorHref ?? engine.docsHref ?? engine.addonsHref!}
+                        {...(!engine.operatorHref && !engine.docsHref ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                         sx={{ height: '100%', alignItems: 'flex-start', display: 'flex' }}
                         underline="none"
                       >
@@ -368,7 +380,9 @@ export default function DatabasesPage() {
                             <Typography variant="h6" fontWeight={600}>
                               {engine.name}
                             </Typography>
-                            {engine.docsHref ? (
+                            {engine.operatorHref ? (
+                              <Chip label="Operator" size="small" color="primary" variant="outlined" />
+                            ) : engine.docsHref ? (
                               <Chip label="Docs" size="small" color="primary" variant="outlined" />
                             ) : (
                               <Chip label="Add-on" size="small" variant="outlined" />

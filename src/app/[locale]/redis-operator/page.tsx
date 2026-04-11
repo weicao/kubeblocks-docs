@@ -42,6 +42,7 @@ const jsonLd = {
       operatingSystem: 'Kubernetes',
       description: DESCRIPTION,
       url: 'https://kubeblocks.io/redis-operator',
+      sameAs: ['https://github.com/apecloud/kubeblocks-addons/tree/main/addons/redis'],
       downloadUrl: 'https://github.com/apecloud/kubeblocks',
       license: 'https://opensource.org/licenses/Apache-2.0',
       author: { '@type': 'Organization', name: 'ApeCloud', url: 'https://kubeblocks.io' },

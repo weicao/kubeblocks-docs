@@ -20,7 +20,7 @@ image: /img/blogs/thumbnails/blog-redis-kuaishou-cover.jpeg
 >
 > Yuxing Liu is the senior software engineer from Kuaishou. Yuxing has worked in the cloud-native teams of Alibaba Cloud and Kuaishou, focusing on the cloud-native field and gaining experience in open source, commercialization, and scaling of cloud-native technologies. Yuxing is also one of the maintainers of the CNCF/Dragonfly project and also one of the maintainers of the CNCF/Sealer project. Currently, he focuses on driving the cloud-native transformation of stateful business in Kuaishou.
 
-As a popular short-form video application, Kuaishou relies heavily on [Redis](/docs/preview/kubeblocks-for-redis) to deliver low-latency responses to its users. Operating on private cloud infrastructure, automating the management of large-scale Redis clusters with minimal human intervention presents a significant challenge. A promising solution emerged: running Redis on Kubernetes using an Operator.
+As a popular short-form video application, Kuaishou relies heavily on [Redis](/redis-operator) to deliver low-latency responses to its users. Operating on private cloud infrastructure, automating the management of large-scale Redis clusters with minimal human intervention presents a significant challenge. A promising solution emerged: running Redis on Kubernetes using an Operator.
 
 While containerizing stateless services like applications and Nginx is now standard, running stateful services like databases and Redis on Kubernetes remains debated. Based on Kuaishou's experience transforming Redis from physical machines to a cloud-native solution, this blog explores solutions and key considerations for managing stateful services on Kubernetes with the KubeBlocks Operator.
 
@@ -194,5 +194,5 @@ At KubeCon Hong Kong in August, Kuaishou and the KubeBlocks team delivered a joi
 
 - [KubeBlocks Documentation](/docs/preview/user_docs)
 - [Quick Start with KubeBlocks](/docs/preview/user_docs)
-- [KubeBlocks for Redis](/docs/preview/kubeblocks-for-redis)
-- [KubeBlocks for MongoDB](/docs/preview/kubeblocks-for-mongodb)
+- [KubeBlocks for Redis](/redis-operator)
+- [KubeBlocks for MongoDB](/mongodb-operator)

@@ -1147,7 +1147,44 @@ function Comparison() {
   );
 }
 
-// ── 5. CTA ────────────────────────────────────────────────────────────────────
+// ── 5. Related Operators ──────────────────────────────────────────────────────
+
+function RelatedOperators() {
+  return (
+    <Box sx={{ borderTop: '1px solid', borderColor: 'divider', py: { xs: 5, md: 7 } }}>
+      <Container maxWidth="lg">
+        <Typography
+          variant="body2"
+          fontWeight={700}
+          color="text.secondary"
+          mb={3}
+          sx={{ textTransform: 'uppercase', letterSpacing: 1.5, fontSize: '0.7rem' }}
+        >
+          Also on KubeBlocks
+        </Typography>
+        <Box display="flex" flexWrap="wrap" gap={3}>
+          <Box maxWidth={360}>
+            <Button
+              variant="outlined"
+              href="/kafka-operator"
+              size="small"
+              sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 2, mb: 1 }}
+            >
+              Apache Kafka Operator for Kubernetes →
+            </Button>
+            <Typography variant="body2" color="text.secondary" lineHeight={1.6}>
+              ZooKeeper is the external coordination layer for Apache Kafka 2.x.
+              KubeBlocks manages both — deploy your Kafka cluster and ZooKeeper ensemble
+              with a single operator and unified Day-2 operations.
+            </Typography>
+          </Box>
+        </Box>
+      </Container>
+    </Box>
+  );
+}
+
+// ── 6. CTA ────────────────────────────────────────────────────────────────────
 
 function CTA() {
   const checks = ['Open Source', 'ZooKeeper & 35+ other engines', 'Production-grade HA', 'No vendor lock-in'];
@@ -1217,6 +1254,7 @@ export default function ZookeeperOperatorPage() {
       <Comparison />
       <CapabilitiesDiagrams />
       <LifecycleFeatures />
+      <RelatedOperators />
       <CTA />
     </>
   );

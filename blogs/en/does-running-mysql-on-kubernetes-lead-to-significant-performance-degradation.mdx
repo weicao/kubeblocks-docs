@@ -14,7 +14,7 @@ image: /img/blogs/thumbnails/blog-mysql.png
 
 # Does running MySQL on Kubernetes lead to significant performance degradation?
 
-Does running [MySQL](/docs/preview/kubeblocks-for-mysql) on Kubernetes lead to significant performance degradation? Although concerns about this have been raised recently, few tests have been conducted, and results have rarely been shared publicly.
+Does running [MySQL](/mysql-operator) on Kubernetes lead to significant performance degradation? Although concerns about this have been raised recently, few tests have been conducted, and results have rarely been shared publicly.
 To answer this question, we used a popular benchmarking tool to evaluate MySQL throughput and latency in the following typical scenarios and tried to give a report and our insights:
 - MySQL and the benchmarking tool are deployed in the same K8s cluster to simulate the application and database running in the same K8s cluster.
 - MySQL and the benchmarking tool are deployed in two K8s clusters to simulate the application and database running in two K8s clusters.
@@ -192,5 +192,5 @@ The above points have been verified on AWS and are likely to still hold true on 
 
 - [KubeBlocks Documentation](/docs/preview/user_docs)
 - [Quick Start with KubeBlocks](/docs/preview/user_docs)
-- [KubeBlocks for MySQL](/docs/preview/kubeblocks-for-mysql)
-- [KubeBlocks for PostgreSQL](/docs/preview/kubeblocks-for-postgresql)
+- [KubeBlocks for MySQL](/mysql-operator)
+- [KubeBlocks for PostgreSQL](/pg-operator)
