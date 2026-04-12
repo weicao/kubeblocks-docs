@@ -14,6 +14,19 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: 'The Production-Grade Redis Operator for Kubernetes | KubeBlocks',
     description: DESCRIPTION,
+    keywords: [
+      'Redis Operator',
+      'Redis Kubernetes',
+      'Redis on Kubernetes',
+      'KubeBlocks Redis',
+      'Redis cluster Kubernetes',
+      'Redis HA Kubernetes',
+      'Redis Sentinel Kubernetes',
+      'Redis backup restore Kubernetes',
+      'Valkey Kubernetes',
+      'open source Redis operator',
+      'Redis Day-2 operations',
+    ],
     alternates: { canonical: '/redis-operator' },
     openGraph: {
       url: '/redis-operator',
@@ -44,7 +57,7 @@ const jsonLd = {
       url: 'https://kubeblocks.io/redis-operator',
       sameAs: ['https://github.com/apecloud/kubeblocks-addons/tree/main/addons/redis'],
       downloadUrl: 'https://github.com/apecloud/kubeblocks',
-      license: 'https://opensource.org/licenses/Apache-2.0',
+      license: 'https://github.com/apecloud/kubeblocks/blob/main/LICENSE',
       author: { '@type': 'Organization', name: 'ApeCloud', url: 'https://kubeblocks.io' },
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD', description: 'Open source, free to use' },
       featureList: [
@@ -95,7 +108,7 @@ const jsonLd = {
           name: 'Is the KubeBlocks Redis Operator open source?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'Yes. KubeBlocks is fully open source under the Apache 2.0 license at https://github.com/apecloud/kubeblocks. It supports both Redis and Valkey (the open-source Redis fork).',
+            text: 'Yes. KubeBlocks is fully open source under the AGPL-3.0 license at https://github.com/apecloud/kubeblocks. It supports both Redis and Valkey (the open-source Redis fork).',
           },
         },
         {

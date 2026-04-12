@@ -14,6 +14,19 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: 'The Production-Grade MySQL Operator for Kubernetes | KubeBlocks',
     description: DESCRIPTION,
+    keywords: [
+      'MySQL Operator',
+      'MySQL Kubernetes',
+      'MySQL on Kubernetes',
+      'KubeBlocks MySQL',
+      'MySQL cluster Kubernetes',
+      'MySQL HA Kubernetes',
+      'MySQL Group Replication Kubernetes',
+      'MySQL PITR Kubernetes',
+      'MySQL backup restore Kubernetes',
+      'open source MySQL operator',
+      'MySQL Day-2 operations',
+    ],
     alternates: { canonical: '/mysql-operator' },
     openGraph: {
       url: '/mysql-operator',
@@ -44,7 +57,7 @@ const jsonLd = {
       url: 'https://kubeblocks.io/mysql-operator',
       sameAs: ['https://github.com/apecloud/kubeblocks-addons/tree/main/addons/apecloud-mysql'],
       downloadUrl: 'https://github.com/apecloud/kubeblocks',
-      license: 'https://opensource.org/licenses/Apache-2.0',
+      license: 'https://github.com/apecloud/kubeblocks/blob/main/LICENSE',
       author: { '@type': 'Organization', name: 'ApeCloud', url: 'https://kubeblocks.io' },
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD', description: 'Open source, free to use' },
       featureList: [
@@ -94,7 +107,7 @@ const jsonLd = {
           name: 'Is the KubeBlocks MySQL Operator open source?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'Yes. KubeBlocks is fully open source under the Apache 2.0 license at https://github.com/apecloud/kubeblocks. An Enterprise edition adds major version blue-green upgrades, cross-cluster standby, and a web management UI.',
+            text: 'Yes. KubeBlocks is fully open source under the AGPL-3.0 license at https://github.com/apecloud/kubeblocks. An Enterprise edition adds major version blue-green upgrades, cross-cluster standby, and a web management UI.',
           },
         },
         {
