@@ -50,6 +50,7 @@ export async function GET() {
     `- Kafka Operator for Kubernetes (KRaft mode, no ZooKeeper, combined/separated topology, topic/ACL/quota management): ${toAbsoluteUrl('/kafka-operator')}`,
     `- ZooKeeper Operator for Kubernetes (ZAB consensus, leader routing, quorum-safe scaling, snapshot backup): ${toAbsoluteUrl('/zookeeper-operator')}`,
     `- Milvus Operator for Kubernetes (vector database, standalone/distributed topology, billion-scale ANN search, milvus-backup): ${toAbsoluteUrl('/milvus-operator')}`,
+    `- Elasticsearch Operator for Kubernetes (multi-node HA, dedicated master/data/ingest/transform roles, snapshot backup, rolling upgrades): ${toAbsoluteUrl('/elasticsearch-operator')}`,
     '',
     '## Supported database engines',
     '| Engine | Category | Docs |',

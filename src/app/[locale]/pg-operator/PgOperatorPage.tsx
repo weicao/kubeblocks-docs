@@ -1251,7 +1251,7 @@ const pgPosts = [
     title: 'How Containerization Affects Database Performance: runC, Kata, and gVisor',
     description: 'CPU, memory, and I/O benchmarks across container runtimes — and how to avoid common pitfalls like I/O hangs and OOM errors in Kubernetes.',
     image: '/img/blogs/thumbnails/blog-containerization.png',
-    href: '/blog/Does-containerization-affect-the-performance-of-databases',
+    href: '/blog/does-containerization-affect-the-performance-of-databases',
   },
 ];
 

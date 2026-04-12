@@ -54,7 +54,7 @@ const categories: Category[] = [
     items: [
       { name: 'Milvus',       href: '/milvus-operator' },
       { name: 'Qdrant',       href: '/docs/preview/kubeblocks-for-qdrant' },
-      { name: 'ElasticSearch', href: '/docs/preview/kubeblocks-for-elasticsearch' },
+      { name: 'ElasticSearch', href: '/elasticsearch-operator' },
       { name: 'OpenSearch',   preview: true },
       { name: 'Neo4j',        preview: true },
       { name: 'NebulaGraph',  preview: true },

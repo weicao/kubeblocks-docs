@@ -1,116 +1,194 @@
 ---
 title: Elasticsearch Architecture in KubeBlocks
-description: Learn how KubeBlocks deploys and manages Elasticsearch clusters on Kubernetes, including the resource hierarchy, pod layout, multi-role nodes, and automatic master election.
-keywords: [Elasticsearch, KubeBlocks, architecture, Kubernetes, high availability, master election, sharding]
+description: Learn how KubeBlocks deploys and manages Elasticsearch clusters on Kubernetes across four topologies — single-node, mdit, multi-node, and m-d-i-t — with dedicated architecture diagrams, pod internals, and HA details for each layout.
+keywords: [Elasticsearch, KubeBlocks, architecture, Kubernetes, high availability, master election, sharding, topology, single-node, multi-node, mdit, m-d-i-t]
 sidebar_position: 3
 sidebar_label: Architecture
 ---
 
+import ElasticsearchSingleNodeDiagram from '@/components/ElasticsearchSingleNodeDiagram';
+import ElasticsearchMditDiagram from '@/components/ElasticsearchMditDiagram';
 import ElasticsearchArchitectureDiagram from '@/components/ElasticsearchArchitectureDiagram';
+import ElasticsearchFullSeparationDiagram from '@/components/ElasticsearchFullSeparationDiagram';
 
 # Elasticsearch Architecture in KubeBlocks
 
-This page describes how KubeBlocks deploys an Elasticsearch cluster on Kubernetes — covering the resource hierarchy, pod internals, node roles, and built-in HA through Elasticsearch's cluster coordination protocol.
+KubeBlocks supports four distinct Elasticsearch deployment topologies:
 
-<ElasticsearchArchitectureDiagram />
+| Topology | `spec.topology` | Components | Use Case |
+|----------|----------------|-----------|----------|
+| **Single Node** | `single-node` | `mdit` (1 replica) | Development and local testing |
+| **MDIT** | `mdit` | `mdit` (N replicas) | Medium workloads — scalable, no dedicated masters |
+| **Multi-Node** | `multi-node` *(default)* | `master` (3) + `dit` (N) | Production HA — dedicated master + data/ingest/transform nodes |
+| **Full Separation** | `m-d-i-t` | `m` + `d` + `i` + `t` | Large scale — each role component sized and scaled independently |
 
-## Resource Hierarchy
+Each topology uses the same KubeBlocks resource hierarchy: `Cluster → Component → InstanceSet → Pod × N`.
 
-KubeBlocks models an Elasticsearch cluster as a hierarchy of Kubernetes custom resources:
+---
 
-```
-Cluster  →  Component  →  InstanceSet  →  Pod × N
-```
+## Single-Node Topology
 
-| Resource | Role |
-|----------|------|
-| **Cluster** | User-facing declaration — specifies topology, node roles, shard counts, replicas, and resources |
-| **Component** | Generated automatically; references a `ComponentDefinition` that describes container specs, lifecycle actions, and services |
-| **InstanceSet** | KubeBlocks custom workload (replaces `StatefulSet`); manages pods with stable identities and role awareness |
-| **Pod** | Actual running instance; each pod gets a unique ordinal and its own PVC |
+A single Elasticsearch pod running all roles simultaneously — master, data, ingest, and transform. The entire cluster state, data, and pipeline processing lives on one node. Designed purely for development and testing: there is no failover, no shard replication, and no HA.
 
-## Containers Inside Each Pod
+<ElasticsearchSingleNodeDiagram />
 
-Every Elasticsearch pod runs three main containers (plus three init containers on startup: `prepare-plugins` stages plugin files from a plugin image into a shared volume, `install-plugins` installs those plugins and prepares the filesystem layout, and `install-es-agent` copies the `es-agent` binary into the container's local bin path):
+### Components
+
+| Component | Replicas | Roles |
+|-----------|---------|-------|
+| `mdit` | 1 | master · data · ingest · transform |
+
+### Containers inside the pod
 
 | Container | Port | Purpose |
 |-----------|------|---------|
-| `elasticsearch` | 9200 (HTTP REST), 9300 (transport/inter-node) | Elasticsearch engine handling indexing, search, and cluster coordination |
-| `es-agent` | 8080 | Sidecar agent for configuration management and lifecycle operations |
-| `exporter` | 9114 | Prometheus metrics exporter (`elasticsearch-exporter`) |
+| `elasticsearch` | 9200 (HTTP), 9300 (transport) | Elasticsearch engine — all roles |
+| `es-agent` | 8080 | Lifecycle operations and configuration management |
+| `exporter` | 9114 | Prometheus metrics (`elasticsearch-exporter`) |
 
-Each pod mounts its own **PVC** for the Elasticsearch data directory (`/usr/share/elasticsearch/data`), providing independent persistent storage per node.
-
-## Node roles (Elasticsearch)
-
-Elasticsearch nodes are configured with **roles** (master-eligible, data, ingest, coordinating, etc.). The sections below describe what each role means for **capacity and HA**.
-
-| Node role | Responsibility |
-|-----------|----------------|
-| **Master-eligible** | Participates in leader election; manages cluster state, index mappings, and shard allocation |
-| **Data** | Stores shard data; handles indexing and search requests for its assigned shards |
-| **Ingest** | Pre-processes documents before indexing via ingest pipelines |
-| **Coordinating** (optional) | Routes client requests to the appropriate data nodes and aggregates results |
-
-In smaller deployments, one process can hold several roles. In production, splitting roles across nodes improves stability.
-
-## Topologies and component names (ClusterDefinition)
-
-In the **kubeblocks-addons** Elasticsearch chart, **`spec.topology`** selects a layout. KubeBlocks creates **one Component per entry** in that topology; component **names** are short labels (`master`, `dit`, `mdit`, …), while the **Elasticsearch role set** is defined inside the image/config for each layout.
-
-| Topology (`spec.topology`) | Components created | Notes |
-|---------------------------|-------------------|--------|
-| `single-node` | `mdit` | Single-node layout |
-| `multi-node` (chart default) | `master`, `dit` | Split layout: dedicated `master` Component plus `dit` Component for the remaining node group |
-| `m-dit` | `master`, `dit` | Same component names as `multi-node`; chart distinguishes layouts for ordering/defaults |
-| `mdit` | `mdit` | Combined multi-role naming under one component |
-| `m-d-i-t` | `m`, `d`, `i`, `t` | Dedicated components per role family (master / data / ingest / coordinating) |
-
-Service names look like `{cluster}-{component}-http` — the **`{component}`** segment is the KubeBlocks Component name above (for example `mdit`, `master`, `dit`), not the long English phrase “master-eligible”. Use your Cluster’s `status` or `kubectl get component -n <ns>` to see the exact names for a running cluster.
-
-## High Availability via Cluster Coordination
-
-Elasticsearch provides built-in HA through its own cluster coordination protocol (quorum-based master election). No external coordinator is required:
-
-| Mechanism | Description |
-|-----------|-------------|
-| **Master election** | Master-eligible nodes elect a leader via quorum voting; requires `(N/2 + 1)` master-eligible nodes to agree |
-| **Shard replication** | Each index shard has a primary and one or more replica shards; replicas are placed on different nodes for fault tolerance |
-| **Primary shard promotion** | If a node holding a primary shard fails, Elasticsearch automatically promotes an in-sync replica to primary |
-| **Cluster state replication** | The elected master replicates cluster state changes to all nodes before acknowledging writes |
-
-In Elasticsearch 7.x and later, the quorum is configured via the **voting configuration** — a set of master-eligible nodes whose agreement is required. Split-brain prevention relies on maintaining quorum rather than the legacy `minimum_master_nodes` setting (which was removed in 7.0). KubeBlocks provides separate `ComponentDefinition` configurations for Elasticsearch 6.x, 7.x, and 8.x.
-
-## Traffic Routing
-
-KubeBlocks creates three services for each Elasticsearch cluster:
+### Traffic routing
 
 | Service | Type | Port | Notes |
 |---------|------|------|-------|
-| `{cluster}-{component}-http` | ClusterIP | 9200 | Client REST API endpoint; all pods (no roleSelector) |
-| `{cluster}-{component}-agent` | ClusterIP | 8080 | `es-agent` sidecar endpoint; used for lifecycle operations and configuration management |
-| `{cluster}-{component}-headless` | Headless | 9200, 9300 | Per-pod DNS — inter-node transport and operator probes |
+| `{cluster}-mdit-http` | ClusterIP | 9200 | Client REST API — single pod |
+| `{cluster}-mdit-agent` | ClusterIP | 8080 | es-agent sidecar |
+| `{cluster}-mdit-headless` | Headless | 9200, 9300 | Pod DNS — operator probes |
 
-The component name depends on the topology — for example `mdit` (single combined node) or `master`/`dit` (multi-node). Client applications send REST API requests to `{cluster}-{component}-http:9200`. Inter-node transport communication (shard replication, cluster state synchronization) uses port 9300 over the headless service so each pod is individually addressable:
+### High availability
 
-```
-{pod-name}.{cluster}-{component}-headless.{namespace}.svc.cluster.local:9300
-```
+None. Pod failure means the cluster is unavailable until Kubernetes restarts the pod. **Do not use in production.**
 
-## Automatic Failover
+---
 
-When an Elasticsearch node fails, the cluster responds automatically:
+## MDIT Topology
 
-1. **Node leaves the cluster** — heartbeat timeout expires; the master removes the node from cluster state
-2. **Primary shard promotion** — for any primary shards on the failed node, an in-sync replica is promoted to primary immediately
-3. **Shard rebalancing** — Elasticsearch allocates new replica shards on remaining nodes to restore the target replication factor
-4. **Master failover** — if the failed node was the elected master, surviving master-eligible nodes hold a new election within seconds
+Multiple Elasticsearch pods each running all four roles (master, data, ingest, transform). Unlike `single-node`, you can scale out replicas for higher throughput and capacity. All pods participate in master election — any pod can become master. There are no dedicated master nodes.
 
-Recovery time depends on shard size and network throughput but requires no manual intervention.
+<ElasticsearchMditDiagram />
+
+### Components
+
+| Component | Replicas | Roles |
+|-----------|---------|-------|
+| `mdit` | N (configurable) | master · data · ingest · transform |
+
+### Containers inside each pod
+
+| Container | Port | Purpose |
+|-----------|------|---------|
+| `elasticsearch` | 9200, 9300 | Elasticsearch engine — all roles |
+| `es-agent` | 8080 | Lifecycle operations and configuration management |
+| `exporter` | 9114 | Prometheus metrics |
+
+### Traffic routing
+
+| Service | Type | Port | Notes |
+|---------|------|------|-------|
+| `{cluster}-mdit-http` | ClusterIP | 9200 | Client REST API — load-balanced across all pods |
+| `{cluster}-mdit-agent` | ClusterIP | 8080 | es-agent sidecar |
+| `{cluster}-mdit-headless` | Headless | 9200, 9300 | Per-pod DNS — inter-node transport and operator probes |
+
+### High availability
+
+Any node failure requires re-election among surviving pods. With N=3 pods, the cluster tolerates 1 pod failure. Data is stored on each pod's own PVC; shard replication ensures data redundancy across pods. For stronger master stability, prefer `multi-node`.
+
+---
+
+## Multi-Node Topology
+
+The recommended production topology. Separates cluster management from data operations: three dedicated **master** nodes handle cluster state and shard allocation, while the combined **DIT** (data + ingest + transform) nodes handle indexing, search, and pipeline processing. Client traffic goes only to DIT nodes.
+
+<ElasticsearchArchitectureDiagram />
+
+### Components
+
+| Component | Replicas | Roles | Purpose |
+|-----------|---------|-------|---------|
+| `master` | 3 | master only | Cluster state management, shard allocation, index mappings |
+| `dit` | N (configurable) | data · ingest · transform | Indexing, search, pipeline processing |
+
+### Containers inside each pod
+
+**Both `master` and `dit` pods:**
+
+| Container | Port | Purpose |
+|-----------|------|---------|
+| `elasticsearch` | 9200 (dit only), 9300 | Elasticsearch engine; master pods do not expose :9200 to clients |
+| `es-agent` | 8080 | Lifecycle operations and configuration management |
+| `exporter` | 9114 | Prometheus metrics |
+
+### Traffic routing
+
+| Service | Type | Port | Notes |
+|---------|------|------|-------|
+| `{cluster}-dit-http` | ClusterIP | 9200 | **Client REST API** — routes to DIT pods |
+| `{cluster}-master-headless` | Headless | 9300 | Inter-node transport for master component |
+| `{cluster}-dit-headless` | Headless | 9200, 9300 | Per-pod DNS for DIT component |
+
+Master pods are only reachable via the headless service on :9300 — they do not serve client REST traffic.
+
+### High availability
+
+| Mechanism | Description |
+|-----------|-------------|
+| **Master quorum** | 3 master-eligible nodes — tolerates 1 failure without losing cluster state |
+| **Shard replication** | Primary and replica shards distributed across DIT pods — promotes replica on data node failure |
+| **Split-brain prevention** | Dedicated master nodes never also hold data — master election cannot be confused by data node failures |
+| **Rolling upgrades** | KubeBlocks upgrades DIT nodes first, then master nodes last (quorum maintained throughout) |
+
+---
+
+## Full Separation (m-d-i-t) Topology
+
+Fully separated role components: each of the four Elasticsearch roles runs as its own independent KubeBlocks Component with its own replica count, resource limits, and PVC size. Best for large-scale deployments where fine-grained resource tuning and independent scaling per role is critical.
+
+<ElasticsearchFullSeparationDiagram />
+
+### Components
+
+| Component | Replicas | Role | Primary Resource Driver |
+|-----------|---------|------|------------------------|
+| `m` | 3 | master | Low CPU/memory — manages metadata only |
+| `d` | N | data | High storage (large PVCs) + memory for JVM heap |
+| `i` | N | ingest | High CPU for pipeline transforms |
+| `t` | N | transform | Medium CPU for continuous aggregation jobs |
+
+### Containers inside each pod
+
+All components include `elasticsearch` (role-specific config) and `es-agent` (:8080). Data and ingest pods also include `exporter` (:9114) for Prometheus metrics.
+
+### Traffic routing
+
+| Service | Type | Port | Notes |
+|---------|------|------|-------|
+| `{cluster}-d-http` | ClusterIP | 9200 | **Search traffic** → data nodes |
+| `{cluster}-i-http` | ClusterIP | 9200 | **Ingest traffic** → ingest nodes (pipeline processing) |
+| `{cluster}-m-headless` | Headless | 9300 | Inter-node transport for master component |
+| `{cluster}-d-headless` | Headless | 9200, 9300 | Per-pod DNS for data component |
+| `{cluster}-i-headless` | Headless | 9200, 9300 | Per-pod DNS for ingest component |
+| `{cluster}-t-headless` | Headless | 9200, 9300 | Per-pod DNS for transform component |
+
+### High availability
+
+Same mechanisms as `multi-node` (master quorum + shard replication), with the additional benefit that ingest pipeline failures and transform job failures are fully isolated from search and indexing workloads. Each component can be scaled independently without affecting other roles.
+
+---
+
+## Common Pod Internals
+
+All Elasticsearch pods include three init containers on startup:
+
+| Init Container | Purpose |
+|---------------|---------|
+| `prepare-plugins` | Stages plugin files from a plugin image into a shared volume |
+| `install-plugins` | Installs plugins and prepares the filesystem layout |
+| `install-es-agent` | Copies the `es-agent` binary into the container's local bin path |
+
+Each pod mounts its own PVC for the Elasticsearch data directory (`/usr/share/elasticsearch/data`), providing independent persistent storage per node.
 
 ## System Accounts
 
-KubeBlocks automatically manages the following Elasticsearch system account. Passwords are auto-generated and stored in a Secret named `{cluster}-{component}-account-{name}`.
+KubeBlocks automatically provisions the following Elasticsearch accounts. Credentials are stored in Secrets named `{cluster}-{component}-account-{name}`.
 
 | Account | Role | Purpose |
 |---------|------|---------|

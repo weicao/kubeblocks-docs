@@ -1068,13 +1068,13 @@ const mongodbPosts = [
     title: 'How Containerization Affects Database Performance: runC, Kata, and gVisor',
     description: 'CPU, memory, and I/O benchmarks across container runtimes — and how to avoid common pitfalls like I/O hangs and OOM errors in Kubernetes.',
     image: '/img/blogs/thumbnails/blog-containerization.png',
-    href: '/blog/Does-containerization-affect-the-performance-of-databases',
+    href: '/blog/does-containerization-affect-the-performance-of-databases',
   },
   {
     title: 'Running Databases on Kubernetes — Insights from Leading Chinese Internet Companies',
     description: 'Why major internet companies are moving databases to Kubernetes, and what it takes to operate them reliably at scale.',
     image: '/img/blogs/thumbnails/blog-run-databases-on-k8s-insight.png',
-    href: '/blog/run-databases-on-k8s-insight-from-chinese-internet-giants',
+    href: '/blog/run-databases-on-k8s-insights-from-leading-chinese-internet-companies',
   },
 ];
 

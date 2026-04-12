@@ -175,6 +175,7 @@ const ENGINES: Engine[] = [
     name: 'Elasticsearch',
     category: 'Search',
     description: 'Deploy Elasticsearch clusters with dedicated master, data, and ingest node roles, plus index lifecycle management.',
+    operatorHref: '/elasticsearch-operator',
     docsHref: '/docs/preview/kubeblocks-for-elasticsearch',
     addonsHref: 'https://github.com/apecloud/kubeblocks-addons/tree/main/addons/elasticsearch',
   },

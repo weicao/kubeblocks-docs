@@ -194,7 +194,7 @@ function AddonsSheet({ open, onClose }: { open: boolean; onClose: () => void }) 
       items: [
         { title: 'Milvus', icon: <MilvusIcon {...iconProps} />, href: '/milvus-operator' },
         { title: 'Qdrant', icon: <QdrantIcon {...iconProps} />, href: '/docs/preview/kubeblocks-for-qdrant' },
-        { title: 'ElasticSearch', icon: <ElasticSearchIcon {...iconProps} />, href: '/docs/preview/kubeblocks-for-elasticsearch' },
+        { title: 'ElasticSearch', icon: <ElasticSearchIcon {...iconProps} />, href: '/elasticsearch-operator' },
       ],
     },
     {
