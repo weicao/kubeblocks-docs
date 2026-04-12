@@ -131,7 +131,7 @@ function makeSteps(engine: typeof engines[0]) {
 const resourceLinks = [
   { icon: <LibraryBooks sx={{ fontSize: 16 }} />, label: 'Documentation', href: '/docs/preview/user_docs', external: false },
   { icon: <GitHub sx={{ fontSize: 16 }} />, label: 'GitHub', href: 'https://github.com/apecloud/kubeblocks', external: true },
-  { icon: <Forum sx={{ fontSize: 16 }} />, label: 'Slack Community', href: 'https://kubeblockshq.slack.com/', external: true },
+  { icon: <Forum sx={{ fontSize: 16 }} />, label: 'Slack Community', href: 'https://join.slack.com/t/kubeblockshq/shared_invite/zt-3u7x3hvky-sNWWCp3ljL8oBNzoaxBEmw', external: true },
   { icon: <Extension sx={{ fontSize: 16 }} />, label: 'All Add-ons', href: 'https://github.com/apecloud/kubeblocks-addons', external: true },
 ];
 

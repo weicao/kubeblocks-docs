@@ -273,7 +273,7 @@ function MoreSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
             <ListItemIcon><GitHub /></ListItemIcon>
             <ListItemText primary="GitHub" />
           </ListItemButton>
-          <ListItemButton component="a" href="https://kubeblockshq.slack.com/" target="_blank" rel="noopener noreferrer" onClick={onClose} sx={{ py: 1.5 }}>
+          <ListItemButton component="a" href="https://join.slack.com/t/kubeblockshq/shared_invite/zt-3u7x3hvky-sNWWCp3ljL8oBNzoaxBEmw" target="_blank" rel="noopener noreferrer" onClick={onClose} sx={{ py: 1.5 }}>
             <ListItemIcon><SlackIconNoColor /></ListItemIcon>
             <ListItemText primary="Slack" />
           </ListItemButton>
@@ -484,7 +484,7 @@ export const ElevationScrollAppBar = (props: AppBarProps) => {
 
             {/* Social icons — desktop only */}
             <IconButton
-              href="https://kubeblockshq.slack.com/"
+              href="https://join.slack.com/t/kubeblockshq/shared_invite/zt-3u7x3hvky-sNWWCp3ljL8oBNzoaxBEmw"
               target="_blank"
               aria-label="Join KubeBlocks on Slack"
               sx={{ display: { xs: 'none', md: 'flex' } }}
