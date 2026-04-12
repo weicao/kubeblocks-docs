@@ -92,7 +92,7 @@ export default function DatabasesNav() {
     {
       title: 'etcd',
       icon: <AccountTree {...iconProps} />,
-      href: '/docs/preview/kubeblocks-for-etcd',
+      href: '/etcd-operator',
     },
     {
       title: 'ZooKeeper',

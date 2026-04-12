@@ -137,6 +137,7 @@ const ENGINES: Engine[] = [
     name: 'etcd',
     category: 'Cache / KV',
     description: 'Run etcd clusters as a reliable distributed key-value store for Kubernetes and cloud-native applications.',
+    operatorHref: '/etcd-operator',
     docsHref: '/docs/preview/kubeblocks-for-etcd',
     addonsHref: 'https://github.com/apecloud/kubeblocks-addons/tree/main/addons/etcd',
   },
