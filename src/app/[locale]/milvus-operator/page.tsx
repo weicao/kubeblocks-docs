@@ -134,6 +134,14 @@ const jsonLd = {
         },
         {
           '@type': 'Question',
+          name: 'What is the difference between KubeBlocks Milvus Operator and the official Milvus Operator?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Both deploy and manage Milvus on Kubernetes. The official Milvus Operator is maintained by the Milvus project and has the deepest integration with Milvus internals and the fastest support for new Milvus versions. KubeBlocks uses a unified Cluster/OpsRequest API that works across 35+ database engines, so AI/ML teams running Milvus alongside PostgreSQL, Redis, or other databases benefit from a single operator and consistent operational model. KubeBlocks integrates etcd and MinIO management, adds backup/restore via milvus-backup, stop/start lifecycle management, and a web management UI (Enterprise).',
+          },
+        },
+        {
+          '@type': 'Question',
           name: 'Is the KubeBlocks Milvus Operator open source?',
           acceptedAnswer: {
             '@type': 'Answer',

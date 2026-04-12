@@ -1128,7 +1128,7 @@ function PerformanceBenchmark() {
         <Box sx={{ textAlign: 'center' }}>
           <Button
             variant="outlined"
-            href="/blog/a-testing-report-for-optimizing-pg-performance-on-kubeblocks"
+            href="/blog/a-testing-report-for-optimizing-PG-performance-on-kubeblocks"
             sx={{ fontWeight: 600 }}
           >
             Read Full Benchmark Report →
@@ -1239,13 +1239,13 @@ const pgPosts = [
     title: 'PostgreSQL Performance Tuning on Kubernetes: A KubeBlocks Deep Dive',
     description: 'Benchmark and fix TPS drops, CPU fluctuations, and checkpoint issues by tuning WAL settings, IO bandwidth, and full_page_write.',
     image: '/img/blogs/thumbnails/blog-pg.png',
-    href: '/blog/A-testing-report-for-optimizing-PG-performance-on-Kubernetes',
+    href: '/blog/a-testing-report-for-optimizing-PG-performance-on-kubeblocks',
   },
   {
     title: 'Managing Over 6,000 Self-Hosted Databases Without a DBA',
     description: 'How Sealos used KubeBlocks to manage 6,000+ self-hosted databases across four availability zones — architecture, HA, backup, and operations.',
     image: '/img/blogs/thumbnails/blog-manage-6k-db-instance-with-kb.png',
-    href: '/blog/manage-6k-db-instance-with-kubeblocks',
+    href: '/blog/mangage-6k-db-instance-with-kubeblocks',
   },
   {
     title: 'How Containerization Affects Database Performance: runC, Kata, and gVisor',

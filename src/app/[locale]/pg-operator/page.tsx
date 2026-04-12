@@ -108,6 +108,14 @@ const jsonLd = {
         },
         {
           '@type': 'Question',
+          name: 'What is the difference between KubeBlocks PostgreSQL Operator and CloudNativePG?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Both are Kubernetes-native operators for PostgreSQL. CloudNativePG is a CNCF sandbox project with a PostgreSQL-first design, strong community, and tight integration with PostgreSQL streaming replication. KubeBlocks uses a unified Cluster/OpsRequest API that works across 35+ database engines, so teams running multiple databases benefit from a single operator and consistent operational model. KubeBlocks adds incremental backup, stop/start lifecycle management, and a web management UI (Enterprise). CloudNativePG offers deeper PostgreSQL-specific configuration and is a good choice for teams running PostgreSQL exclusively.',
+          },
+        },
+        {
+          '@type': 'Question',
           name: 'Is the KubeBlocks PostgreSQL Operator open source?',
           acceptedAnswer: {
             '@type': 'Answer',

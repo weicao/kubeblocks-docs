@@ -1062,7 +1062,7 @@ const mongodbPosts = [
     title: 'Managing Over 6,000 Self-Hosted Databases Without a DBA',
     description: 'How Sealos used KubeBlocks to manage 6,000+ self-hosted databases across four availability zones — architecture, HA, backup, and operations.',
     image: '/img/blogs/thumbnails/blog-manage-6k-db-instance-with-kb.png',
-    href: '/blog/manage-6k-db-instance-with-kubeblocks',
+    href: '/blog/mangage-6k-db-instance-with-kubeblocks',
   },
   {
     title: 'How Containerization Affects Database Performance: runC, Kata, and gVisor',

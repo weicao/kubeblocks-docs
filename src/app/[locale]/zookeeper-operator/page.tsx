@@ -132,6 +132,14 @@ const jsonLd = {
         },
         {
           '@type': 'Question',
+          name: 'What is the difference between KubeBlocks ZooKeeper Operator and Pravega ZooKeeper Operator?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Both manage ZooKeeper on Kubernetes with HA and scaling support. Pravega ZooKeeper Operator is a widely used, focused operator maintained by the Pravega community. KubeBlocks uses a unified Cluster/OpsRequest API that works across 35+ database engines, so teams running ZooKeeper alongside other databases benefit from a single operator and consistent operational model. KubeBlocks adds snapshot backup/restore to S3-compatible storage, stop/start lifecycle management, PVC volume expansion, and a web management UI (Enterprise) — capabilities not natively provided by Pravega ZooKeeper Operator.',
+          },
+        },
+        {
+          '@type': 'Question',
           name: 'Is the KubeBlocks ZooKeeper Operator open source?',
           acceptedAnswer: {
             '@type': 'Answer',

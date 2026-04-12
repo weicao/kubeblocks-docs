@@ -82,7 +82,7 @@ export default function DatabasesNav() {
     {
       title: 'ClickHouse',
       icon: <Storage {...iconProps} />,
-      href: '/docs/preview/kubeblocks-for-clickhouse',
+      href: '/clickhouse-operator',
     },
     {
       title: 'RocketMQ',

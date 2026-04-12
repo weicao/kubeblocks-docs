@@ -940,7 +940,7 @@ const milvusPosts = [
     title: 'KubeBlocks x Milvus: Kubernetes Operator Guide',
     description: 'Deploy standalone and cluster modes, integrate etcd/MinIO via Addons, and manage Day-2 operations with an operator-first approach.',
     image: '/img/blogs/thumbnails/milvus_kubeblocks_thumbnail.png',
-    href: '/blog/kubeblocks-x-milvus-kubernetes-operator-guide',
+    href: '/blog/kubeblocks-for-milvus',
   },
   {
     title: 'We Let an AI Agent Manage Our Databases',
@@ -952,7 +952,7 @@ const milvusPosts = [
     title: 'Deploy Production-Ready AIGC Applications with KubeBlocks and Dify',
     description: 'Build and deploy production-grade AIGC applications on Kubernetes with KubeBlocks managing PostgreSQL, Redis, and Qdrant.',
     image: '/img/blogs/thumbnails/blog-dify.png',
-    href: '/blog/deploy-aigc-applications-using-kubeblocks-and-dify',
+    href: '/blog/dify-on-kb',
   },
 ];
 

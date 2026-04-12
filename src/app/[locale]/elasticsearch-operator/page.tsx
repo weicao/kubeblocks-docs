@@ -130,6 +130,14 @@ const jsonLd = {
         },
         {
           '@type': 'Question',
+          name: 'What is the difference between KubeBlocks Elasticsearch Operator and ECK (Elastic Cloud on Kubernetes)?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Both are Kubernetes-native operators for Elasticsearch. ECK is the official operator from Elastic with the deepest Elasticsearch integration, support for the full Elastic Stack (Kibana, APM, Fleet), and enterprise-grade security features. KubeBlocks uses a unified Cluster/OpsRequest API that works across 35+ database engines, so teams running multiple databases benefit from a single operator and consistent operational model. KubeBlocks is fully open source (AGPL-3.0) with no license-gated features for core operations, whereas ECK requires an Elastic license for enterprise features. KubeBlocks adds stop/start lifecycle management and a web management UI (Enterprise).',
+          },
+        },
+        {
+          '@type': 'Question',
           name: 'Is the KubeBlocks Elasticsearch Operator open source?',
           acceptedAnswer: {
             '@type': 'Answer',

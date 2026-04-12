@@ -1195,13 +1195,13 @@ const redisPosts = [
     title: 'Redis Operatorization — Ready Yet?',
     description: 'HA, persistence, sharding challenges — and why Redis on Kubernetes is harder than it looks.',
     image: '/img/blogs/thumbnails/blog-redis-containerization.png',
-    href: '/blog/redis-operatorization-ready-yet',
+    href: '/blog/redis-containerization',
   },
   {
     title: 'Large-Scale Redis Migration from Bare Metal to Kubernetes',
     description: 'How Kuaishou migrated thousands of Redis instances to Kubernetes and improved resource utilisation.',
     image: '/img/blogs/thumbnails/blog-kubecon-kuaishou.png',
-    href: '/blog/migrate-redis-at-kuaishou-from-bare-metal-to-k8s',
+    href: '/blog/migrate-redis-in-kuaishou-from-bare-metal-to-k8s',
   },
   {
     title: 'Mastering Redis Network Modes in Kubernetes',

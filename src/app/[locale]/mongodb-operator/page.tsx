@@ -104,6 +104,14 @@ const jsonLd = {
         },
         {
           '@type': 'Question',
+          name: 'What is the difference between KubeBlocks MongoDB Operator and MongoDB Community Operator?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Both are Kubernetes-native operators for MongoDB. MongoDB Community Operator is maintained by MongoDB Inc. and is the standard choice for self-managed MongoDB on Kubernetes, with tight integration with MongoDB tooling. KubeBlocks uses a unified Cluster/OpsRequest API that works across 35+ database engines. KubeBlocks adds backup/restore to S3-compatible storage, incremental backup, stop/start lifecycle management, PVC volume expansion, and a web management UI (Enterprise) — operational features the Community Operator does not provide natively. KubeBlocks also supports sharded cluster topology alongside replica sets.',
+          },
+        },
+        {
+          '@type': 'Question',
           name: 'Is the KubeBlocks MongoDB Operator open source?',
           acceptedAnswer: {
             '@type': 'Answer',

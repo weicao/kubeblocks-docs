@@ -69,6 +69,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   addStaticRoute('/milvus-operator',          'en', 0.9, 'monthly');
   addStaticRoute('/elasticsearch-operator',   'en', 0.9, 'monthly');
   addStaticRoute('/etcd-operator',            'en', 0.9, 'monthly');
+  addStaticRoute('/clickhouse-operator',      'en', 0.9, 'monthly');
 
   getStaticParams().forEach((item) => {
     const localeDir = path.join(DOCS_DIR, item.locale);
