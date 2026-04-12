@@ -69,7 +69,7 @@ export async function GET() {
     `| etcd | Cache / KV | ${toAbsoluteUrl('/docs/preview/kubeblocks-for-etcd')} |`,
     `| Kafka | Message Queue | ${toAbsoluteUrl('/docs/preview/kubeblocks-for-kafka')} |`,
     `| Pulsar | Message Queue | ${toAbsoluteUrl('/docs/release-0_9/kubeblocks-for-pulsar')} |`,
-    `| RabbitMQ | Message Queue | ${toAbsoluteUrl('/docs/preview/kubeblocks-for-rabbitmq')} |`,
+    `| RabbitMQ | Message Queue | ${toAbsoluteUrl('/rabbitmq-operator')} |`,
     `| RocketMQ | Message Queue | ${toAbsoluteUrl('/docs/preview/kubeblocks-for-rocketmq')} |`,
     `| Elasticsearch | Search | ${toAbsoluteUrl('/docs/preview/kubeblocks-for-elasticsearch')} |`,
     '| OpenSearch | Search | — |',

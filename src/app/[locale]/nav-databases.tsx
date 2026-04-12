@@ -72,7 +72,7 @@ export default function DatabasesNav() {
     {
       title: 'RabbitMQ',
       icon: <RabbitMQIcon {...iconProps} />,
-      href: '/docs/preview/kubeblocks-for-rabbitmq',
+      href: '/rabbitmq-operator',
     },
     {
       title: 'Elasticsearch',
