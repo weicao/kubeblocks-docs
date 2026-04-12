@@ -122,6 +122,14 @@ const jsonLd = {
         },
         {
           '@type': 'Question',
+          name: 'What is the difference between KubeBlocks etcd Operator and the community etcd-operator?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Both manage etcd clusters on Kubernetes with Raft-based HA. The community etcd-operator (originally from CoreOS) is a lightweight, focused operator. KubeBlocks uses a unified Cluster/OpsRequest API that works across 35+ database engines, so teams running etcd alongside other databases benefit from a single operator and consistent operational model. KubeBlocks adds snapshot backup/restore to S3-compatible storage, stop/start lifecycle management, PVC volume expansion, vertical scaling, and a web management UI (Enterprise) — operational capabilities that the community etcd-operator does not natively provide.',
+          },
+        },
+        {
+          '@type': 'Question',
           name: 'Is the KubeBlocks etcd Operator open source?',
           acceptedAnswer: {
             '@type': 'Answer',

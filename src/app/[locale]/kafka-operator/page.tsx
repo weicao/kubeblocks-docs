@@ -135,6 +135,14 @@ const jsonLd = {
         },
         {
           '@type': 'Question',
+          name: 'What is the difference between KubeBlocks Kafka Operator and Strimzi?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Both are Kubernetes-native operators for Apache Kafka. Strimzi is a CNCF graduated project with broad community adoption, deep Kafka ecosystem support (Kafka Connect, MirrorMaker, Kafka Bridge), and extensive configuration flexibility. KubeBlocks uses a unified Cluster/OpsRequest API that works across 35+ database engines, so teams running multiple databases benefit from a single operator and consistent operational model. KubeBlocks supports KRaft mode (no ZooKeeper dependency), topic and ACL management via OpsRequest, backup/restore, and a web management UI (Enterprise). Strimzi is the better choice for teams needing deep Kafka ecosystem integration; KubeBlocks is better for multi-engine environments.',
+          },
+        },
+        {
+          '@type': 'Question',
           name: 'Is the KubeBlocks Kafka Operator open source?',
           acceptedAnswer: {
             '@type': 'Answer',

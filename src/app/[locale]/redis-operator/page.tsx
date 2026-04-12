@@ -105,6 +105,14 @@ const jsonLd = {
         },
         {
           '@type': 'Question',
+          name: 'What is the difference between KubeBlocks Redis Operator and Spotahome Redis Operator?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Both manage Redis on Kubernetes with Sentinel-based HA. Spotahome Redis Operator is focused purely on Redis Sentinel topology and is lightweight and simple to deploy. KubeBlocks supports both Redis Sentinel and Redis Cluster modes, adds Valkey (the open-source Redis fork), and uses a unified Cluster/OpsRequest API that works across 35+ database engines. KubeBlocks also provides backup/restore to S3-compatible storage, stop/start lifecycle management, TLS, and ACL management — capabilities that Spotahome does not natively support.',
+          },
+        },
+        {
+          '@type': 'Question',
           name: 'Is the KubeBlocks Redis Operator open source?',
           acceptedAnswer: {
             '@type': 'Answer',

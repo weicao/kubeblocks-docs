@@ -430,9 +430,6 @@ function ComparisonTable() {
             How KubeBlocks Compares to{' '}
             <Box component="span" sx={{ color: 'primary.main' }}>Other ClickHouse Operators</Box>
           </Typography>
-          <Typography sx={{ color: 'text.secondary', mt: 1.5, maxWidth: 560, mx: 'auto', lineHeight: 1.75 }}>
-            ✓ = Supported · ~ = Partial / Limited · ✗ = Not supported
-          </Typography>
         </Box>
 
         <Box sx={{ overflowX: 'auto', borderRadius: '14px', border: `1px solid ${cardBorder}` }}>

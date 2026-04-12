@@ -133,6 +133,14 @@ const jsonLd = {
         },
         {
           '@type': 'Question',
+          name: 'What is the difference between KubeBlocks ClickHouse Operator and Altinity clickhouse-operator?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Both are Kubernetes-native operators for ClickHouse. Altinity clickhouse-operator uses custom CRDs (ClickHouseInstallation) and has strong community adoption. KubeBlocks uses a unified Cluster/OpsRequest API that works across 35+ database engines, making it easier to operate multiple databases with a single operator. KubeBlocks adds first-class incremental backup, PVC volume expansion, stop/start lifecycle management, and a web management UI (Enterprise), which Altinity does not natively support. Altinity has deeper ClickHouse-specific configuration exposure; KubeBlocks prioritizes operational simplicity and multi-engine consistency.',
+          },
+        },
+        {
+          '@type': 'Question',
           name: 'Is the KubeBlocks ClickHouse Operator open source?',
           acceptedAnswer: {
             '@type': 'Answer',

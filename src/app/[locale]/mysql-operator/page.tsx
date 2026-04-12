@@ -104,6 +104,14 @@ const jsonLd = {
         },
         {
           '@type': 'Question',
+          name: 'What is the difference between KubeBlocks MySQL Operator and Percona Operator for MySQL?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Both are Kubernetes-native operators for MySQL with HA, backup, and scaling capabilities. Percona Operator is MySQL-specific with deep Percona XtraDB Cluster and Group Replication support and strong Percona ecosystem integration. KubeBlocks uses a unified Cluster/OpsRequest API that works across 35+ database engines, so teams running multiple databases benefit from a single operator and consistent operational model. KubeBlocks adds stop/start lifecycle management, a web management UI (Enterprise), and cross-engine consistency that Percona does not provide natively.',
+          },
+        },
+        {
+          '@type': 'Question',
           name: 'Is the KubeBlocks MySQL Operator open source?',
           acceptedAnswer: {
             '@type': 'Answer',
