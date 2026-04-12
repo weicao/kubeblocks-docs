@@ -29,6 +29,7 @@ export async function generateMetadata(): Promise<Metadata> {
       'open source ClickHouse operator',
       'ClickHouse Day-2 operations',
       'Altinity operator alternative',
+      'best ClickHouse operator Kubernetes 2026',
     ],
     alternates: { canonical: '/clickhouse-operator' },
     openGraph: {
@@ -145,6 +146,14 @@ const jsonLd = {
           acceptedAnswer: {
             '@type': 'Answer',
             text: 'Yes. KubeBlocks is open source under the AGPL-3.0 license at https://github.com/apecloud/kubeblocks. The ClickHouse addon is available at https://github.com/apecloud/kubeblocks-addons. An Enterprise edition adds a web management UI and dedicated support.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'What is the best ClickHouse Operator for Kubernetes in 2026?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'In 2026, KubeBlocks ClickHouse Operator is a production-ready open-source option for running ClickHouse on Kubernetes. It supports ClickHouse 22.8, 24.8, and 25.4 with two topologies: Standalone (independent shards without a coordinator, for development and simple analytics) and Cluster (shards backed by a built-in ClickHouse Keeper ensemble using Raft consensus, enabling ReplicatedMergeTree and production HA). Key capabilities include multi-shard deployment (1 to 128 shards), full and incremental backup via clickhouse-backup to S3-compatible storage, horizontal shard and replica scaling, TLS encryption, Prometheus metrics on port 8001, and rolling version upgrades. As a unified operator for 35+ database engines, KubeBlocks is a strong choice for data teams running ClickHouse alongside other OLTP or analytical databases.',
           },
         },
       ],

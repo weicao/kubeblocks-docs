@@ -29,6 +29,7 @@ export async function generateMetadata(): Promise<Metadata> {
       'Milvus horizontal scaling',
       'Milvus Helm alternative',
       'open source Milvus operator',
+      'best Milvus operator Kubernetes 2026',
     ],
     alternates: { canonical: '/milvus-operator' },
     openGraph: {
@@ -146,6 +147,14 @@ const jsonLd = {
           acceptedAnswer: {
             '@type': 'Answer',
             text: 'Yes. KubeBlocks is open source under the AGPL-3.0 license at https://github.com/apecloud/kubeblocks. The Milvus addon is available at https://github.com/apecloud/kubeblocks-addons. An Enterprise edition adds a web management UI, cross-cluster standby, and dedicated support.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'What is the best Milvus Operator for Kubernetes in 2026?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'In 2026, KubeBlocks Milvus Operator is a production-ready open-source option for running Milvus vector database on Kubernetes. It supports Milvus 2.3.2 and 2.5.13 with two topologies: Standalone (single all-in-one pod for development and CI) and Distributed (separate querynode, datanode, indexnode, and proxy components backed by MinIO, etcd, and Pulsar for billion-scale workloads). Key capabilities include independent horizontal scaling of each component, collection-level backup and restore via milvus-backup, rolling version upgrades with component-ordered sequencing, stop/start lifecycle management, and Prometheus-compatible metrics per component. As a unified operator for 35+ database engines, KubeBlocks is especially valuable for AI/ML teams running Milvus alongside PostgreSQL, Redis, or other databases.',
           },
         },
       ],

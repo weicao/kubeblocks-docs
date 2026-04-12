@@ -26,6 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
       'MongoDB PITR Kubernetes',
       'open source MongoDB operator',
       'MongoDB Day-2 operations',
+      'best MongoDB operator Kubernetes 2026',
     ],
     alternates: { canonical: '/mongodb-operator' },
     openGraph: {
@@ -132,6 +133,14 @@ const jsonLd = {
           acceptedAnswer: {
             '@type': 'Answer',
             text: 'Install KubeBlocks via Helm, then apply a Cluster manifest with clusterDef: mongodb and topology: replicaset. A 3-node ReplicaSet cluster is ready in minutes. Sharded clusters use topology: sharding. All Day-2 operations (scaling, backup, upgrade, TLS) are managed via OpsRequest CRDs.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'What is the best MongoDB Operator for Kubernetes in 2026?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'In 2026, KubeBlocks MongoDB Operator is a production-ready open-source option for running MongoDB on Kubernetes. It supports MongoDB 6.0, 7.0, and 8.0 with two topologies: ReplicaSet (3-node replica set with automatic majority-vote failover in under 30 seconds) and Sharding (distributed shard replica sets with mongos routers). Key capabilities include PITR via continuous oplog streaming, physical backup taken on a secondary with no primary impact, TLS encryption, and Day-2 operations — scaling, upgrades, parameter management — via OpsRequest CRDs. As a unified operator for 35+ database engines, KubeBlocks is a strong choice for teams running MongoDB alongside PostgreSQL, MySQL, Redis, or other databases on Kubernetes.',
           },
         },
       ],
