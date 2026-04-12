@@ -14,6 +14,21 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: 'The Production-Grade PostgreSQL Operator for Kubernetes | KubeBlocks',
     description: DESCRIPTION,
+    keywords: [
+      'PostgreSQL Operator',
+      'PostgreSQL Kubernetes',
+      'PostgreSQL on Kubernetes',
+      'KubeBlocks PostgreSQL',
+      'PostgreSQL cluster Kubernetes',
+      'PostgreSQL HA Kubernetes',
+      'PostgreSQL PITR Kubernetes',
+      'PostgreSQL backup restore Kubernetes',
+      'Patroni Kubernetes',
+      'pgbouncer Kubernetes',
+      'open source PostgreSQL operator',
+      'PostgreSQL Day-2 operations',
+      'Zalando postgres-operator alternative',
+    ],
     alternates: { canonical: '/pg-operator' },
     openGraph: {
       url: '/pg-operator',
@@ -44,7 +59,7 @@ const jsonLd = {
       url: 'https://kubeblocks.io/pg-operator',
       sameAs: ['https://github.com/apecloud/kubeblocks-addons/tree/main/addons/postgresql'],
       downloadUrl: 'https://github.com/apecloud/kubeblocks',
-      license: 'https://opensource.org/licenses/Apache-2.0',
+      license: 'https://github.com/apecloud/kubeblocks/blob/main/LICENSE',
       author: { '@type': 'Organization', name: 'ApeCloud', url: 'https://kubeblocks.io' },
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD', description: 'Open source, free to use' },
       featureList: [
@@ -96,7 +111,7 @@ const jsonLd = {
           name: 'Is the KubeBlocks PostgreSQL Operator open source?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'Yes. KubeBlocks is fully open source under the Apache 2.0 license at https://github.com/apecloud/kubeblocks. An Enterprise edition adds major version upgrades via blue-green deployment, cross-cluster standby, and a web management UI.',
+            text: 'Yes. KubeBlocks is fully open source under the AGPL-3.0 license at https://github.com/apecloud/kubeblocks. An Enterprise edition adds major version upgrades via blue-green deployment, cross-cluster standby, and a web management UI.',
           },
         },
         {

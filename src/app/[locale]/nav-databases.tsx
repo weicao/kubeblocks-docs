@@ -75,7 +75,7 @@ export default function DatabasesNav() {
       href: '/docs/preview/kubeblocks-for-rabbitmq',
     },
     {
-      title: 'ElasticSearch',
+      title: 'Elasticsearch',
       icon: <ElasticSearchIcon {...iconProps} />,
       href: '/elasticsearch-operator',
     },

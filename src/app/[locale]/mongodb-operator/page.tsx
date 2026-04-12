@@ -14,6 +14,19 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: 'The Production-Grade MongoDB Operator for Kubernetes | KubeBlocks',
     description: DESCRIPTION,
+    keywords: [
+      'MongoDB Operator',
+      'MongoDB Kubernetes',
+      'MongoDB on Kubernetes',
+      'KubeBlocks MongoDB',
+      'MongoDB cluster Kubernetes',
+      'MongoDB HA Kubernetes',
+      'MongoDB ReplicaSet Kubernetes',
+      'MongoDB sharding Kubernetes',
+      'MongoDB PITR Kubernetes',
+      'open source MongoDB operator',
+      'MongoDB Day-2 operations',
+    ],
     alternates: { canonical: '/mongodb-operator' },
     openGraph: {
       url: '/mongodb-operator',
@@ -44,7 +57,7 @@ const jsonLd = {
       url: 'https://kubeblocks.io/mongodb-operator',
       sameAs: ['https://github.com/apecloud/kubeblocks-addons/tree/main/addons/mongodb'],
       downloadUrl: 'https://github.com/apecloud/kubeblocks',
-      license: 'https://opensource.org/licenses/Apache-2.0',
+      license: 'https://github.com/apecloud/kubeblocks/blob/main/LICENSE',
       author: { '@type': 'Organization', name: 'ApeCloud', url: 'https://kubeblocks.io' },
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD', description: 'Open source, free to use' },
       featureList: [
@@ -94,7 +107,7 @@ const jsonLd = {
           name: 'Is the KubeBlocks MongoDB Operator open source?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'Yes. KubeBlocks is fully open source under the Apache 2.0 license. The source code is available at https://github.com/apecloud/kubeblocks. An Enterprise edition with additional features such as major version blue-green upgrades, cross-cluster DR, and a web management UI is also available.',
+            text: 'Yes. KubeBlocks is fully open source under the AGPL-3.0 license. The source code is available at https://github.com/apecloud/kubeblocks. An Enterprise edition with additional features such as major version blue-green upgrades, cross-cluster DR, and a web management UI is also available.',
           },
         },
         {
