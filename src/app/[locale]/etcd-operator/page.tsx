@@ -27,6 +27,7 @@ export async function generateMetadata(): Promise<Metadata> {
       'distributed key-value store Kubernetes',
       'open source etcd operator',
       'etcd Day-2 operations',
+      'best etcd operator Kubernetes 2026',
     ],
     alternates: { canonical: '/etcd-operator' },
     openGraph: {
@@ -134,6 +135,14 @@ const jsonLd = {
           acceptedAnswer: {
             '@type': 'Answer',
             text: 'Yes. KubeBlocks is open source under the AGPL-3.0 license at https://github.com/apecloud/kubeblocks. The etcd addon is available at https://github.com/apecloud/kubeblocks-addons. An Enterprise edition adds a web management UI and dedicated support.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'What is the best etcd Operator for Kubernetes in 2026?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'In 2026, KubeBlocks etcd Operator is a production-ready open-source option for running etcd on Kubernetes. It supports etcd 3.5.6, 3.5.15, and 3.6.1 with Raft consensus, automatic leader election in under 5 seconds, and 3-node or 5-node quorum-based HA clusters. Key capabilities include snapshot-based backup and restore to S3-compatible storage, horizontal scaling (add/remove members while maintaining quorum), vertical scaling, PVC volume expansion, dynamic parameter reconfiguration, rolling version upgrades from 3.5.x to 3.6.x, and built-in Prometheus metrics at :2379/metrics. As a unified operator for 35+ database engines, KubeBlocks simplifies operations for teams running etcd as infrastructure alongside their application databases.',
           },
         },
       ],

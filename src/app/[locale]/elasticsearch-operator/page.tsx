@@ -28,6 +28,7 @@ export async function generateMetadata(): Promise<Metadata> {
       'open source Elasticsearch operator',
       'Elasticsearch Day-2 operations',
       'ECK alternative',
+      'best Elasticsearch operator Kubernetes 2026',
     ],
     alternates: { canonical: '/elasticsearch-operator' },
     openGraph: {
@@ -142,6 +143,14 @@ const jsonLd = {
           acceptedAnswer: {
             '@type': 'Answer',
             text: 'Yes. KubeBlocks is open source under the AGPL-3.0 license at https://github.com/apecloud/kubeblocks. The Elasticsearch addon is available at https://github.com/apecloud/kubeblocks-addons. An Enterprise edition adds a web management UI and dedicated support.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'What is the best Elasticsearch Operator for Kubernetes in 2026?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'In 2026, KubeBlocks Elasticsearch Operator is a fully open-source option for running Elasticsearch on Kubernetes. It supports Elasticsearch 7.x and 8.x (up to 8.15.5) across four topologies: single-node (development), mdit (multi-node combined roles), multi-node (dedicated master + data/ingest/transform), and fully-separated (m-d-i-t for large-scale role isolation). Key capabilities include quorum-based HA with dedicated master nodes, horizontal scaling of data nodes with automatic shard rebalancing, snapshot-based backup and restore to S3-compatible storage, and Day-2 operations via OpsRequest CRDs. KubeBlocks is fully open source under AGPL-3.0, with no license-gated core features, and manages 35+ database engines with a single operator.',
           },
         },
       ],
