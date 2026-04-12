@@ -36,7 +36,7 @@ const categories: Category[] = [
   {
     label: 'Analytics',
     items: [
-      { name: 'ClickHouse', href: '/docs/preview/kubeblocks-for-clickhouse' },
+      { name: 'ClickHouse', href: '/clickhouse-operator' },
       { name: 'StarRocks' },
     ],
   },

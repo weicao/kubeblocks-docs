@@ -178,7 +178,7 @@ function AddonsSheet({ open, onClose }: { open: boolean; onClose: () => void }) 
     {
       name: 'Analytics',
       items: [
-        { title: 'ClickHouse', icon: <Storage {...iconProps} />, href: '/docs/preview/kubeblocks-for-clickhouse' },
+        { title: 'ClickHouse', icon: <Storage {...iconProps} />, href: '/clickhouse-operator' },
       ],
     },
     {

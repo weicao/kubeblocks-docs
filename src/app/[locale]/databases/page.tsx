@@ -190,7 +190,8 @@ const ENGINES: Engine[] = [
   {
     name: 'ClickHouse',
     category: 'OLAP',
-    description: 'Run ClickHouse clusters for real-time analytical queries with sharding, replication, and ZooKeeper coordination.',
+    description: 'Run ClickHouse clusters for real-time analytical queries with sharding, replication, and ClickHouse Keeper coordination.',
+    operatorHref: '/clickhouse-operator',
     docsHref: '/docs/preview/kubeblocks-for-clickhouse',
     addonsHref: 'https://github.com/apecloud/kubeblocks-addons/tree/main/addons/clickhouse',
   },
