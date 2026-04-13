@@ -29,6 +29,10 @@ export async function generateMetadata(): Promise<Metadata> {
       'Elasticsearch Day-2 operations',
       'ECK alternative',
       'best Elasticsearch operator Kubernetes 2026',
+      'Elasticsearch k8s',
+      'Elasticsearch k8s operator',
+      'run Elasticsearch on k8s',
+      'k8s Elasticsearch operator',
     ],
     alternates: { canonical: '/elasticsearch-operator' },
     openGraph: {

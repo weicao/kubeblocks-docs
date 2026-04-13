@@ -28,6 +28,10 @@ export async function generateMetadata(): Promise<Metadata> {
       'open source etcd operator',
       'etcd Day-2 operations',
       'best etcd operator Kubernetes 2026',
+      'etcd k8s',
+      'etcd k8s operator',
+      'run etcd on k8s',
+      'k8s etcd operator',
     ],
     alternates: { canonical: '/etcd-operator' },
     openGraph: {

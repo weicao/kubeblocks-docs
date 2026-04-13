@@ -30,6 +30,10 @@ export async function generateMetadata(): Promise<Metadata> {
       'ClickHouse Day-2 operations',
       'Altinity operator alternative',
       'best ClickHouse operator Kubernetes 2026',
+      'ClickHouse k8s',
+      'ClickHouse k8s operator',
+      'run ClickHouse on k8s',
+      'k8s ClickHouse operator',
     ],
     alternates: { canonical: '/clickhouse-operator' },
     openGraph: {

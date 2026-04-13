@@ -29,6 +29,10 @@ export async function generateMetadata(): Promise<Metadata> {
       'open source ZooKeeper operator',
       'ZooKeeper Day-2 operations',
       'best ZooKeeper operator Kubernetes 2026',
+      'ZooKeeper k8s',
+      'ZooKeeper k8s operator',
+      'run ZooKeeper on k8s',
+      'k8s ZooKeeper operator',
     ],
     alternates: { canonical: '/zookeeper-operator' },
     openGraph: {

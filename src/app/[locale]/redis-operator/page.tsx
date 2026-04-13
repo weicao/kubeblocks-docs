@@ -27,6 +27,10 @@ export async function generateMetadata(): Promise<Metadata> {
       'open source Redis operator',
       'Redis Day-2 operations',
       'best Redis operator Kubernetes 2026',
+      'Redis k8s',
+      'Redis k8s operator',
+      'run Redis on k8s',
+      'k8s Redis operator',
     ],
     alternates: { canonical: '/redis-operator' },
     openGraph: {

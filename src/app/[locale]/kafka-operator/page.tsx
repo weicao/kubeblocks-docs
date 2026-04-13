@@ -30,6 +30,10 @@ export async function generateMetadata(): Promise<Metadata> {
       'open source Kafka operator',
       'Kafka Day-2 operations',
       'best Kafka operator Kubernetes 2026',
+      'Kafka k8s',
+      'Kafka k8s operator',
+      'run Kafka on k8s',
+      'k8s Kafka operator',
     ],
     alternates: { canonical: '/kafka-operator' },
     openGraph: {

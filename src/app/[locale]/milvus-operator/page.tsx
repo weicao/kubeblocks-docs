@@ -30,6 +30,10 @@ export async function generateMetadata(): Promise<Metadata> {
       'Milvus Helm alternative',
       'open source Milvus operator',
       'best Milvus operator Kubernetes 2026',
+      'Milvus k8s',
+      'Milvus k8s operator',
+      'run Milvus on k8s',
+      'k8s Milvus operator',
     ],
     alternates: { canonical: '/milvus-operator' },
     openGraph: {

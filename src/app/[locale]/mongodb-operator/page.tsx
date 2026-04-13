@@ -27,6 +27,10 @@ export async function generateMetadata(): Promise<Metadata> {
       'open source MongoDB operator',
       'MongoDB Day-2 operations',
       'best MongoDB operator Kubernetes 2026',
+      'MongoDB k8s',
+      'MongoDB k8s operator',
+      'run MongoDB on k8s',
+      'k8s MongoDB operator',
     ],
     alternates: { canonical: '/mongodb-operator' },
     openGraph: {

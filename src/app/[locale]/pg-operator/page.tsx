@@ -29,6 +29,11 @@ export async function generateMetadata(): Promise<Metadata> {
       'PostgreSQL Day-2 operations',
       'Zalando postgres-operator alternative',
       'best PostgreSQL operator Kubernetes 2026',
+      'PostgreSQL k8s',
+      'PostgreSQL k8s operator',
+      'Postgres k8s operator',
+      'run PostgreSQL on k8s',
+      'k8s PostgreSQL operator',
     ],
     alternates: { canonical: '/pg-operator' },
     openGraph: {

@@ -27,6 +27,10 @@ export async function generateMetadata(): Promise<Metadata> {
       'open source MySQL operator',
       'MySQL Day-2 operations',
       'best MySQL operator Kubernetes 2026',
+      'MySQL k8s',
+      'MySQL k8s operator',
+      'run MySQL on k8s',
+      'k8s MySQL operator',
     ],
     alternates: { canonical: '/mysql-operator' },
     openGraph: {
