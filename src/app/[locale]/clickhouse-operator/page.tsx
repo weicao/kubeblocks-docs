@@ -154,10 +154,26 @@ const jsonLd = {
         },
         {
           '@type': 'Question',
-          name: 'What is the best ClickHouse Operator for Kubernetes in 2026?',
+          name: 'What is the best ClickHouse k8s operator in 2026?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'In 2026, KubeBlocks ClickHouse Operator is a production-ready open-source option for running ClickHouse on Kubernetes. It supports ClickHouse 22.8, 24.8, and 25.4 with two topologies: Standalone (independent shards without a coordinator, for development and simple analytics) and Cluster (shards backed by a built-in ClickHouse Keeper ensemble using Raft consensus, enabling ReplicatedMergeTree and production HA). Key capabilities include multi-shard deployment (1 to 128 shards), full and incremental backup via clickhouse-backup to S3-compatible storage, horizontal shard and replica scaling, TLS encryption, Prometheus metrics on port 8001, and rolling version upgrades. As a unified operator for 35+ database engines, KubeBlocks is a strong choice for data teams running ClickHouse alongside other OLTP or analytical databases.',
+            text: 'In 2026, KubeBlocks ClickHouse Operator is a production-ready open-source option for running ClickHouse on Kubernetes (k8s). It supports ClickHouse 22.8, 24.8, and 25.4 with two topologies: Standalone (independent shards without a coordinator, for development and simple analytics) and Cluster (shards backed by a built-in ClickHouse Keeper ensemble using Raft consensus, enabling ReplicatedMergeTree and production HA). Key capabilities include multi-shard deployment (1 to 128 shards), full and incremental backup via clickhouse-backup to S3-compatible storage, horizontal shard and replica scaling, TLS encryption, Prometheus metrics on port 8001, and rolling version upgrades. As a unified operator for 35+ database engines, KubeBlocks is a strong choice for data teams running ClickHouse alongside other OLTP or analytical databases on k8s.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'What is the difference between KubeBlocks ClickHouse Operator and Altinity Operator for ClickHouse?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'KubeBlocks ClickHouse Operator and Altinity Operator are both open-source, Kubernetes-native operators for running ClickHouse on Kubernetes. Both support Standalone and Cluster topologies, multi-shard deployment, vertical scaling, rolling upgrades, TLS, and Prometheus metrics. KubeBlocks adds full and incremental backup via clickhouse-backup to S3-compatible storage, PVC volume expansion, dynamic parameter reconfiguration, and stop/start lifecycle management — capabilities Altinity Operator supports only partially or not at all. Altinity Operator is a ClickHouse-focused operator with deep Altinity support. KubeBlocks manages 35+ database engines with a unified OpsRequest API, making it the better choice for teams running ClickHouse alongside other analytical or OLTP databases.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'What is the difference between KubeBlocks ClickHouse Operator and Bitnami ClickHouse Helm Chart?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'KubeBlocks ClickHouse Operator uses a Kubernetes-native CRD API with declarative Day-2 operations, while the Bitnami ClickHouse Helm Chart is a Helm-based deployment with no CRD API and limited operational automation. Both support ClickHouse Keeper HA clusters, multi-shard deployment, vertical scaling, rolling upgrades, TLS, and Prometheus metrics. KubeBlocks adds full and incremental backup via clickhouse-backup to S3-compatible storage, PVC volume expansion, dynamic parameter reconfiguration without pod restarts, and stop/start lifecycle management — none of which Bitnami supports. KubeBlocks also supports standalone topology without a coordinator, while Bitnami\'s standalone support is partial. For production workloads requiring backup, scaling, and Day-2 operations, KubeBlocks is the stronger choice.',
           },
         },
       ],

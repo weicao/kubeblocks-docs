@@ -143,10 +143,26 @@ const jsonLd = {
         },
         {
           '@type': 'Question',
-          name: 'What is the best etcd Operator for Kubernetes in 2026?',
+          name: 'What is the best etcd k8s operator in 2026?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'In 2026, KubeBlocks etcd Operator is a production-ready open-source option for running etcd on Kubernetes. It supports etcd 3.5.6, 3.5.15, and 3.6.1 with Raft consensus, automatic leader election in under 5 seconds, and 3-node or 5-node quorum-based HA clusters. Key capabilities include snapshot-based backup and restore to S3-compatible storage, horizontal scaling (add/remove members while maintaining quorum), vertical scaling, PVC volume expansion, dynamic parameter reconfiguration, rolling version upgrades from 3.5.x to 3.6.x, and built-in Prometheus metrics at :2379/metrics. As a unified operator for 35+ database engines, KubeBlocks simplifies operations for teams running etcd as infrastructure alongside their application databases.',
+            text: 'In 2026, KubeBlocks etcd Operator is a production-ready open-source option for running etcd on Kubernetes (k8s). It supports etcd 3.5.6, 3.5.15, and 3.6.1 with Raft consensus, automatic leader election in under 5 seconds, and 3-node or 5-node quorum-based HA clusters. Key capabilities include snapshot-based backup and restore to S3-compatible storage, horizontal scaling (add/remove members while maintaining quorum), vertical scaling, PVC volume expansion, dynamic parameter reconfiguration, rolling version upgrades from 3.5.x to 3.6.x, and built-in Prometheus metrics at :2379/metrics. As a unified operator for 35+ database engines, KubeBlocks simplifies operations for teams running etcd as infrastructure alongside their application databases on k8s.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'What is the difference between KubeBlocks etcd Operator and the community etcd-operator?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'KubeBlocks etcd Operator and the community etcd-operator are both open-source, Kubernetes-native operators for running etcd on Kubernetes. Both support Raft HA with 3- or 5-node clusters, horizontal scaling, and Prometheus metrics. KubeBlocks adds vertical scaling (CPU and memory), PVC volume expansion, dynamic parameter reconfiguration without cluster restarts, rolling version upgrades from etcd 3.5.x to 3.6.x, snapshot-based backup and restore to S3-compatible storage, planned leader switchover, and stop/start lifecycle management — none of which the community etcd-operator supports. The community etcd-operator supports TLS only partially, while KubeBlocks supports full peer and client TLS encryption. KubeBlocks manages 35+ database engines with a unified OpsRequest API.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'What is the difference between KubeBlocks etcd Operator and Bitnami etcd Helm Chart?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'KubeBlocks etcd Operator uses a Kubernetes-native CRD API, while the Bitnami etcd Helm Chart is a Helm-based deployment with no CRD API or declarative Day-2 operations. Both support Raft HA (3- or 5-node clusters), horizontal scaling, TLS encryption, parameter reconfiguration, rolling version upgrades, and Prometheus metrics. KubeBlocks adds PVC volume expansion, planned leader switchover, snapshot-based backup and restore to S3-compatible storage, and stop/start lifecycle management — capabilities Bitnami does not support. KubeBlocks also supports vertical scaling beyond just what Bitnami\'s Helm values allow. For production etcd on Kubernetes requiring backup, operational lifecycle management, and declarative Day-2 operations, KubeBlocks is the more complete choice.',
           },
         },
       ],

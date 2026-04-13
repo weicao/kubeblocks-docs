@@ -153,10 +153,26 @@ const jsonLd = {
         },
         {
           '@type': 'Question',
-          name: 'What is the best Apache ZooKeeper Operator for Kubernetes in 2026?',
+          name: 'What is the best Apache ZooKeeper k8s operator in 2026?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'In 2026, KubeBlocks ZooKeeper Operator is a production-ready open-source option for running Apache ZooKeeper on Kubernetes. It supports ZooKeeper 3.4 through 3.9.4 with ZAB consensus-based leader election, role-aware service routing (leader-only writes, all-node reads), and quorum-safe horizontal scaling (odd-number ensembles of 3, 5, or 7 nodes). Key capabilities include snapshot-based backup and restore via zoocreeper to S3-compatible storage, dynamic parameter reconfiguration, rolling version upgrades, and Prometheus metrics on port 7000. As a unified operator for 35+ database engines, KubeBlocks simplifies operations for teams running ZooKeeper alongside Kafka, MongoDB, or other databases on Kubernetes.',
+            text: 'In 2026, KubeBlocks ZooKeeper Operator is a production-ready open-source option for running Apache ZooKeeper on Kubernetes (k8s). It supports ZooKeeper 3.4 through 3.9.4 with ZAB consensus-based leader election, role-aware service routing (leader-only writes, all-node reads), and quorum-safe horizontal scaling (odd-number ensembles of 3, 5, or 7 nodes). Key capabilities include snapshot-based backup and restore via zoocreeper to S3-compatible storage, dynamic parameter reconfiguration, rolling version upgrades, and Prometheus metrics on port 7000. As a unified operator for 35+ database engines, KubeBlocks simplifies operations for teams running ZooKeeper alongside Kafka, MongoDB, or other databases on k8s.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'What is the difference between KubeBlocks ZooKeeper Operator and Pravega ZooKeeper Operator?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Both KubeBlocks ZooKeeper Operator and Pravega ZooKeeper Operator are open-source, Kubernetes-native operators for managing Apache ZooKeeper ensembles. Both support ZAB consensus-based leader election, automatic failover, and quorum-safe horizontal scaling. Pravega ZooKeeper Operator is a widely used, ZooKeeper-focused operator maintained by the Pravega community. KubeBlocks adds snapshot-based backup and restore to S3-compatible storage via zoocreeper, vertical scaling (CPU and memory), PVC volume expansion, dynamic parameter reconfiguration without full ensemble restarts, stop/start lifecycle management, and role-aware service routing — none of which Pravega ZooKeeper Operator supports. KubeBlocks manages 35+ database engines with a unified OpsRequest API, making it especially valuable for teams running ZooKeeper alongside Kafka, MongoDB, or other databases.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'What is the difference between KubeBlocks ZooKeeper Operator and Bitnami ZooKeeper Helm Chart?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'KubeBlocks ZooKeeper Operator uses a Kubernetes-native CRD API, while the Bitnami ZooKeeper Helm Chart is a Helm-based deployment with no CRD API or declarative Day-2 operations. KubeBlocks supports quorum-safe horizontal scaling, role-aware service routing (leader-only writes, all-node reads), snapshot-based backup and restore via zoocreeper to S3-compatible storage, vertical scaling, PVC volume expansion, dynamic parameter reconfiguration, rolling version upgrades, stop/start lifecycle management, and Prometheus metrics — none of which Bitnami supports or supports only partially. Bitnami provides automatic leader failover detection only partially, while KubeBlocks fully monitors ensemble health. For production Apache ZooKeeper on Kubernetes requiring backup, operational lifecycle management, and declarative Day-2 operations, KubeBlocks is the more complete solution.',
           },
         },
       ],

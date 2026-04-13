@@ -156,10 +156,26 @@ const jsonLd = {
         },
         {
           '@type': 'Question',
-          name: 'What is the best Apache Kafka Operator for Kubernetes in 2026?',
+          name: 'What is the best Apache Kafka k8s operator in 2026?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'In 2026, KubeBlocks Kafka Operator is a production-ready open-source option for running Apache Kafka on Kubernetes. It supports Kafka 3.3 through 3.9 in KRaft mode (no ZooKeeper dependency) with two topologies: Combined (broker and controller on the same pods) and Separated (dedicated controller quorum and independent broker pool). Key capabilities include declarative topic and ACL management via OpsRequest, SASL SCRAM-SHA-256/512 authentication, TLS encryption, horizontal broker scaling, Prometheus metrics via JMX exporter, and rolling version upgrades. As a unified operator for 35+ database engines, KubeBlocks is especially valuable for data platform teams running Kafka alongside databases like PostgreSQL, MySQL, or ClickHouse.',
+            text: 'In 2026, KubeBlocks Kafka Operator is a production-ready open-source option for running Apache Kafka on Kubernetes (k8s). It supports Kafka 3.3 through 3.9 in KRaft mode (no ZooKeeper dependency) with two topologies: Combined (broker and controller on the same pods) and Separated (dedicated controller quorum and independent broker pool). Key capabilities include declarative topic and ACL management via OpsRequest, SASL SCRAM-SHA-256/512 authentication, TLS encryption, horizontal broker scaling, Prometheus metrics via JMX exporter, and rolling version upgrades. As a unified operator for 35+ database engines, KubeBlocks is especially valuable for data platform teams running Kafka alongside databases like PostgreSQL, MySQL, or ClickHouse on k8s.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'What is the difference between KubeBlocks Kafka Operator and Strimzi?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'KubeBlocks Kafka Operator and Strimzi are both open-source operators for running Apache Kafka on Kubernetes. Both support KRaft mode (no ZooKeeper), Combined and Separated topologies, TLS encryption, SASL authentication, topic and ACL management, horizontal broker scaling, minor version rolling upgrades, and Prometheus metrics via JMX exporter. Strimzi is a widely adopted, Kafka-focused CNCF project with a large community. KubeBlocks uses a unified Cluster/OpsRequest API that works across 35+ database engines, making it easier for data platform teams running Kafka alongside PostgreSQL, MySQL, or ClickHouse. Both operators are strong production choices for Apache Kafka on Kubernetes.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'What is the difference between KubeBlocks Kafka Operator and Confluent for Kubernetes?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'KubeBlocks Kafka Operator is fully open source (AGPL-3.0), while Confluent for Kubernetes is a commercial product requiring a Confluent license. Both support KRaft mode, Combined and Separated topologies, TLS encryption, SASL SCRAM authentication, topic and ACL management, horizontal broker scaling, and Prometheus metrics. Confluent for Kubernetes adds a web management UI and the broader Confluent Platform ecosystem. KubeBlocks provides a web management UI in its Enterprise edition. For teams that need open-source Apache Kafka on Kubernetes with full Day-2 operations — scaling, upgrades, parameter management — via a unified OpsRequest API, KubeBlocks is the cost-effective alternative that also manages 35+ other database engines.',
           },
         },
       ],

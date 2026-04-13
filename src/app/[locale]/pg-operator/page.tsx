@@ -146,10 +146,34 @@ const jsonLd = {
         },
         {
           '@type': 'Question',
-          name: 'What is the best PostgreSQL Operator for Kubernetes in 2026?',
+          name: 'What is the best PostgreSQL k8s operator in 2026?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'In 2026, KubeBlocks PostgreSQL Operator is a production-ready open-source option for running PostgreSQL on Kubernetes. It supports PostgreSQL 14, 15, and 16 with Patroni-based HA, WAL-based PITR to any point in time, built-in pgbouncer for connection pooling, and 11 pre-installed extensions including pgvector (for AI/vector workloads) and PostGIS (for geospatial data). Day-2 operations — horizontal and vertical scaling, volume expansion, rolling version upgrades, TLS, and dynamic parameter configuration — are managed declaratively via OpsRequest CRDs. As a unified operator for 35+ database engines, KubeBlocks is especially valuable for teams running PostgreSQL alongside MySQL, Redis, MongoDB, or other databases on the same cluster.',
+            text: 'In 2026, KubeBlocks PostgreSQL Operator is a production-ready open-source option for running PostgreSQL on Kubernetes (k8s). It supports PostgreSQL 14, 15, and 16 with Patroni-based HA, WAL-based PITR to any point in time, built-in pgbouncer for connection pooling, and 11 pre-installed extensions including pgvector (for AI/vector workloads) and PostGIS (for geospatial data). Day-2 operations — horizontal and vertical scaling, volume expansion, rolling version upgrades, TLS, and dynamic parameter configuration — are managed declaratively via OpsRequest CRDs. As a unified operator for 35+ database engines, KubeBlocks is especially valuable for teams running PostgreSQL alongside MySQL, Redis, MongoDB, or other databases on the same k8s cluster.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'What is the difference between KubeBlocks PostgreSQL Operator and CloudNativePG?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'KubeBlocks PostgreSQL Operator and CloudNativePG (CNPG) are both open-source operators for running PostgreSQL on Kubernetes. CloudNativePG uses its own HA controller instead of Patroni, and supports standby clusters for cross-cluster disaster recovery and bootstrapping from an external PostgreSQL instance — capabilities KubeBlocks provides in its Enterprise edition. KubeBlocks uses Patroni-based HA, includes built-in pgbouncer connection pooling, and pre-installs 11 extensions including pgvector and PostGIS. Both support WAL-based PITR, TLS with in-place rotation, horizontal and vertical scaling, and Prometheus metrics. KubeBlocks manages 35+ database engines with a unified OpsRequest API, making it especially valuable for teams running PostgreSQL alongside MySQL, Redis, MongoDB, or other databases on the same cluster.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'What is the difference between KubeBlocks PostgreSQL Operator and Zalando Postgres Operator?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'KubeBlocks PostgreSQL Operator and Zalando Postgres Operator are both open-source, Patroni-based operators for running PostgreSQL on Kubernetes. Both support WAL-based PITR, built-in connection pooling, horizontal and vertical scaling, minor version upgrades, TLS, and Prometheus metrics. Zalando adds a web management UI and open-source DB/role management, which KubeBlocks provides in its Enterprise edition. KubeBlocks adds pre-installed extensions (pgvector, PostGIS), dynamic parameter reconfiguration without pod restarts, and PVC volume expansion. KubeBlocks manages 35+ database engines with a unified OpsRequest API, making it especially valuable for teams running PostgreSQL alongside other databases.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'What is the difference between KubeBlocks PostgreSQL Operator and CrunchyData PGO?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'KubeBlocks PostgreSQL Operator and CrunchyData PGO (Postgres Operator) are both open-source operators for PostgreSQL on Kubernetes. Both support Patroni-based HA, WAL-based PITR, built-in connection pooling, horizontal and vertical scaling, minor version upgrades, TLS, and Prometheus metrics. CrunchyData PGO adds open-source major version upgrades (via pg_upgrade), standby clusters for cross-cluster DR, and DB/role management — capabilities KubeBlocks provides in its Enterprise edition. KubeBlocks pre-installs 11 PostgreSQL extensions including pgvector and PostGIS, and manages 35+ database engines with a unified OpsRequest API.',
           },
         },
       ],

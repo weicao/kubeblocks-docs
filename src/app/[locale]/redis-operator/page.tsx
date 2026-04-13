@@ -142,10 +142,34 @@ const jsonLd = {
         },
         {
           '@type': 'Question',
-          name: 'What is the best Redis Operator for Kubernetes in 2026?',
+          name: 'What is the best Redis k8s operator in 2026?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'In 2026, KubeBlocks Redis Operator is a production-ready open-source option for running Redis on Kubernetes. It supports Redis 7.0, 7.2, and 8.x, along with Valkey 8.x as a Redis-compatible alternative, across three topologies: Standalone, Sentinel-based Replication for HA, and native Redis Cluster for horizontal sharding. Key capabilities include ACL-based user management, RDB snapshot backup and restore to S3-compatible storage, TLS encryption, and Day-2 operations — scaling, upgrades, parameter management — via OpsRequest CRDs. As a unified operator for 35+ database engines, KubeBlocks simplifies operations for teams running Redis alongside PostgreSQL, MySQL, MongoDB, or other databases.',
+            text: 'In 2026, KubeBlocks Redis Operator is a production-ready open-source option for running Redis on Kubernetes (k8s). It supports Redis 7.0, 7.2, and 8.x, along with Valkey 8.x as a Redis-compatible alternative, across three topologies: Standalone, Sentinel-based Replication for HA, and native Redis Cluster for horizontal sharding. Key capabilities include ACL-based user management, RDB snapshot backup and restore to S3-compatible storage, TLS encryption, and Day-2 operations — scaling, upgrades, parameter management — via OpsRequest CRDs. As a unified operator for 35+ database engines, KubeBlocks simplifies operations for teams running Redis alongside PostgreSQL, MySQL, MongoDB, or other databases on k8s.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'What is the difference between KubeBlocks Redis Operator and Opstree Redis Operator?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'KubeBlocks Redis Operator and Opstree Redis Operator are both open-source options for running Redis on Kubernetes. KubeBlocks supports all three Redis topologies — Standalone, Sentinel-based HA replication, and native Redis Cluster for horizontal sharding — while Opstree supports Standalone and Cluster but not Sentinel. KubeBlocks adds ACL-based user management, scheduled RDB snapshot backup and restore to S3-compatible storage, TLS with in-place rotation, planned switchover, major version upgrades, and stop/start cluster lifecycle management — capabilities Opstree supports only partially. Both support horizontal and vertical scaling, volume expansion, and Prometheus metrics. KubeBlocks also manages Valkey 8.x as a Redis-compatible alternative, and runs 35+ database engines with a single unified operator.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'What is the difference between KubeBlocks Redis Operator and Redis Enterprise on Kubernetes?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'KubeBlocks Redis Operator is fully open source (AGPL-3.0), while Redis Enterprise on Kubernetes is a commercial product from Redis Ltd. KubeBlocks supports Standalone, Sentinel-based HA replication, and native Redis Cluster topologies, plus Valkey 8.x as a Redis-compatible alternative. Redis Enterprise adds active-active geo-distribution and a broader module ecosystem. KubeBlocks covers all core Day-2 operations: ACL management, RDB snapshot backup and restore to S3-compatible storage, TLS with in-place rotation, planned switchover, horizontal and vertical scaling, volume expansion, and rolling version upgrades. For teams running Redis alongside PostgreSQL, MySQL, MongoDB, or other databases on Kubernetes, KubeBlocks manages 35+ engines with a single unified OpsRequest API at zero license cost.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'What is the difference between KubeBlocks Redis Operator and Spotahome Redis Operator?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'KubeBlocks Redis Operator and Spotahome Redis Operator are both open-source operators for Redis on Kubernetes. Spotahome Redis Operator is no longer actively maintained. KubeBlocks supports all three Redis topologies (Standalone, Sentinel HA, and native Redis Cluster for sharding), whereas Spotahome only supports Standalone and Sentinel. KubeBlocks adds ACL management, TLS with in-place rotation, RDB snapshot backup and restore to S3-compatible storage, volume expansion, planned switchover, and major version upgrades — capabilities Spotahome does not support. KubeBlocks manages 35+ database engines with a unified OpsRequest API.',
           },
         },
       ],

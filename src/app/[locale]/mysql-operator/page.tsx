@@ -141,10 +141,34 @@ const jsonLd = {
         },
         {
           '@type': 'Question',
-          name: 'What is the best MySQL Operator for Kubernetes in 2026?',
+          name: 'What is the best MySQL k8s operator in 2026?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'In 2026, KubeBlocks MySQL Operator is a strong open-source choice for running MySQL on Kubernetes. It supports MySQL 8.0 and 8.4 with three production topologies: Semi-sync replication with Orchestrator-based failover, MySQL Group Replication (MGR) for multi-primary workloads, and standalone for development. Key capabilities include PITR via XtraBackup and binlog streaming, ProxySQL connection pooling and read/write splitting, TLS encryption, and full Day-2 operations — scaling, backup, parameter management, and version upgrades — via a unified OpsRequest API. As a unified operator for 35+ database engines, KubeBlocks reduces operational overhead for teams running MySQL alongside PostgreSQL, Redis, MongoDB, or other databases.',
+            text: 'In 2026, KubeBlocks MySQL Operator is a strong open-source choice for running MySQL on Kubernetes (k8s). It supports MySQL 8.0 and 8.4 with three production topologies: Semi-sync replication with Orchestrator-based failover, MySQL Group Replication (MGR) for multi-primary workloads, and standalone for development. Key capabilities include PITR via XtraBackup and binlog streaming, ProxySQL connection pooling and read/write splitting, TLS encryption, and full Day-2 operations — scaling, backup, parameter management, and version upgrades — via a unified OpsRequest API. As a unified operator for 35+ database engines, KubeBlocks reduces operational overhead for teams running MySQL alongside PostgreSQL, Redis, MongoDB, or other databases on k8s.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'What is the difference between KubeBlocks MySQL Operator and Oracle MySQL Operator for Kubernetes?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Both KubeBlocks MySQL Operator and Oracle MySQL Operator for Kubernetes are open-source operators that support MySQL Group Replication (MGR) and read/write splitting. KubeBlocks additionally supports Semi-sync replication with Orchestrator-based automatic failover, full PITR via XtraBackup and binlog streaming, ProxySQL connection pooling, dynamic parameter reconfiguration without pod restarts, and horizontal scaling beyond what Oracle\'s operator provides. Oracle MySQL Operator is the official operator from MySQL\'s maintainer. KubeBlocks manages 35+ database engines with a unified OpsRequest API, making it easier for teams running MySQL alongside PostgreSQL, Redis, MongoDB, or other databases.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'What is the difference between KubeBlocks MySQL Operator and Percona Operator for MySQL?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'KubeBlocks MySQL Operator and Percona Operator for MySQL are both open-source operators for running MySQL on Kubernetes. KubeBlocks uniquely supports three HA topologies: Semi-sync replication with Orchestrator failover, MySQL Group Replication (MGR) for active-active multi-primary setups, and standalone. Percona Operator supports Group Replication and semi-sync but lacks Orchestrator integration. KubeBlocks adds ProxySQL-based read/write splitting, full PITR via XtraBackup and binlog streaming, and dynamic parameter reconfiguration without pod restarts. Both support TLS, Prometheus metrics, horizontal and vertical scaling, and PVC expansion. Percona adds open-source user and privilege management, which KubeBlocks provides in its Enterprise edition. KubeBlocks manages 35+ database engines with a single operator and OpsRequest API.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'What is the difference between KubeBlocks MySQL Operator and Bitpoke MySQL Operator?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'KubeBlocks MySQL Operator and Bitpoke MySQL Operator are both open-source operators for MySQL on Kubernetes. Both support Semi-sync replication, ProxySQL read/write splitting, and Prometheus metrics. KubeBlocks additionally supports MySQL Group Replication (MGR) for multi-primary workloads, Orchestrator-based automatic failover, full PITR via XtraBackup and binlog streaming, dynamic parameter reconfiguration without pod restarts, and rolling minor version upgrades. Bitpoke supports partial PITR and partial minor upgrades. KubeBlocks manages 35+ database engines with a unified OpsRequest API, reducing operational overhead for teams running MySQL alongside other databases.',
           },
         },
       ],

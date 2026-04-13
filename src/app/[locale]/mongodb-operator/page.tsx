@@ -141,10 +141,26 @@ const jsonLd = {
         },
         {
           '@type': 'Question',
-          name: 'What is the best MongoDB Operator for Kubernetes in 2026?',
+          name: 'What is the best MongoDB k8s operator in 2026?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'In 2026, KubeBlocks MongoDB Operator is a production-ready open-source option for running MongoDB on Kubernetes. It supports MongoDB 6.0, 7.0, and 8.0 with two topologies: ReplicaSet (3-node replica set with automatic majority-vote failover in under 30 seconds) and Sharding (distributed shard replica sets with mongos routers). Key capabilities include PITR via continuous oplog streaming, physical backup taken on a secondary with no primary impact, TLS encryption, and Day-2 operations — scaling, upgrades, parameter management — via OpsRequest CRDs. As a unified operator for 35+ database engines, KubeBlocks is a strong choice for teams running MongoDB alongside PostgreSQL, MySQL, Redis, or other databases on Kubernetes.',
+            text: 'In 2026, KubeBlocks MongoDB Operator is a production-ready open-source option for running MongoDB on Kubernetes (k8s). It supports MongoDB 6.0, 7.0, and 8.0 with two topologies: ReplicaSet (3-node replica set with automatic majority-vote failover in under 30 seconds) and Sharding (distributed shard replica sets with mongos routers). Key capabilities include PITR via continuous oplog streaming, physical backup taken on a secondary with no primary impact, TLS encryption, and Day-2 operations — scaling, upgrades, parameter management — via OpsRequest CRDs. As a unified operator for 35+ database engines, KubeBlocks is a strong choice for teams running MongoDB alongside PostgreSQL, MySQL, Redis, or other databases on k8s.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'What is the difference between KubeBlocks MongoDB Operator and Percona Operator for MongoDB?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'KubeBlocks MongoDB Operator and Percona Operator for MongoDB are both open-source operators for running MongoDB on Kubernetes. Both support ReplicaSet HA, Sharding, TLS, physical backup, scheduled backup, restore, PITR via oplog streaming, horizontal and vertical scaling, volume expansion, and Prometheus metrics. KubeBlocks adds dynamic parameter reconfiguration without pod restarts and stop/start cluster lifecycle management. Percona adds user and role management in the open-source edition — KubeBlocks provides this in its Enterprise edition. Both are strong production choices; KubeBlocks manages 35+ engines with a single unified OpsRequest API, making it especially valuable for teams running MongoDB alongside PostgreSQL, MySQL, Redis, or other databases.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'What is the difference between KubeBlocks MongoDB Operator and MongoDB Community Kubernetes Operator?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'KubeBlocks MongoDB Operator and MongoDB Community Kubernetes Operator are both open-source operators for running MongoDB on Kubernetes. The MongoDB Community Operator supports ReplicaSet HA, Sharding, TLS, horizontal and vertical scaling, and volume expansion, but does not support physical backup, scheduled backup, restore, PITR via oplog streaming, or Prometheus metrics. KubeBlocks adds all of these, plus dynamic parameter reconfiguration without pod restarts, stop/start lifecycle management, and rolling minor version upgrades. KubeBlocks manages 35+ database engines with a unified OpsRequest API, making it the stronger choice for production workloads that require backup, PITR, and full Day-2 operations.',
           },
         },
       ],

@@ -151,10 +151,26 @@ const jsonLd = {
         },
         {
           '@type': 'Question',
-          name: 'What is the best Elasticsearch Operator for Kubernetes in 2026?',
+          name: 'What is the best Elasticsearch k8s operator in 2026?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'In 2026, KubeBlocks Elasticsearch Operator is a fully open-source option for running Elasticsearch on Kubernetes. It supports Elasticsearch 7.x and 8.x (up to 8.15.5) across four topologies: single-node (development), mdit (multi-node combined roles), multi-node (dedicated master + data/ingest/transform), and fully-separated (m-d-i-t for large-scale role isolation). Key capabilities include quorum-based HA with dedicated master nodes, horizontal scaling of data nodes with automatic shard rebalancing, snapshot-based backup and restore to S3-compatible storage, and Day-2 operations via OpsRequest CRDs. KubeBlocks is fully open source under AGPL-3.0, with no license-gated core features, and manages 35+ database engines with a single operator.',
+            text: 'In 2026, KubeBlocks Elasticsearch Operator is a fully open-source option for running Elasticsearch on Kubernetes (k8s). It supports Elasticsearch 7.x and 8.x (up to 8.15.5) across four topologies: single-node (development), mdit (multi-node combined roles), multi-node (dedicated master + data/ingest/transform), and fully-separated (m-d-i-t for large-scale role isolation). Key capabilities include quorum-based HA with dedicated master nodes, horizontal scaling of data nodes with automatic shard rebalancing, snapshot-based backup and restore to S3-compatible storage, and Day-2 operations via OpsRequest CRDs. KubeBlocks is fully open source under AGPL-3.0, with no license-gated core features, and manages 35+ database engines with a single k8s operator.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'What is the difference between KubeBlocks Elasticsearch Operator and ECK (Elastic Cloud on Kubernetes)?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'KubeBlocks Elasticsearch Operator and ECK (Elastic Cloud on Kubernetes) are both Kubernetes-native operators for running Elasticsearch on Kubernetes. ECK is maintained by Elastic and supports all four role topologies, Kibana integration, and cross-cluster replication. However, ECK is licensed under the Elastic License 2.0, which is not OSI open source — advanced features require an Elastic subscription. KubeBlocks Elasticsearch Operator is fully open source under AGPL-3.0 with no license-gated features: it supports the same four topologies, snapshot backup and restore to S3-compatible storage, dynamic parameter reconfiguration, stop/start lifecycle management, and Day-2 operations via OpsRequest CRDs. KubeBlocks manages 35+ database engines with a single operator, making it valuable for teams running Elasticsearch alongside other databases.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'What is the difference between KubeBlocks Elasticsearch Operator and Bitnami Elasticsearch Helm Chart?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'KubeBlocks Elasticsearch Operator uses a Kubernetes-native CRD API with declarative Day-2 operations, while the Bitnami Elasticsearch Helm Chart is a Helm-based deployment with limited operational automation and no CRD API. KubeBlocks supports all four Elasticsearch topologies including fully-separated role isolation (dedicated master, data, ingest, and transform nodes), while Bitnami\'s multi-node support is partial. KubeBlocks adds PVC volume expansion, dynamic parameter reconfiguration without pod restarts, snapshot backup and restore to S3-compatible storage, and stop/start lifecycle management — none of which Bitnami supports. Both support TLS, Prometheus metrics, horizontal and vertical scaling, and rolling version upgrades (Bitnami partially). For production Elasticsearch on Kubernetes, KubeBlocks provides significantly more operational capability.',
           },
         },
       ],

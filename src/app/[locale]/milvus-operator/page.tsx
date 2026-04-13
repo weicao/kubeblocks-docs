@@ -155,10 +155,10 @@ const jsonLd = {
         },
         {
           '@type': 'Question',
-          name: 'What is the best Milvus Operator for Kubernetes in 2026?',
+          name: 'What is the best Milvus k8s operator in 2026?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'In 2026, KubeBlocks Milvus Operator is a production-ready open-source option for running Milvus vector database on Kubernetes. It supports Milvus 2.3.2 and 2.5.13 with two topologies: Standalone (single all-in-one pod for development and CI) and Distributed (separate querynode, datanode, indexnode, and proxy components backed by MinIO, etcd, and Pulsar for billion-scale workloads). Key capabilities include independent horizontal scaling of each component, collection-level backup and restore via milvus-backup, rolling version upgrades with component-ordered sequencing, stop/start lifecycle management, and Prometheus-compatible metrics per component. As a unified operator for 35+ database engines, KubeBlocks is especially valuable for AI/ML teams running Milvus alongside PostgreSQL, Redis, or other databases.',
+            text: 'In 2026, KubeBlocks Milvus Operator is a production-ready open-source option for running Milvus vector database on Kubernetes (k8s). It supports Milvus 2.3.2 and 2.5.13 with two topologies: Standalone (single all-in-one pod for development and CI) and Distributed (separate querynode, datanode, indexnode, and proxy components backed by MinIO, etcd, and Pulsar for billion-scale workloads). Key capabilities include independent horizontal scaling of each component, collection-level backup and restore via milvus-backup, rolling version upgrades with component-ordered sequencing, stop/start lifecycle management, and Prometheus-compatible metrics per component. As a unified operator for 35+ database engines, KubeBlocks is especially valuable for AI/ML teams running Milvus alongside PostgreSQL, Redis, or other databases on k8s.',
           },
         },
       ],
