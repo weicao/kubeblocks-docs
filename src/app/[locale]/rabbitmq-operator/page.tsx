@@ -31,6 +31,10 @@ export async function generateMetadata(): Promise<Metadata> {
       'RabbitMQ Day-2 operations',
       'RabbitMQ Cluster Operator alternative',
       'best RabbitMQ operator Kubernetes 2026',
+      'RabbitMQ k8s',
+      'RabbitMQ k8s operator',
+      'run RabbitMQ on k8s',
+      'k8s RabbitMQ operator',
     ],
     alternates: { canonical: '/rabbitmq-operator' },
     openGraph: {
