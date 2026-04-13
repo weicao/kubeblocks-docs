@@ -7,6 +7,9 @@ BUILDX_NAME = kubeblocks-docs-xbuilder
 YARN := yarn
 DOCKER := docker
 PLATFORMS := linux/arm64,linux/amd64
+# next build loads the full MDX graph; default ~2GB heap OOMs on GitHub runners
+NODE_BUILD_MEMORY ?= 6144
+export NODE_OPTIONS := --max-old-space-size=$(NODE_BUILD_MEMORY)
 
 # Help target
 .PHONY: help

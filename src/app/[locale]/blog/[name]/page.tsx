@@ -1,4 +1,5 @@
 import { getStaticParams } from '@/locales/server';
+import { getBlogAliasRouteSlugs, getBlogCanonicalSlug, resolveBlogMdxSlug } from '@/utils/blogSlugAliases';
 import { BLOGS_DIR, getMarkDownMetaData } from '@/utils/markdown';
 import { toAbsoluteUrl } from '@/utils/site';
 import fs from 'fs';
@@ -21,6 +22,9 @@ export async function generateStaticParams() {
             name: f.replace(/\.mdx/, ''),
           });
         });
+      getBlogAliasRouteSlugs().forEach((alias) => {
+        data.push({ locale: item.locale, name: alias });
+      });
     }
   });
   return data;
@@ -80,9 +84,11 @@ export async function generateMetadata({
   params: Promise<ParamsProps>;
 }): Promise<Metadata> {
   const { locale, name } = await params;
-  const mdxPath = path.join(BLOGS_DIR, locale, `${name}.mdx`);
-  const defaultMdxEnPath = path.join(BLOGS_DIR, 'en', `${name}.mdx`);
-  const canonicalPath = `/blog/${name}`;
+  const mdxSlug = resolveBlogMdxSlug(name);
+  const canonicalSlug = getBlogCanonicalSlug(name);
+  const mdxPath = path.join(BLOGS_DIR, locale, `${mdxSlug}.mdx`);
+  const defaultMdxEnPath = path.join(BLOGS_DIR, 'en', `${mdxSlug}.mdx`);
+  const canonicalPath = `/blog/${canonicalSlug}`;
 
   const activePath = fs.existsSync(mdxPath) ? mdxPath : defaultMdxEnPath;
   const meta = await getMarkDownMetaData(activePath);
@@ -98,9 +104,11 @@ export default async function BlogDetail({
   params: Promise<ParamsProps>;
 }) {
   const { name, locale } = await params;
+  const mdxSlug = resolveBlogMdxSlug(name);
+  const canonicalSlug = getBlogCanonicalSlug(name);
 
-  const mdxPath = path.join(BLOGS_DIR, locale, `${name}.mdx`);
-  const defaultMdxEnPath = path.join(BLOGS_DIR, 'en', `${name}.mdx`);
+  const mdxPath = path.join(BLOGS_DIR, locale, `${mdxSlug}.mdx`);
+  const defaultMdxEnPath = path.join(BLOGS_DIR, 'en', `${mdxSlug}.mdx`);
 
   const activePath = fs.existsSync(mdxPath)
     ? mdxPath
@@ -141,7 +149,7 @@ export default async function BlogDetail({
       url: 'https://kubeblocks.io',
       logo: { '@type': 'ImageObject', url: toAbsoluteUrl('/logo.png') },
     },
-    mainEntityOfPage: { '@type': 'WebPage', '@id': toAbsoluteUrl(`/blog/${name}`) },
+    mainEntityOfPage: { '@type': 'WebPage', '@id': toAbsoluteUrl(`/blog/${canonicalSlug}`) },
   };
 
   const jsonLdScript = (
@@ -152,7 +160,7 @@ export default async function BlogDetail({
   );
 
   if (fs.existsSync(mdxPath)) {
-    const { default: MDXContent } = await import(`@blogs/${locale}/${name}.mdx`);
+    const { default: MDXContent } = await import(`@blogs/${locale}/${mdxSlug}.mdx`);
     return (
       <>
         {jsonLdScript}
@@ -161,7 +169,7 @@ export default async function BlogDetail({
     );
   } else {
     const _locale = 'en';
-    const { default: MDXContent } = await import(`@blogs/${_locale}/${name}.mdx`);
+    const { default: MDXContent } = await import(`@blogs/${_locale}/${mdxSlug}.mdx`);
     return (
       <>
         {jsonLdScript}

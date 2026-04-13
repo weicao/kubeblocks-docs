@@ -1,4 +1,5 @@
 import { SidebarMenuItem } from '@/components/SidebarMenu';
+import { getBlogCanonicalSlug } from '@/utils/blogSlugAliases';
 import fs from 'fs';
 import grayMatter from 'gray-matter';
 import moment from 'moment';
@@ -124,7 +125,7 @@ export const getBlogs = async (
         const data = (await getMarkDownMetaData(
           path.join(blogsDir, file),
         )) as BlogMetadata;
-        data.name = file.replace(/\.mdx$/, '');
+        data.name = getBlogCanonicalSlug(file.replace(/\.mdx$/, ''));
         return data;
       }),
     )

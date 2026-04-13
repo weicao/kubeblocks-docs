@@ -1,3 +1,4 @@
+import { getBlogCanonicalSlug } from '@/utils/blogSlugAliases';
 import { BLOGS_DIR, DOCS_DIR } from '@/utils/markdown';
 import { getSiteUrl } from '@/utils/site';
 import fs from 'fs';
@@ -138,7 +139,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       .forEach((f) => {
         const filePath = path.join(dir, f);
         const fileLastModified = fs.statSync(filePath).mtime;
-        const slug = f.replace(/\.mdx/, '');
+        const slug = getBlogCanonicalSlug(f.replace(/\.mdx/, ''));
         const routePath = `/blog/${slug}`;
 
         sitemap.push({

@@ -252,6 +252,13 @@ async function main() {
       .replace(/^blogs\/[^/]+\//, 'blog/')
       .replace(/^docs\/[^/]+\//, 'docs/');
     normPath = normPath.replace(/\.(md|mdx)$/, '');
+    if (
+      relPath.startsWith('blogs/') &&
+      typeof data.slug === 'string' &&
+      data.slug.length > 0
+    ) {
+      normPath = `blog/${data.slug}`;
+    }
     if (locale !== 'en') {
       normPath = `${locale}/${normPath}`;
     }

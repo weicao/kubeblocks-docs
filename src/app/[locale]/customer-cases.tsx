@@ -58,7 +58,7 @@ const cases = [
     title: '2× Resource Utilization at 10,000-Pod Scale',
     description:
       'Kuaishou built a custom federated architecture with KubeBlocks that deploys Redis across multiple K8s clusters — ultimately doubling resource utilization while hiding all complexity from end-users.',
-    cta: { label: 'Read the story', href: 'https://kubeblocks.io/blog/manage-large-scale-redis-on-k8s-with-kubeblocks' },
+    cta: { label: 'Read the story', href: 'https://kubeblocks.io/blog/run-redis-on-k8s-kuaishou-solution-with-kubeblocks' },
     cta2: { label: 'Watch KubeCon talk', href: 'https://www.youtube.com/watch?v=yHXPOupg-iM' },
   },
   {
