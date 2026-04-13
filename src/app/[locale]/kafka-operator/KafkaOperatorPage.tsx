@@ -714,112 +714,6 @@ function CapabilitiesDiagrams() {
   );
 }
 
-// ── 5. Comparison Table ───────────────────────────────────────────────────────
-
-function ComparisonTable() {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
-  const cardBg = theme.palette.background.paper;
-  const cardBorder = theme.palette.divider;
-
-  const YES  = <Box component="span" sx={{ color: '#3fb950', fontWeight: 700 }}>✓</Box>;
-  const NO   = <Box component="span" sx={{ color: '#f85149', fontWeight: 700 }}>✗</Box>;
-  const PART = <Box component="span" sx={{ color: '#e3b341', fontWeight: 700 }}>~</Box>;
-  const ENT  = (
-    <Box component="span" sx={{ fontSize: '0.65rem', fontWeight: 700, px: 0.75, py: 0.25, borderRadius: 0.5, bgcolor: 'action.selected', color: 'text.secondary', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-      Enterprise
-    </Box>
-  );
-
-  const rows = [
-    { feature: 'Open Source',                       kb: YES,  strimzi: YES,  confluent: NO   },
-    { feature: 'KRaft Mode',                        kb: YES,  strimzi: YES,  confluent: YES  },
-    { feature: 'ZooKeeper Mode (legacy)',            kb: YES,  strimzi: YES,  confluent: YES  },
-    { feature: 'Combined Mode (broker+controller)', kb: YES,  strimzi: YES,  confluent: YES  },
-    { feature: 'Separated Mode',                    kb: YES,  strimzi: YES,  confluent: YES  },
-    { feature: 'TLS Encryption',                    kb: YES,  strimzi: YES,  confluent: YES  },
-    { feature: 'SASL (SCRAM-SHA-256/512)',           kb: YES,  strimzi: YES,  confluent: YES  },
-    { feature: 'Topic management',                  kb: YES,  strimzi: YES,  confluent: YES  },
-    { feature: 'ACL management',                    kb: YES,  strimzi: YES,  confluent: YES  },
-    { feature: 'Quota management',                   kb: YES,  strimzi: YES,  confluent: YES  },
-    { feature: 'Dynamic config (no restart)',        kb: PART, strimzi: PART, confluent: PART },
-    { feature: 'Horizontal scaling (broker)',        kb: YES,  strimzi: YES,  confluent: YES  },
-    { feature: 'Minor version rolling upgrade',      kb: YES,  strimzi: YES,  confluent: YES  },
-    { feature: 'Prometheus metrics',                kb: YES,  strimzi: YES,  confluent: YES  },
-    { feature: 'Web management UI',                 kb: ENT,  strimzi: NO,   confluent: YES  },
-  ];
-
-  const cols = [
-    { label: 'KubeBlocks', highlight: true },
-    { label: 'Strimzi', highlight: false },
-    { label: 'Confluent for K8s', highlight: false },
-  ];
-
-  const cellSx = { px: 2, py: 1.5, fontSize: '0.82rem', borderBottom: `1px solid ${cardBorder}`, textAlign: 'center' as const };
-
-  return (
-    <Box sx={{ py: { xs: 6, md: 10 }, borderTop: '1px solid', borderColor: 'divider' }}>
-      <Container maxWidth="lg">
-        <Box textAlign="center" mb={6}>
-          <SectionEyebrow label="Comparison" />
-          <Typography variant="h4" fontWeight={700} sx={{ letterSpacing: '-0.03em', lineHeight: 1.15 }}>
-            How KubeBlocks Compares to{' '}
-            <Box component="span" color="primary.main">Other Kafka Operators</Box>
-          </Typography>
-          <Typography sx={{ color: 'text.secondary', mt: 1.5, maxWidth: 560, mx: 'auto', lineHeight: 1.75 }}>
-            A feature-by-feature breakdown based on publicly available documentation.
-          </Typography>
-        </Box>
-
-        <Box sx={{ overflowX: 'auto', borderRadius: '14px', border: `1px solid ${cardBorder}` }}>
-          <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', bgcolor: cardBg }}>
-            <Box component="thead">
-              <Box component="tr">
-                <Box component="th" sx={{ px: 2, py: 2, textAlign: 'left', fontSize: '0.78rem', fontWeight: 700, color: 'text.secondary', letterSpacing: '.08em', textTransform: 'uppercase', borderBottom: `1px solid ${cardBorder}`, bgcolor: isDark ? '#161b22' : '#f6f8fa' }}>
-                  Feature
-                </Box>
-                {cols.map(({ label, highlight }) => (
-                  <Box key={label} component="th" sx={{ px: 2, py: 2, textAlign: 'center', fontSize: '0.78rem', fontWeight: 700, color: highlight ? 'primary.main' : 'text.secondary', letterSpacing: '.04em', borderBottom: `1px solid ${cardBorder}`, borderLeft: `1px solid ${cardBorder}`, bgcolor: highlight ? (isDark ? alpha('#0165CB', 0.08) : alpha('#0165CB', 0.04)) : (isDark ? '#161b22' : '#f6f8fa') }}>
-                    {label}
-                  </Box>
-                ))}
-              </Box>
-            </Box>
-            <Box component="tbody">
-              {rows.map(({ feature, kb, strimzi, confluent }) => (
-                <Box key={feature} component="tr" sx={{ '&:hover td, &:hover th': { bgcolor: isDark ? alpha('#fff', 0.02) : alpha('#000', 0.02) } }}>
-                  <Box component="td" sx={{ ...cellSx, textAlign: 'left', color: 'text.primary', fontWeight: 500, borderRight: `1px solid ${cardBorder}` }}>
-                    {feature}
-                  </Box>
-                  {[kb, strimzi, confluent].map((val, j) => (
-                    <Box key={j} component="td" sx={{ ...cellSx, borderLeft: `1px solid ${cardBorder}`, bgcolor: j === 0 ? (isDark ? alpha('#0165CB', 0.06) : alpha('#0165CB', 0.03)) : 'inherit' }}>
-                      {val}
-                    </Box>
-                  ))}
-                </Box>
-              ))}
-            </Box>
-          </Box>
-        </Box>
-
-        <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center', mt: 2, fontSize: '0.75rem' }}>
-          <Box component="span" sx={{ color: '#3fb950', fontWeight: 700 }}>✓</Box>{' '}= Supported · <Box component="span" sx={{ color: '#e3b341', fontWeight: 700 }}>~</Box>{' '}= Partial / Limited · <Box component="span" sx={{ color: '#f85149', fontWeight: 700 }}>✗</Box>{' '}= Not supported
-        </Typography>
-        <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center', mt: 0.75, fontSize: '0.75rem' }}>
-          <Box component="span" sx={{ fontSize: '0.65rem', fontWeight: 700, px: 0.75, py: 0.25, borderRadius: 0.5, bgcolor: 'action.selected', color: 'text.secondary', letterSpacing: '0.04em', textTransform: 'uppercase', mr: 0.75 }}>Enterprise</Box>
-          indicates a capability available in KubeBlocks Enterprise, not the open-source distribution.{' '}
-          <Box component="a" href="https://kubeblocks.com/contact" target="_blank" rel="noopener noreferrer" sx={{ color: 'primary.main', textDecoration: 'none', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}>
-            Contact us for licensing →
-          </Box>
-        </Typography>
-        <Typography variant="body2" sx={{ color: 'text.disabled', textAlign: 'center', mt: 0.75, fontSize: '0.72rem' }}>
-          Based on publicly available documentation. Features may vary by version.
-        </Typography>
-      </Container>
-    </Box>
-  );
-}
-
 // ── 6. Related Operators ──────────────────────────────────────────────────────
 
 function RelatedOperators() {
@@ -909,7 +803,6 @@ export default function KafkaOperatorPage() {
       <Hero />
       <TrustedBy />
       <Topologies />
-      <ComparisonTable />
       <CapabilitiesDiagrams />
       <LifecycleFeatures />
       <RelatedOperators />
