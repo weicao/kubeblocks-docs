@@ -1,0 +1,615 @@
+---
+slug: gitlab-on-kubeblocks
+title: "GitLab on Kubernetes: Production-Ready PostgreSQL and Redis HA with KubeBlocks"
+description: Learn how to replace GitLab's fragile bundled databases with KubeBlocks-managed HA clusters — PostgreSQL with Patroni and Redis with Sentinel — for automatic failover, zero-downtime upgrades, and day-2 operations out of the box.
+date: 2026-04-14
+authors:
+  name: ApeCloud
+  url: https://github.com/apecloud
+  image_url: https://avatars.githubusercontent.com/u/96192465?v=4
+tags: [Use Case]
+Keywords: GitLab, Kubernetes, KubeBlocks, High Availability, PostgreSQL, Patroni, Redis, Sentinel, EKS, Helm, Failover, StatefulSet, Database on Kubernetes
+image: /img/blogs/thumbnails/blog-gitlab.png
+---
+
+# GitLab on Kubernetes: Production-Ready PostgreSQL and Redis HA with KubeBlocks
+
+Running GitLab on Kubernetes is remarkably straightforward if you stick to the official Helm chart—until you hit the database tier. The bundled PostgreSQL and Redis instances are perfectly fine for taking GitLab for a spin, but they are single points of failure. The moment one of those pods restarts, your entire CI/CD pipeline grinds to a halt.
+
+This guide walks you through replacing those fragile bundled databases with true, production-grade Highly Available (HA) clusters managed by **[KubeBlocks](https://kubeblocks.io)**. We will set up **PostgreSQL with Patroni** (for streaming replication and automatic primary election) and **Redis with Sentinel** (1 primary, 1 replica, and 3 sentinels).
+
+Every command below has been tested on EKS using KubeBlocks 1.0.2.
+
+### What is KubeBlocks?
+
+[KubeBlocks](https://kubeblocks.io) is an open-source Kubernetes operator for running and managing databases and stateful middleware. It supports 30+ database engines—including [PostgreSQL](/pg-operator), [Redis](/redis-operator), MySQL, MongoDB, and Kafka—through a unified API surface. Instead of writing StatefulSets and sidecar logic by hand, you describe what you want (topology, version, resources) and KubeBlocks handles provisioning, HA configuration, credential management, and day-2 operations.
+
+---
+
+## Prerequisites
+
+Before diving in, make sure you have the following:
+
+- A Kubernetes cluster (1.22 or newer) with `kubectl` configured
+- Helm 3.x installed
+- KubeBlocks 1.0.2 or higher installed in your cluster
+
+If you haven't installed KubeBlocks yet, you can add it quickly:
+
+```bash
+helm repo add kubeblocks https://apecloud.github.io/helm-charts
+helm repo update
+
+helm install kubeblocks kubeblocks/kubeblocks \
+  --namespace kb-system \
+  --create-namespace \
+  --version 1.0.2
+```
+
+Wait for the operator to become fully ready:
+
+```bash
+kubectl wait --for=condition=ready pod \
+  -l app.kubernetes.io/name=kubeblocks \
+  -n kb-system \
+  --timeout=120s
+```
+
+---
+
+## Architecture Overview
+
+To keep things clean, we will deploy both database clusters into a dedicated `gitlab-data` namespace. This strictly isolates the stateful data layer from GitLab's stateless application pods.
+
+![GitLab on Kubernetes Architecture](/img/blogs/blog-gitlab-arch.png)
+
+---
+
+## Step 1: Create the Database Namespace
+
+First, let's create the isolated namespace for our data layer.
+
+```bash
+kubectl create namespace gitlab-data
+```
+
+---
+
+## Step 2: Deploy PostgreSQL HA
+
+KubeBlocks ships with a [PostgreSQL addon](/pg-operator) built on **Patroni**—a battle-tested HA solution that handles leader election, streaming replication, and automatic failover seamlessly. See the [PostgreSQL quickstart](/docs/preview/kubeblocks-for-postgresql/02-quickstart) for standalone usage.
+
+Deploy the cluster using Helm:
+
+```bash
+helm install gitlab-pg kubeblocks/postgresql-cluster \
+  --namespace gitlab-data \
+  --set version=16.4.0 \
+  --set mode=replication \
+  --set replicas=2 \
+  --set cpu=2 \
+  --set memory=4 \
+  --set storage=50 \
+  --set terminationPolicy=Delete
+```
+
+Here is exactly what these parameters do:
+- `mode=replication` — Enables Patroni streaming replication (1 primary + N-1 replicas).
+- `replicas=2` — Deploys 1 primary and 1 standby. (This is sufficient for this guide, but see the production note below).
+- `terminationPolicy=Delete` — Allows `helm delete` to remove the cluster.
+
+> **Production Note:** We use `replicas=2` here to keep tutorial costs low. For actual production environments, you should use `replicas=3`. With only 2 nodes and no external Distributed Configuration Store (like etcd or Consul), Patroni cannot establish a quorum during a network partition. In that scenario, it will pause the primary to prevent split-brain, rather than failing over. Three replicas give Patroni the majority vote it needs to fail over safely without external dependencies.
+
+Wait for the cluster to reach the `Running` state:
+
+```bash
+kubectl wait --for=jsonpath='{.status.phase}'=Running \
+  cluster/gitlab-pg \
+  -n gitlab-data \
+  --timeout=300s
+```
+
+Let's verify that replication is actively working:
+
+```bash
+# Check the Primary (pg_is_in_recovery should be 'f')
+kubectl exec -n gitlab-data gitlab-pg-postgresql-0 -c postgresql -- \
+  psql -U postgres -c "SELECT pg_is_in_recovery();"
+
+# Check the Replica (pg_is_in_recovery should be 't')
+kubectl exec -n gitlab-data gitlab-pg-postgresql-1 -c postgresql -- \
+  psql -U postgres -c "SELECT pg_is_in_recovery();"
+```
+
+You should see output similar to this:
+```
+ pg_is_in_recovery
+-------------------
+ f                    ← pod-0 is the primary
+
+ pg_is_in_recovery
+-------------------
+ t                    ← pod-1 is the replica
+```
+
+---
+
+## Step 3: Create the GitLab Database and User
+
+Next, we need to provision the specific database and user that GitLab expects.
+
+First, identify which pod is the current Patroni primary. It will be the pod where `pg_is_in_recovery()` returns `f`:
+
+```bash
+# Find the primary (returns 'f' = false = not a replica)
+kubectl exec -n gitlab-data gitlab-pg-postgresql-0 -c postgresql -- \
+  psql -U postgres -c "SELECT pg_is_in_recovery();"
+
+kubectl exec -n gitlab-data gitlab-pg-postgresql-1 -c postgresql -- \
+  psql -U postgres -c "SELECT pg_is_in_recovery();"
+```
+
+Once you have identified the primary pod (e.g., `gitlab-pg-postgresql-0`), run the following commands against it to set up the credentials:
+
+```bash
+# Generate a strong, random password
+GITLAB_PG_PASS=$(openssl rand -base64 18 | tr -d '/+=')
+echo "Save this password: $GITLAB_PG_PASS"
+
+PRIMARY_POD=gitlab-pg-postgresql-0   # Replace with the pod where pg_is_in_recovery()=f
+
+kubectl exec -n gitlab-data $PRIMARY_POD -c postgresql -- \
+  psql -U postgres -c "CREATE USER gitlab WITH PASSWORD '$GITLAB_PG_PASS';"
+
+kubectl exec -n gitlab-data $PRIMARY_POD -c postgresql -- \
+  psql -U postgres -c "CREATE DATABASE gitlabhq_production OWNER gitlab;"
+
+kubectl exec -n gitlab-data $PRIMARY_POD -c postgresql -- \
+  psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE gitlabhq_production TO gitlab;"
+```
+
+> **Note:** Because Patroni can elect either pod as the primary, you must ensure you run Data Definition Language (DDL) commands exclusively on the primary node. Attempting to write to a replica will result in an `ERROR: cannot execute ... in a read-only transaction`.
+
+---
+
+## Step 4: Deploy Redis HA with Sentinel
+
+GitLab leans heavily on Redis for caching, managing Sidekiq job queues, and maintaining session state.
+
+KubeBlocks' [Redis addon](/redis-operator) `replication` topology deploys a complete HA stack. See the [Redis quickstart](/docs/preview/kubeblocks-for-redis/02-quickstart) for standalone usage.
+- Redis data nodes (1 primary + N-1 replicas)
+- 3 Sentinel nodes dedicated to monitoring and automatic failover
+
+To avoid Helm type-coercion issues with decimal values, it's best to create a `redis-values.yaml` file:
+
+```yaml
+version: "7.2.10"
+mode: replication
+replicas: 2
+cpu: 1
+memory: 2
+storage: 10
+terminationPolicy: Delete
+sentinel:
+  replicas: 3
+  cpu: 0.5
+  memory: 0.5
+  storage: 1
+```
+
+Deploy the Redis cluster:
+
+```bash
+helm install gitlab-redis kubeblocks/redis-cluster \
+  --namespace gitlab-data \
+  --values redis-values.yaml
+```
+
+Here is a breakdown of the key parameters:
+- `mode=replication` — Automatically deploys both the Redis and Sentinel components.
+- `replicas=2` — Provisions 1 primary and 1 replica for the Redis data nodes.
+- `sentinel.replicas=3` — Provisions 3 Sentinel nodes, establishing a quorum of 2.
+
+Wait for the cluster to become `Running`:
+
+```bash
+kubectl wait --for=jsonpath='{.status.phase}'=Running \
+  cluster/gitlab-redis \
+  -n gitlab-data \
+  --timeout=300s
+```
+
+Now, let's verify that Sentinel is actively monitoring the master node:
+
+```bash
+SENTINEL_PASS=$(kubectl get secret gitlab-redis-redis-sentinel-account-default \
+  -n gitlab-data \
+  -o jsonpath='{.data.password}' | base64 -d)
+
+kubectl exec -n gitlab-data gitlab-redis-redis-sentinel-0 -c redis-sentinel -- \
+  redis-cli -p 26379 -a "$SENTINEL_PASS" sentinel masters
+```
+
+You should see output containing these specific lines:
+```
+name
+gitlab-redis-redis
+ip
+gitlab-redis-redis-0.gitlab-redis-redis-headless.gitlab-data.svc.cluster.local
+port
+6379
+flags
+master
+num-slaves
+1
+num-other-sentinels
+2
+quorum
+2
+```
+
+The `num-slaves: 1` and `num-other-sentinels: 2` values confirm that you have a healthy 1+1 Redis cluster with all 3 Sentinels online and watching.
+
+---
+
+## Step 5: Create Kubernetes Secrets for GitLab
+
+GitLab reads its database credentials directly from Kubernetes Secrets. We need to create these secrets in the `gitlab` namespace (or whichever namespace you plan to deploy the GitLab application into).
+
+```bash
+kubectl create namespace gitlab
+
+# Create the PostgreSQL password secret
+# $GITLAB_PG_PASS was set in Step 3
+kubectl create secret generic gitlab-postgresql-password \
+  --namespace gitlab \
+  --from-literal=main-gitlab-password="$GITLAB_PG_PASS"
+
+# Extract the Redis password from the KubeBlocks-generated secret
+REDIS_PASS=$(kubectl get secret gitlab-redis-redis-account-default \
+  -n gitlab-data \
+  -o jsonpath='{.data.password}' | base64 -d)
+
+# Create the Redis password secret for GitLab
+kubectl create secret generic gitlab-redis-secret \
+  --namespace gitlab \
+  --from-literal=redis-password="$REDIS_PASS"
+
+# Extract the Sentinel auth password (this is separate from the Redis data password)
+SENTINEL_PASS=$(kubectl get secret gitlab-redis-redis-sentinel-account-default \
+  -n gitlab-data \
+  -o jsonpath='{.data.password}' | base64 -d)
+
+# Create the Sentinel password secret for GitLab
+kubectl create secret generic gitlab-redis-sentinel-secret \
+  --namespace gitlab \
+  --from-literal=sentinel-password="$SENTINEL_PASS"
+```
+
+> **Why do we need two Redis secrets?** KubeBlocks manages the Redis data nodes and the Sentinel nodes using entirely separate credentials for enhanced security. The sentinel password is used specifically for `AUTH` on the sentinel port (26379), while the standard Redis password is used for `AUTH` on the actual data port (6379).
+
+---
+
+## Step 6: Deploy GitLab
+
+Now we are ready for the main event. Add the GitLab Helm repository and prepare the values file to wire up our external, highly available databases.
+
+```bash
+helm repo add gitlab https://charts.gitlab.io/
+helm repo update
+```
+
+Create a `gitlab-values.yaml` file:
+
+```yaml
+global:
+  hosts:
+    domain: gitlab.example.com   # Replace this with your actual domain
+    https: true
+
+  ## External PostgreSQL (KubeBlocks Patroni cluster)
+  psql:
+    host: gitlab-pg-postgresql-postgresql.gitlab-data.svc.cluster.local
+    port: 5432
+    username: gitlab
+    database: gitlabhq_production
+    password:
+      useSecret: true
+      secret: gitlab-postgresql-password
+      key: main-gitlab-password
+
+  ## External Redis (KubeBlocks Sentinel cluster)
+  redis:
+    # IMPORTANT: The 'host' here must be the Sentinel MASTER NAME, not the sentinel service hostname.
+    # KubeBlocks assigns the master name based on the cluster: <release>-<component>
+    host: gitlab-redis-redis
+    port: 6379
+    auth:
+      enabled: true
+      secret: gitlab-redis-secret
+      key: redis-password
+    sentinels:
+      - host: gitlab-redis-redis-sentinel-redis-sentinel.gitlab-data.svc.cluster.local
+        port: 26379
+    sentinelAuth:
+      enabled: true
+      secret: gitlab-redis-sentinel-secret
+      key: sentinel-password
+
+# Explicitly disable the bundled PostgreSQL and Redis instances
+postgresql:
+  install: false
+
+redis:
+  install: false
+
+# Disable the bundled cert-manager (Note: GitLab chart 9.x uses 'installCertmanager', not 'certmanager.install')
+installCertmanager: false
+
+certmanager-issuer:
+  email: your@email.com
+```
+
+Deploy GitLab:
+
+```bash
+helm install gitlab gitlab/gitlab \
+  --namespace gitlab \
+  --values gitlab-values.yaml \
+  --timeout 600s
+```
+
+> **Note:** GitLab's initial deployment is heavy. It pulls several large images and executes extensive database migrations. Give the `gitlab-migrations` job a solid 5–10 minutes to complete before expecting the rest of the application pods to become ready.
+
+---
+
+## Step 7: Verify the Setup
+
+Check the status of the GitLab pods (remember to give it a few minutes for migrations to finish):
+
+```bash
+kubectl get pods -n gitlab
+```
+
+You are looking for an output where all application pods are `Running` with zero restarts, and the migrations pod has cleanly finished:
+```
+NAME                                  READY   STATUS      RESTARTS
+gitlab-gitaly-0                       1/1     Running     0
+gitlab-gitlab-exporter-xxx            1/1     Running     0
+gitlab-gitlab-shell-xxx               1/1     Running     0
+gitlab-migrations-xxx                 0/1     Completed   0
+gitlab-sidekiq-all-in-1-xxx           1/1     Running     0
+gitlab-webservice-default-xxx         2/2     Running     0
+...
+```
+
+The fact that `gitlab-migrations-xxx` is `Completed` (rather than running or crashing) is your confirmation that the database schema was applied successfully to the external PostgreSQL cluster.
+
+To test database connectivity directly from the application layer, run this inside a webservice pod:
+
+```bash
+WEBSERVICE_POD=$(kubectl get pods -n gitlab -l app=webservice -o name | head -1)
+
+kubectl exec -n gitlab $WEBSERVICE_POD -c webservice -- \
+  /srv/gitlab/bin/rails runner "puts Gitlab::Database.main.version" 2>&1
+```
+
+### Access GitLab via Port-Forward
+
+If you don't have direct access to the LoadBalancer (for instance, if you are testing locally or have strict security groups on your ELB), you can use `kubectl port-forward` to access the GitLab UI directly from your workstation:
+
+```bash
+# Retrieve the initial root password
+kubectl get secret gitlab-gitlab-initial-root-password \
+  -n gitlab \
+  -o jsonpath='{.data.password}' | base64 -d && echo
+
+# Forward the nginx-ingress controller to your localhost
+kubectl port-forward -n gitlab svc/gitlab-nginx-ingress-controller 8888:80
+```
+
+Open your browser to **http://localhost:8888/users/sign_in** and log in using:
+- Username: `root`
+- Password: (the output from the command above)
+
+> **Note:** After logging in, GitLab might try to redirect you to `http://localhost/users/sign_in` (dropping the port). Simply navigate back to `http://localhost:8888/users/sign_in` manually to stay on the port-forwarded connection.
+
+---
+
+## Understanding the Connection Details
+
+How does GitLab actually maintain connections to these HA clusters without getting confused during a failover event?
+
+### PostgreSQL
+
+| Property | Value |
+|----------|-------|
+| Service | `gitlab-pg-postgresql-postgresql.gitlab-data.svc.cluster.local` |
+| Port | `5432` |
+| Username | `gitlab` |
+| Database | `gitlabhq_production` |
+| HA Mechanism | Patroni (automatic primary election) |
+
+The `-postgresql` service is a standard ClusterIP service (non-headless) that KubeBlocks dynamically manages. It is guaranteed to always point to the current Patroni primary. When a failover occurs, Patroni promotes the standby and updates the service selector under the hood. From GitLab's perspective, no reconfiguration is needed; the connection simply drops for a moment and immediately reconnects to the newly promoted primary.
+
+### Redis
+
+| Property | Value |
+|----------|-------|
+| Sentinel Service | `gitlab-redis-redis-sentinel-redis-sentinel.gitlab-data.svc.cluster.local` |
+| Sentinel Port | `26379` |
+| Master Name | `gitlab-redis-redis` |
+| HA Mechanism | Sentinel (automatic master election) |
+
+GitLab's underlying Rails stack supports Redis Sentinel natively via the `sentinels:` configuration block. When a Redis master fails, the Sentinel nodes elect a new master within seconds and proactively notify all connected clients (like Sidekiq) to redirect their traffic to the new master IP.
+
+> **Important:** In the GitLab Helm chart, when `sentinels` is configured, the `global.redis.host` field actually serves as the **Sentinel master name**, not the service hostname. KubeBlocks systematically names the master after the cluster itself: `<helm-release>-<component>`. So, for a release named `gitlab-redis` with the component `redis`, the master name is exactly `gitlab-redis-redis`. You can always verify this manually by running `redis-cli -p 26379 sentinel masters`.
+
+---
+
+## Failover Testing
+
+Don't just trust the theory. Let's intentionally break things and watch the system recover.
+
+### Test PostgreSQL Failover
+
+First, identify the current primary, delete its pod, and watch Patroni promote the replica in real-time:
+
+```bash
+# Identify the current primary
+kubectl exec -n gitlab-data gitlab-pg-postgresql-0 -c postgresql -- \
+  psql -U postgres -c "SELECT pg_is_in_recovery();"
+
+# Kill the primary pod
+kubectl delete pod gitlab-pg-postgresql-0 -n gitlab-data
+
+# Watch Patroni elect a new primary (this usually happens within 10-30 seconds)
+watch kubectl exec -n gitlab-data gitlab-pg-postgresql-1 -c postgresql -- \
+  psql -U postgres -c "SELECT pg_is_in_recovery();"
+```
+
+The moment `pg_is_in_recovery` returns `f` on pod-1, the failover is complete. The ClusterIP service will have already redirected traffic to the new primary.
+
+### Test Redis Failover
+
+```bash
+REDIS_PASS=$(kubectl get secret gitlab-redis-redis-account-default \
+  -n gitlab-data -o jsonpath='{.data.password}' | base64 -d)
+
+# Confirm the current master
+kubectl exec -n gitlab-data gitlab-redis-redis-0 -c redis -- \
+  redis-cli -a "$REDIS_PASS" role
+
+# Kill the master pod
+kubectl delete pod gitlab-redis-redis-0 -n gitlab-data
+
+# Sentinel detects the failure and promotes the replica within ~20 seconds.
+# Let's check the new master via Sentinel:
+SENTINEL_PASS=$(kubectl get secret gitlab-redis-redis-sentinel-account-default \
+  -n gitlab-data -o jsonpath='{.data.password}' | base64 -d)
+
+kubectl exec -n gitlab-data gitlab-redis-redis-sentinel-0 -c redis-sentinel -- \
+  redis-cli -p 26379 -a "$SENTINEL_PASS" sentinel masters | grep -A1 "^ip"
+```
+
+---
+
+## Scaling and Upgrades
+
+### Scale PostgreSQL Read Replicas
+
+Need more read capacity? You can scale the cluster dynamically:
+
+```bash
+# Scale the cluster to 1 primary + 2 replicas
+kubectl patch cluster gitlab-pg -n gitlab-data \
+  --type='json' \
+  -p='[{"op":"replace","path":"/spec/componentSpecs/0/replicas","value":3}]'
+```
+
+### Upgrade PostgreSQL Version
+
+KubeBlocks supports in-place minor version upgrades with zero downtime. It performs a rolling update of the replicas first, followed by a controlled primary failover:
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: pg-upgrade
+  namespace: gitlab-data
+spec:
+  clusterName: gitlab-pg
+  type: Upgrade
+  upgrade:
+    components:
+      - componentName: postgresql
+        serviceVersion: "16.9.0"
+EOF
+```
+
+### Expand Storage
+
+Running out of disk space? Expand the volume seamlessly:
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: operations.kubeblocks.io/v1alpha1
+kind: OpsRequest
+metadata:
+  name: pg-volume-expand
+  namespace: gitlab-data
+spec:
+  clusterName: gitlab-pg
+  type: VolumeExpansion
+  volumeExpansion:
+    - componentName: postgresql
+      volumeClaimTemplates:
+        - name: data
+          storage: "100Gi"
+EOF
+```
+
+---
+
+## Backup and Recovery
+
+Backup is not optional in production. For a GitLab deployment, the two stateful components that absolutely must be backed up are:
+
+- **PostgreSQL** — This holds all of your critical GitLab application data: projects, issues, merge requests, user accounts, and CI pipeline configurations.
+- **Redis** — While primarily acting as a cache and job queue (making it slightly less critical for strict point-in-time recovery), preserving the Sentinel state across hard restarts is still best practice.
+
+KubeBlocks provides a unified, Kubernetes-native backup API for both databases. The general workflow looks like this:
+
+1. Configure a **BackupRepo** (pointing to S3, GCS, or any S3-compatible object store).
+2. Create a **BackupSchedule** to automate snapshots on a cron schedule.
+3. Use an **OpsRequest** (with type `Restore`) or standard `Backup`/`Restore` Custom Resources to recover when disaster strikes.
+
+For detailed, step-by-step instructions, refer to the official documentation:
+- [PostgreSQL Backup & Restore with KubeBlocks](https://kubeblocks.io/docs/preview/kubeblocks-for-postgresql/05-backup-restore/01-create-backuprepo)
+- [Redis Backup & Restore with KubeBlocks](https://kubeblocks.io/docs/preview/kubeblocks-for-redis/05-backup-restore/01-create-backuprepo)
+
+> **Tip:** Always configure your BackupRepo and BackupSchedule *before* going live. If you suffer a catastrophic double-node failure on a `replicas=2` cluster without a backup, recovery is impossible.
+
+---
+
+## Cleanup
+
+If you are just testing and want to tear everything down:
+
+```bash
+helm delete gitlab -n gitlab
+helm delete gitlab-pg -n gitlab-data
+helm delete gitlab-redis -n gitlab-data
+
+# Delete the PersistentVolumeClaims if you want to permanently wipe the data
+kubectl delete pvc -n gitlab-data --all
+
+# Finally, remove the namespaces
+kubectl delete namespace gitlab gitlab-data
+```
+
+---
+
+## Summary
+
+| Component | Before | After |
+|-----------|--------|-------|
+| **PostgreSQL** | Bundled single-instance | Patroni HA: 1 primary + 1 replica, auto-failover |
+| **Redis** | Bundled standalone | Sentinel HA: 1 primary + 1 replica + 3 sentinels |
+| **Failover** | Manual / none | Automatic within 10–30 seconds |
+| **Scaling** | Manual pod management | Native `kubectl patch` or OpsRequest |
+| **Version Upgrade** | Downtime required | Rolling in-place via KubeBlocks OpsRequest |
+
+KubeBlocks entirely abstracts the operational complexity of running stateful databases on Kubernetes. It handles provisioning, HA configuration, credential management, and day-2 operations through a single, unified API. For your GitLab deployment, this means the database tier is genuinely production-ready from day one—all without you having to write a single line of StatefulSet YAML.
+
+---
+
+## Related Resources
+
+- [KubeBlocks Official Website](https://kubeblocks.io)
+- [KubeBlocks for PostgreSQL](/pg-operator) — Landing page, quickstart, architecture, and operations
+- [KubeBlocks for Redis](/redis-operator) — Landing page, quickstart, topologies, and operations
+- [PostgreSQL Backup & Restore with KubeBlocks](https://kubeblocks.io/docs/preview/kubeblocks-for-postgresql/05-backup-restore/01-create-backuprepo)
+- [Redis Backup & Restore with KubeBlocks](https://kubeblocks.io/docs/preview/kubeblocks-for-redis/05-backup-restore/01-create-backuprepo)
+- [GitLab Helm Chart Documentation](https://docs.gitlab.com/charts/)
