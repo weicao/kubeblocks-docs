@@ -286,7 +286,7 @@ function Topology() {
           {/* Description + features */}
           <Box>
             <Typography sx={{ color: 'text.secondary', lineHeight: 1.8, mb: 3, fontSize: '0.95rem' }}>
-              KubeBlocks deploys RabbitMQ in a 3-node (or 5-node) Raft cluster where quorum queues replicate every message to a majority of nodes before acknowledging the producer. If the leader node fails, the remaining quorum elects a new leader automatically — no manual intervention required.
+              KubeBlocks deploys RabbitMQ as a 3-node (or 5-node) HA cluster. Quorum queues replicate every message to a majority of nodes via Raft before acknowledging the producer. If a queue leader fails, the remaining members elect a new one automatically — no manual intervention required.
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, mb: 3 }}>
               {features.map((f) => (
@@ -330,7 +330,7 @@ const lifecycleCategories = [
     title: 'Availability & Scaling',
     color: RMQ_COLOR,
     items: [
-      { title: 'Horizontal Scaling', desc: 'Add or remove nodes (3→5 or 5→3) online. KubeBlocks joins new pods to the Raft cluster and rebalances queue leaders.' },
+      { title: 'Horizontal Scaling', desc: 'Add or remove nodes (3→5 or 5→3) online. KubeBlocks joins new pods to the RabbitMQ cluster and rebalances queue leaders.' },
       { title: 'Vertical Scaling', desc: 'Resize CPU and memory on running nodes with a rolling strategy and no message loss.' },
       { title: 'Volume Expansion', desc: 'Expand PVC storage for message data without pod restarts on supported storage classes.' },
       { title: 'Rolling Restart', desc: 'Controlled pod restarts that maintain quorum throughout — the cluster stays available.' },
@@ -789,7 +789,7 @@ function CapabilitiesDiagrams() {
               <div className="cd-icon cd-icon-orange"></div>
               <div className="cd-title-group">
                 <div className="cd-title">Horizontal Scaling (3→5 Nodes)</div>
-                <div className="cd-desc">Add nodes to grow the Raft quorum. KubeBlocks joins each new pod to the cluster and rebalances queue leaders across members.</div>
+                <div className="cd-desc">Add nodes to grow cluster membership. KubeBlocks joins each new pod to the RabbitMQ cluster and rebalances queue leaders across members.</div>
               </div>
               <div className="cd-badge cd-badge-orange">Zero Message Loss</div>
             </div>
@@ -959,7 +959,7 @@ function CTA() {
           <Box component="span" color="primary.main">the Easy Way</Box>
         </Typography>
         <Typography sx={{ color: 'text.secondary', mb: 5, maxWidth: 520, mx: 'auto', lineHeight: 1.75 }}>
-          Deploy a production-grade RabbitMQ cluster in minutes with automatic Raft HA, quorum queues, and full Day-2 operations — all open source.
+          Deploy a production-grade RabbitMQ cluster in minutes with HA, quorum queues (Raft replication), and full Day-2 operations — all open source.
         </Typography>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="center">
           <Button variant="contained" size="large"

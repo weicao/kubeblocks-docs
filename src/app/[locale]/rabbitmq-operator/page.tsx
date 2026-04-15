@@ -23,7 +23,6 @@ export async function generateMetadata(): Promise<Metadata> {
       'RabbitMQ cluster Kubernetes',
       'RabbitMQ HA Kubernetes',
       'RabbitMQ quorum queues Kubernetes',
-      'RabbitMQ backup restore Kubernetes',
       'RabbitMQ horizontal scaling',
       'AMQP broker Kubernetes',
       'message broker Kubernetes',
