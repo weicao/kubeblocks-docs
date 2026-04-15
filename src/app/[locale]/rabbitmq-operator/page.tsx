@@ -9,7 +9,7 @@ export async function generateStaticParams() {
 }
 
 const DESCRIPTION =
-  'KubeBlocks RabbitMQ Operator for Kubernetes — deploy production-grade RabbitMQ clusters with Raft-based quorum queues, automatic leader re-election, horizontal scaling, TLS, and full Day-2 operations via a single open-source operator.';
+  'KubeBlocks RabbitMQ Operator for Kubernetes — deploy production-grade RabbitMQ clusters with quorum queues, automatic leader re-election, horizontal scaling, and full Day-2 operations via a single open-source operator.';
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
