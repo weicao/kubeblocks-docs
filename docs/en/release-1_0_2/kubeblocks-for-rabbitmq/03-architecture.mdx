@@ -6,7 +6,7 @@ sidebar_position: 3
 sidebar_label: Architecture
 ---
 
-import RabbitmqArchitectureDiagram from '@/components/RabbitmqArchitectureDiagram';
+import RabbitMQArchitectureDiagram from '@/components/RabbitMQArchitectureDiagram';
 
 # RabbitMQ Architecture in KubeBlocks
 
@@ -22,7 +22,7 @@ KubeBlocks supports one RabbitMQ deployment topology:
 
 In the `clustermode` topology, every pod is a full RabbitMQ broker node that participates in the same Erlang cluster. There is a single KubeBlocks Component (`rabbitmq`) for all nodes, and the entire pod set forms one logical RabbitMQ broker. Quorum Queues use a Raft-based majority protocol to replicate message data across nodes and elect a new queue leader when a node fails.
 
-<RabbitmqArchitectureDiagram />
+<RabbitMQArchitectureDiagram />
 
 ### Resource Hierarchy
 
