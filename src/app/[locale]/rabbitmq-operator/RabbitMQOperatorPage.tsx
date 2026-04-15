@@ -832,7 +832,7 @@ function CapabilitiesDiagrams() {
                 <div className="cd-title">Rolling Version Upgrade</div>
                 <div className="cd-desc">Followers are upgraded one by one. The leader is restarted last. Traffic is always served.</div>
               </div>
-              <div className="cd-badge cd-badge-blue">0 ms Downtime</div>
+              <div className="cd-badge cd-badge-blue">No Cluster Downtime</div>
             </div>
             <div className="cd-upgrade-grid">
               <div className="cd-stage">
