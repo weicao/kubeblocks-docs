@@ -9,6 +9,9 @@ import {
   alpha,
   Box,
   Button,
+  Card,
+  CardActionArea,
+  CardContent,
   Container,
   Stack,
   Tab,
@@ -16,6 +19,7 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
+import Image from 'next/image';
 import RabbitMQArchitectureDiagram from '@/components/RabbitMQArchitectureDiagram';
 import TrustedBy from '@/app/[locale]/trusted-by';
 
@@ -880,7 +884,65 @@ function CapabilitiesDiagrams() {
   );
 }
 
-// ── 5. CTA ────────────────────────────────────────────────────────────────────
+// ── 5. Blog ───────────────────────────────────────────────────────────────────
+
+const rmqPosts = [
+  {
+    title: 'We Let an AI Agent Manage Our Databases. Here\'s Why Most Operators Failed It.',
+    description: 'We tested AI agents against traditional Kubernetes database operators. The results revealed a fundamental mismatch between fragmented operator APIs and how LLMs actually reason.',
+    image: '/img/blogs/thumbnails/blog-ai-agent-database-operators.png',
+    href: '/blog/we-let-an-ai-agent-manage-our-databases',
+  },
+  {
+    title: 'Validating KubeBlocks Addon High Availability with Chaos Mesh',
+    description: 'How to leverage Chaos Mesh for chaos engineering to validate and enhance KubeBlocks\' high availability capabilities through systematic fault injection testing.',
+    image: '/img/blogs/thumbnails/blog-chaos-mesh.png',
+    href: '/blog/validating-kubeblocks-addon-availability-with-chaos-mesh',
+  },
+  {
+    title: 'Managing Over 6,000 Self-Hosted Databases Without a DBA',
+    description: 'How Sealos used KubeBlocks to manage 6,000+ self-hosted databases across four availability zones — architecture, HA, backup, and operations.',
+    image: '/img/blogs/thumbnails/blog-manage-6k-db-instance-with-kb.png',
+    href: '/blog/manage-6k-db-instance-with-kubeblocks',
+  },
+];
+
+function BlogPosts() {
+  return (
+    <Box sx={{ py: { xs: 6, md: 10 }, borderTop: '1px solid', borderColor: 'divider' }}>
+      <Container maxWidth="lg">
+        <Box textAlign="center" mb={6}>
+          <SectionEyebrow label="From the Blog" />
+          <Typography variant="h4" fontWeight={700} sx={{ letterSpacing: '-0.03em', lineHeight: 1.15 }}>
+            Go Deeper on{' '}
+            <Box component="span" color="primary.main">RabbitMQ on Kubernetes</Box>
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(3, 1fr)' }, gap: 3 }}>
+          {rmqPosts.map((post) => (
+            <Card key={post.href} sx={{ boxShadow: 'none', border: 1, borderColor: 'divider' }}>
+              <CardActionArea component="a" href={post.href}>
+                <Box sx={{ height: 160, width: '100%', position: 'relative' }}>
+                  <Image fill src={post.image} alt={post.title} style={{ objectFit: 'cover' }} />
+                </Box>
+                <CardContent>
+                  <Typography gutterBottom fontWeight={600} sx={{ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                    {post.title}
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary" sx={{ height: 40, overflow: 'hidden' }}>
+                    {post.description}
+                  </Typography>
+                </CardContent>
+              </CardActionArea>
+            </Card>
+          ))}
+        </Box>
+      </Container>
+    </Box>
+  );
+}
+
+// ── 6. CTA ────────────────────────────────────────────────────────────────────
 
 function CTA() {
   const theme = useTheme();
@@ -929,6 +991,7 @@ export default function RabbitMQOperatorPage() {
       <Topology />
       <LifecycleFeatures />
       <CapabilitiesDiagrams />
+      <BlogPosts />
       <CTA />
     </>
   );
