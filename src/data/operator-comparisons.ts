@@ -340,6 +340,38 @@ export const zookeeperComparison: OperatorComparison = {
 };
 
 // ---------------------------------------------------------------------------
+// RabbitMQ
+// ---------------------------------------------------------------------------
+export const rabbitmqComparison: OperatorComparison = {
+  engine: 'RabbitMQ',
+  slug: 'rabbitmq',
+  lastVerified: '2026-04',
+  competitors: [
+    { key: 'bitnami',    label: 'Bitnami Helm Chart', url: 'https://github.com/bitnami/charts/tree/main/bitnami/rabbitmq' },
+    { key: 'cluster_op', label: 'RabbitMQ Cluster Operator', url: 'https://github.com/rabbitmq/cluster-operator' },
+    { key: 'messaging',  label: 'Messaging Topology Operator', url: 'https://github.com/rabbitmq/messaging-topology-operator' },
+  ],
+  rows: [
+    { feature: 'Open Source',                   kb: 'YES',  bitnami: 'YES',  cluster_op: 'YES',  messaging: 'YES'  },
+    { feature: 'Quorum Queues (Raft consensus)', kb: 'YES',  bitnami: 'YES',  cluster_op: 'YES',  messaging: 'YES'  },
+    { feature: 'Kubernetes-native CRD API',      kb: 'YES',  bitnami: 'NO',   cluster_op: 'YES',  messaging: 'YES'  },
+    { feature: 'Horizontal scaling',             kb: 'YES',  bitnami: 'PART', cluster_op: 'YES',  messaging: 'PART' },
+    { feature: 'Vertical scaling (CPU/memory)',  kb: 'YES',  bitnami: 'NO',   cluster_op: 'PART', messaging: 'NO'   },
+    { feature: 'PVC volume expansion',           kb: 'YES',  bitnami: 'NO',   cluster_op: 'PART', messaging: 'NO'   },
+    { feature: 'Dynamic reconfiguration',        kb: 'YES',  bitnami: 'PART', cluster_op: 'PART', messaging: 'PART' },
+    { feature: 'Rolling version upgrade',        kb: 'YES',  bitnami: 'PART', cluster_op: 'YES',  messaging: 'PART' },
+    { feature: 'TLS encryption',                 kb: 'YES',  bitnami: 'YES',  cluster_op: 'YES',  messaging: 'PART' },
+    { feature: 'Stop / start lifecycle',         kb: 'YES',  bitnami: 'NO',   cluster_op: 'NO',   messaging: 'NO'   },
+    { feature: 'Prometheus metrics',             kb: 'YES',  bitnami: 'YES',  cluster_op: 'YES',  messaging: 'YES'  },
+    { feature: 'Web management UI',              kb: 'ENT',  bitnami: 'NO',   cluster_op: 'NO',   messaging: 'NO'   },
+    { feature: 'Multi-engine (35+ DB engines)',  kb: 'YES',  bitnami: 'NO',   cluster_op: 'NO',   messaging: 'NO'   },
+  ],
+  notes: [
+    'Messaging Topology Operator is a companion to RabbitMQ Cluster Operator for declarative exchange, queue, and binding management.',
+  ],
+};
+
+// ---------------------------------------------------------------------------
 // Milvus (no competitor comparison data yet)
 // ---------------------------------------------------------------------------
 // export const milvusComparison: OperatorComparison = { ... };
@@ -357,4 +389,5 @@ export const allComparisons: OperatorComparison[] = [
   elasticsearchComparison,
   etcdComparison,
   zookeeperComparison,
+  rabbitmqComparison,
 ];

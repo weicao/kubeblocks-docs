@@ -154,12 +154,10 @@ function Hero() {
             </Stack>
 
             <Box sx={{
-              display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' },
+              display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(2, 1fr)' },
               gap: 2, pt: 4, borderTop: '1px solid', borderColor: 'divider',
             }}>
               {[
-                { value: '9',      label: 'Supported Versions' },
-                { value: 'Raft',   label: 'Consensus Protocol' },
                 { value: '< 30s',  label: 'Leader Re-election' },
                 { value: '100%',   label: 'Open Source' },
               ].map(({ value, label }) => (
@@ -191,7 +189,7 @@ function Hero() {
               <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#ffbd2e' }} />
               <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#28c840' }} />
               <Typography sx={{ ml: 1, fontSize: '13px', color: '#8b949e', fontFamily: 'monospace' }}>
-                Deploy RabbitMQ in 3 steps
+                Deploy RabbitMQ in 4 steps
               </Typography>
             </Box>
 
@@ -211,15 +209,24 @@ function Hero() {
               {/* Step 2 */}
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 1.25 }}>
                 <Box sx={{ width: 22, height: 22, borderRadius: '50%', bgcolor: 'rgba(249,115,22,0.12)', border: '1px solid #F97316', color: '#F97316', fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>2</Box>
+                <Typography sx={{ fontSize: '13px', fontWeight: 600, color: '#8b949e' }}>Install RabbitMQ Addon</Typography>
+              </Box>
+              <Box component="pre" sx={{ m: 0, mb: 2.5, p: 2, borderRadius: '8px', bgcolor: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.06)', fontFamily: '"JetBrains Mono","Fira Code",monospace', fontSize: { xs: '0.68rem', md: '0.72rem' }, lineHeight: 1.7, color: '#c9d1d9', overflowX: 'auto' }}>
+                {'helm install rabbitmq kubeblocks/rabbitmq \\\n  --namespace kb-system'}
+              </Box>
+
+              {/* Step 3 */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 1.25 }}>
+                <Box sx={{ width: 22, height: 22, borderRadius: '50%', bgcolor: 'rgba(249,115,22,0.12)', border: '1px solid #F97316', color: '#F97316', fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>3</Box>
                 <Typography sx={{ fontSize: '13px', fontWeight: 600, color: '#8b949e' }}>Create a RabbitMQ Cluster</Typography>
               </Box>
               <Box sx={{ m: 0, mb: 2.5, p: 2, borderRadius: '8px', bgcolor: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.06)', overflowX: 'auto' }}>
                 <YamlBlock code={CLUSTER_YAML} isDark={true} />
               </Box>
 
-              {/* Step 3 */}
+              {/* Step 4 */}
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 1.25 }}>
-                <Box sx={{ width: 22, height: 22, borderRadius: '50%', bgcolor: 'rgba(249,115,22,0.12)', border: '1px solid #F97316', color: '#F97316', fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>3</Box>
+                <Box sx={{ width: 22, height: 22, borderRadius: '50%', bgcolor: 'rgba(249,115,22,0.12)', border: '1px solid #F97316', color: '#F97316', fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>4</Box>
                 <Typography sx={{ fontSize: '13px', fontWeight: 600, color: '#8b949e' }}>Cluster is Ready</Typography>
               </Box>
               <Box component="pre" sx={{ m: 0, p: 2, borderRadius: '8px', bgcolor: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.06)', fontFamily: '"JetBrains Mono","Fira Code",monospace', fontSize: { xs: '0.68rem', md: '0.72rem' }, lineHeight: 1.7, color: '#c9d1d9', overflowX: 'auto' }}>
@@ -873,111 +880,7 @@ function CapabilitiesDiagrams() {
   );
 }
 
-// ── 5. Comparison Table ───────────────────────────────────────────────────────
-
-function ComparisonTable() {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
-  const cardBg = theme.palette.background.paper;
-  const cardBorder = theme.palette.divider;
-
-  const YES  = <Box component="span" sx={{ color: '#3fb950', fontWeight: 700 }}>✓</Box>;
-  const NO   = <Box component="span" sx={{ color: '#f85149', fontWeight: 700 }}>✗</Box>;
-  const PART = <Box component="span" sx={{ color: '#e3b341', fontWeight: 700 }}>~</Box>;
-  const ENT  = (
-    <Box component="span" sx={{
-      fontSize: '0.65rem', fontWeight: 700, px: 0.75, py: 0.25,
-      borderRadius: 0.5, bgcolor: 'action.selected',
-      color: 'text.secondary', letterSpacing: '0.04em', textTransform: 'uppercase',
-    }}>Enterprise</Box>
-  );
-
-  const rows = [
-    { feature: 'Open Source',                       kb: YES,  bitnami: YES,  cluster_op: YES,  messaging: YES  },
-    { feature: 'Quorum Queues (Raft consensus)',     kb: YES,  bitnami: YES,  cluster_op: YES,  messaging: YES  },
-    { feature: 'Kubernetes-native CRD API',         kb: YES,  bitnami: NO,   cluster_op: YES,  messaging: YES  },
-    { feature: 'Horizontal scaling',                kb: YES,  bitnami: PART, cluster_op: YES,  messaging: PART },
-    { feature: 'Vertical scaling (CPU/memory)',      kb: YES,  bitnami: NO,   cluster_op: PART, messaging: NO   },
-    { feature: 'PVC volume expansion',              kb: YES,  bitnami: NO,   cluster_op: PART, messaging: NO   },
-    { feature: 'Dynamic reconfiguration',           kb: YES,  bitnami: PART, cluster_op: PART, messaging: PART },
-    { feature: 'Rolling version upgrade',           kb: YES,  bitnami: PART, cluster_op: YES,  messaging: PART },
-    { feature: 'TLS encryption',                    kb: YES,  bitnami: YES,  cluster_op: YES,  messaging: PART },
-    { feature: 'Stop / start lifecycle',            kb: YES,  bitnami: NO,   cluster_op: NO,   messaging: NO   },
-    { feature: 'Prometheus metrics',                kb: YES,  bitnami: YES,  cluster_op: YES,  messaging: YES  },
-    { feature: 'Web management UI',                 kb: ENT,  bitnami: NO,   cluster_op: NO,   messaging: NO   },
-    { feature: 'Multi-engine (35+ DB engines)',     kb: YES,  bitnami: NO,   cluster_op: NO,   messaging: NO   },
-  ];
-
-  const cols = [
-    { label: 'KubeBlocks', highlight: true },
-    { label: 'Bitnami Helm Chart', highlight: false },
-    { label: 'RabbitMQ Cluster Operator', highlight: false },
-    { label: 'Messaging Topology Operator', highlight: false },
-  ];
-
-  const cellSx = {
-    px: 2, py: 1.5, fontSize: '0.82rem',
-    borderBottom: `1px solid ${cardBorder}`, textAlign: 'center' as const,
-  };
-
-  return (
-    <Box sx={{ py: { xs: 6, md: 10 }, borderTop: '1px solid', borderColor: 'divider' }}>
-      <Container maxWidth="lg">
-        <Box textAlign="center" mb={6}>
-          <SectionEyebrow label="Comparison" />
-          <Typography variant="h4" fontWeight={700} sx={{ letterSpacing: '-0.03em', lineHeight: 1.15 }}>
-            How KubeBlocks Compares to{' '}
-            <Box component="span" color="primary.main">Other RabbitMQ Options</Box>
-          </Typography>
-          <Typography sx={{ color: 'text.secondary', mt: 1.5, maxWidth: 560, mx: 'auto', lineHeight: 1.75 }}>
-            ✓ = Supported · ~ = Partial / Limited · ✗ = Not supported
-          </Typography>
-        </Box>
-
-        <Box sx={{ overflowX: 'auto', borderRadius: '14px', border: `1px solid ${cardBorder}` }}>
-          <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', bgcolor: cardBg }}>
-            <Box component="thead">
-              <Box component="tr">
-                <Box component="th" sx={{
-                  px: 2, py: 2, textAlign: 'left',
-                  fontSize: '0.78rem', fontWeight: 700,
-                  color: 'text.secondary', letterSpacing: '.08em', textTransform: 'uppercase',
-                  borderBottom: `1px solid ${cardBorder}`,
-                  bgcolor: isDark ? '#161b22' : '#f6f8fa',
-                }}>Feature</Box>
-                {cols.map(({ label, highlight }) => (
-                  <Box key={label} component="th" sx={{
-                    px: 2, py: 2, fontSize: '0.82rem', fontWeight: 700,
-                    borderBottom: `1px solid ${cardBorder}`, textAlign: 'center',
-                    bgcolor: highlight
-                      ? (isDark ? 'rgba(249,115,22,0.08)' : 'rgba(249,115,22,0.05)')
-                      : (isDark ? '#161b22' : '#f6f8fa'),
-                    color: highlight ? RMQ_COLOR : 'text.primary',
-                  }}>{label}</Box>
-                ))}
-              </Box>
-            </Box>
-            <Box component="tbody">
-              {rows.map(({ feature, kb, bitnami, cluster_op, messaging }) => (
-                <Box component="tr" key={feature} sx={{ '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' } }}>
-                  <Box component="td" sx={{ px: 2, py: 1.5, fontSize: '0.82rem', borderBottom: `1px solid ${cardBorder}` }}>
-                    {feature}
-                  </Box>
-                  <Box component="td" sx={{ ...cellSx, bgcolor: isDark ? 'rgba(249,115,22,0.05)' : 'rgba(249,115,22,0.02)' }}>{kb}</Box>
-                  <Box component="td" sx={cellSx}>{bitnami}</Box>
-                  <Box component="td" sx={cellSx}>{cluster_op}</Box>
-                  <Box component="td" sx={cellSx}>{messaging}</Box>
-                </Box>
-              ))}
-            </Box>
-          </Box>
-        </Box>
-      </Container>
-    </Box>
-  );
-}
-
-// ── 6. CTA ────────────────────────────────────────────────────────────────────
+// ── 5. CTA ────────────────────────────────────────────────────────────────────
 
 function CTA() {
   const theme = useTheme();
@@ -1026,7 +929,6 @@ export default function RabbitMQOperatorPage() {
       <Topology />
       <LifecycleFeatures />
       <CapabilitiesDiagrams />
-      <ComparisonTable />
       <CTA />
     </>
   );
