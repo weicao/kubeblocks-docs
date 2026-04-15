@@ -70,16 +70,15 @@ const jsonLd = {
       author: { '@type': 'Organization', name: 'ApeCloud', url: 'https://kubeblocks.io' },
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD', description: 'Open source, free to use' },
       featureList: [
-        'Raft-based quorum queues for durable, replicated message delivery',
-        'Automatic leader re-election on node failure (< 30s RTO)',
+        'Quorum queues with Raft replication for durable, replicated message delivery',
+        'Automatic quorum queue leader re-election on node failure (< 30s RTO)',
         '9 supported versions: 3.8 through 4.2',
         'Horizontal scaling (add/remove replicas while maintaining quorum)',
         'Vertical scaling (CPU and memory) via OpsRequest',
         'PVC volume expansion without pod restarts',
-        'Dynamic parameter reconfiguration without full cluster restarts',
-        'Rolling version upgrades across supported RabbitMQ versions',
-        'TLS encryption for AMQP and management traffic',
-        'Password management via Kubernetes Secrets',
+        'Dynamic parameter reconfiguration via OpsRequest (rolling pod restart)',
+        'Rolling version upgrades across supported RabbitMQ versions (e.g. 3.13 → 4.0)',
+        'Credential management via Kubernetes Secrets',
         'Prometheus metrics on port 15692 per node',
         'Stop/start cluster lifecycle management',
         'Expose via LoadBalancer for external client access',
@@ -111,7 +110,7 @@ const jsonLd = {
           name: 'How does KubeBlocks handle RabbitMQ high availability?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'KubeBlocks deploys RabbitMQ in a Raft-based cluster topology. Quorum queues use the Raft consensus protocol to replicate messages across a majority of nodes. When the leader node fails, the remaining quorum members elect a new leader automatically within seconds — no manual intervention required. A 3-node cluster tolerates 1 failure; a 5-node cluster tolerates 2.',
+            text: 'KubeBlocks deploys RabbitMQ as a 3- or 5-node HA cluster using Erlang distributed clustering with Kubernetes peer discovery. Quorum queues use the Raft consensus protocol to replicate messages across a majority of nodes — when a queue leader fails, the remaining members elect a new leader automatically within seconds. A 3-node cluster tolerates 1 failure; a 5-node cluster tolerates 2.',
           },
         },
         {
@@ -127,7 +126,7 @@ const jsonLd = {
           name: 'Does KubeBlocks RabbitMQ Operator support TLS?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'Yes. KubeBlocks supports TLS encryption for AMQP client connections and inter-node communication. TLS certificates can be issued via the built-in KubeBlocks issuer or an external cert-manager issuer.',
+            text: 'TLS via the KubeBlocks TLS mechanism is not yet supported in the open-source RabbitMQ addon — the current ComponentDefinition does not declare a TLS spec. You can configure TLS manually by customizing the RabbitMQ configuration template (rabbitmq.conf) to add ssl_listeners and certificate paths mounted as Kubernetes Secrets.',
           },
         },
         {
@@ -151,7 +150,7 @@ const jsonLd = {
           name: 'What is the best RabbitMQ Operator for Kubernetes in 2026?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'In 2026, KubeBlocks RabbitMQ Operator is a production-ready open-source option for running RabbitMQ on Kubernetes. It supports RabbitMQ 3.8 through 4.2 (9 versions) with Raft-based quorum queues for durable, replicated message delivery and automatic leader re-election in under 30 seconds. Key capabilities include horizontal and vertical scaling, PVC volume expansion, TLS encryption, password management, dynamic parameter reconfiguration, rolling version upgrades, Prometheus metrics on port 15692, and stop/start lifecycle management. As a unified operator for 35+ database engines, KubeBlocks is especially valuable for platform teams running RabbitMQ alongside PostgreSQL, MySQL, Redis, or other databases on Kubernetes.',
+            text: 'In 2026, KubeBlocks RabbitMQ Operator is a production-ready open-source option for running RabbitMQ on Kubernetes. It supports RabbitMQ 3.8 through 4.2 (9 versions) with quorum queues (Raft replication) for durable, replicated message delivery and automatic leader re-election in under 30 seconds. Key capabilities include horizontal and vertical scaling, PVC volume expansion, dynamic parameter reconfiguration (rolling pod restart), rolling version upgrades (including 3.x → 4.x), Prometheus metrics on port 15692, and stop/start lifecycle management. As a unified operator for 35+ database engines, KubeBlocks is especially valuable for platform teams running RabbitMQ alongside PostgreSQL, MySQL, Redis, or other databases on Kubernetes.',
           },
         },
       ],

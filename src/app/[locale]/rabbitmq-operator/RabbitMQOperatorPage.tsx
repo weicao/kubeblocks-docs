@@ -203,7 +203,7 @@ function Hero() {
                 <Box sx={{ width: 22, height: 22, borderRadius: '50%', bgcolor: 'rgba(249,115,22,0.12)', border: '1px solid #F97316', color: '#F97316', fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>1</Box>
                 <Typography sx={{ fontSize: '13px', fontWeight: 600, color: '#8b949e' }}>Install KubeBlocks</Typography>
               </Box>
-              <Box component="pre" sx={{ m: 0, mb: 2.5, p: 2, borderRadius: '8px', bgcolor: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.06)', fontFamily: '"JetBrains Mono","Fira Code",monospace', fontSize: { xs: '0.68rem', md: '0.72rem' }, lineHeight: 1.7, color: '#c9d1d9', overflowX: 'auto' }}>
+              <Box component="pre" sx={{ m: 0, mb: 2.5, p: 2, borderRadius: '8px', bgcolor: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.06)', fontFamily: '"JetBrains Mono","Fira Code",monospace', fontSize: { xs: '0.68rem', md: '0.72rem' }, lineHeight: 1.7, color: '#c9d1d9', overflowX: 'hidden' }}>
                 <span style={{ color: '#6e7681' }}># Add Helm repo{'\n'}</span>
                 {'helm repo add kubeblocks https://apecloud.github.io/helm-charts\nhelm repo update\n\n'}
                 <span style={{ color: '#6e7681' }}># Install KubeBlocks{'\n'}</span>
@@ -215,8 +215,8 @@ function Hero() {
                 <Box sx={{ width: 22, height: 22, borderRadius: '50%', bgcolor: 'rgba(249,115,22,0.12)', border: '1px solid #F97316', color: '#F97316', fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>2</Box>
                 <Typography sx={{ fontSize: '13px', fontWeight: 600, color: '#8b949e' }}>Install RabbitMQ Addon</Typography>
               </Box>
-              <Box component="pre" sx={{ m: 0, mb: 2.5, p: 2, borderRadius: '8px', bgcolor: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.06)', fontFamily: '"JetBrains Mono","Fira Code",monospace', fontSize: { xs: '0.68rem', md: '0.72rem' }, lineHeight: 1.7, color: '#c9d1d9', overflowX: 'auto' }}>
-                {'helm install rabbitmq kubeblocks/rabbitmq \\\n  --namespace kb-system'}
+              <Box component="pre" sx={{ m: 0, mb: 2.5, p: 2, borderRadius: '8px', bgcolor: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.06)', fontFamily: '"JetBrains Mono","Fira Code",monospace', fontSize: { xs: '0.68rem', md: '0.72rem' }, lineHeight: 1.7, color: '#c9d1d9', overflowX: 'hidden' }}>
+                {'helm upgrade -i kb-addon-rabbitmq kubeblocks/rabbitmq \\\n  --namespace kb-system'}
               </Box>
 
               {/* Step 3 */}
@@ -233,11 +233,11 @@ function Hero() {
                 <Box sx={{ width: 22, height: 22, borderRadius: '50%', bgcolor: 'rgba(249,115,22,0.12)', border: '1px solid #F97316', color: '#F97316', fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>4</Box>
                 <Typography sx={{ fontSize: '13px', fontWeight: 600, color: '#8b949e' }}>Cluster is Ready</Typography>
               </Box>
-              <Box component="pre" sx={{ m: 0, p: 2, borderRadius: '8px', bgcolor: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.06)', fontFamily: '"JetBrains Mono","Fira Code",monospace', fontSize: { xs: '0.68rem', md: '0.72rem' }, lineHeight: 1.7, color: '#c9d1d9', overflowX: 'auto' }}>
+              <Box component="pre" sx={{ m: 0, p: 2, borderRadius: '8px', bgcolor: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.06)', fontFamily: '"JetBrains Mono","Fira Code",monospace', fontSize: { xs: '0.68rem', md: '0.72rem' }, lineHeight: 1.7, color: '#c9d1d9', overflowX: 'hidden' }}>
                 <span style={{ color: '#3fb950', userSelect: 'none' }}>$ </span>
                 {'kubectl get cluster rabbitmq-cluster -n demo\n'}
                 <span style={{ color: '#6e7681' }}>{'NAME               CLUSTER-DEFINITION   TERMINATION-POLICY   STATUS    AGE\n'}</span>
-                {'rabbitmq-cluster   rabbitmq             Delete               '}
+                {'rabbitmq-cluster                        Delete               '}
                 <span style={{ color: '#3fb950', fontWeight: 700 }}>Running</span>
                 {'   2m'}
               </Box>
@@ -274,7 +274,7 @@ function Topology() {
             <Box component="span" color="primary.main">One Operator.</Box>
           </Typography>
           <Typography sx={{ color: 'text.secondary', mt: 1.5, maxWidth: 560, mx: 'auto', lineHeight: 1.75 }}>
-            KubeBlocks deploys RabbitMQ as a Raft-based cluster with quorum queues for strong consistency and automatic failover.
+            KubeBlocks deploys RabbitMQ as a 3- or 5-node HA cluster. Quorum queues use Raft replication for strong consistency; the cluster itself uses Erlang distributed clustering with Kubernetes peer discovery.
           </Typography>
         </Box>
 
@@ -341,10 +341,9 @@ const lifecycleCategories = [
     title: 'Configuration, Security & Observability',
     color: '#059669',
     items: [
-      { title: 'Dynamic Configuration', desc: 'Apply RabbitMQ parameters (ssl_handshake_timeout, etc.) via OpsRequest without a full cluster restart.' },
-      { title: 'TLS Encryption', desc: 'Enable in-flight encryption for AMQP and inter-node traffic, with certificate rotation via OpsRequest.' },
-      { title: 'Password Management', desc: 'Rotate admin credentials stored in Kubernetes Secrets without restarting the cluster.' },
-      { title: 'Version Upgrade', desc: 'Rolling upgrades across minor versions (3.x → 4.x) with health checks between each pod.' },
+      { title: 'Dynamic Configuration', desc: 'Apply RabbitMQ parameters via OpsRequest. KubeBlocks applies changes with a rolling pod restart, keeping quorum available throughout.' },
+      { title: 'Credential Management', desc: 'Admin credentials are auto-generated and stored in Kubernetes Secrets at cluster creation. Update via Secret rotation.' },
+      { title: 'Version Upgrade', desc: 'Rolling upgrades across supported versions (e.g. 3.13.7 → 4.0.9) with health checks between each pod.' },
       { title: 'Prometheus Metrics', desc: 'Per-node metrics on :15692 via the built-in Prometheus plugin. Grafana dashboards available.' },
       { title: 'Expose via LoadBalancer', desc: 'Expose AMQP or Management UI externally via a LoadBalancer or NodePort service.' },
     ],
@@ -699,7 +698,7 @@ function CapabilitiesDiagrams() {
               <div className="cd-icon cd-icon-green"></div>
               <div className="cd-title-group">
                 <div className="cd-title">Automatic Raft Leader Re-election</div>
-                <div className="cd-desc">KubeBlocks detects the failed node, the Raft quorum elects a new leader, and AMQP traffic is rerouted — all within 30 seconds.</div>
+                <div className="cd-desc">When a node fails, the surviving quorum members elect a new quorum queue leader via Raft. KubeBlocks restarts the failed pod and rejoins it — all within 30 seconds.</div>
               </div>
               <div className="cd-badge cd-badge-green">RTO &lt; 30s</div>
             </div>

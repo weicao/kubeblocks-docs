@@ -360,7 +360,7 @@ export const rabbitmqComparison: OperatorComparison = {
     { feature: 'PVC volume expansion',           kb: 'YES',  bitnami: 'NO',   cluster_op: 'PART', messaging: 'NO'   },
     { feature: 'Dynamic reconfiguration',        kb: 'YES',  bitnami: 'PART', cluster_op: 'PART', messaging: 'PART' },
     { feature: 'Rolling version upgrade',        kb: 'YES',  bitnami: 'PART', cluster_op: 'YES',  messaging: 'PART' },
-    { feature: 'TLS encryption',                 kb: 'YES',  bitnami: 'YES',  cluster_op: 'YES',  messaging: 'PART' },
+    { feature: 'TLS encryption',                 kb: 'NO',   bitnami: 'YES',  cluster_op: 'YES',  messaging: 'PART' },
     { feature: 'Stop / start lifecycle',         kb: 'YES',  bitnami: 'NO',   cluster_op: 'NO',   messaging: 'NO'   },
     { feature: 'Prometheus metrics',             kb: 'YES',  bitnami: 'YES',  cluster_op: 'YES',  messaging: 'YES'  },
     { feature: 'Web management UI',              kb: 'ENT',  bitnami: 'NO',   cluster_op: 'NO',   messaging: 'NO'   },
