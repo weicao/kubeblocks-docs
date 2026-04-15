@@ -140,7 +140,7 @@ function Hero() {
               fontSize: { xs: 16, md: 17 }, lineHeight: 1.75,
             }}>
               Deploy production-grade RabbitMQ clusters on Kubernetes in minutes.
-              Automate Raft-based HA, quorum queues, and zero-downtime upgrades.
+              Automate HA with quorum queues (Raft replication), and zero-downtime upgrades.
             </Typography>
 
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} mb={7}>
